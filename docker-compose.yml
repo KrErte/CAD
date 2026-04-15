@@ -15,7 +15,8 @@ services:
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-4-6}
       WORKER_URL: http://worker:8000
     depends_on:
-      - worker
+      worker:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
