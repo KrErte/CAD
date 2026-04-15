@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector: { matchLabels: { app: backend } }
+  template:
+    metadata: { labels: { app: backend } }
+    spec:
+      containers:
+        - name: backend
+          image: {{ include "ai-cad.image" (dict "Values" .Values "component" "backend") }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: WORKER_URL
+              value: "http://worker:8000"
+            - name: CLAUDE_MODEL
+              value: {{ .Values.backend.env.CLAUDE_MODEL | quote }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: ANTHROPIC_API_KEY } }
+            - name: MESHY_API_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: MESHY_API_KEY } }
+          resources: {{ toYaml .Values.backend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: backend }
+spec:
+  selector: { app: backend }
+  ports: [{ port: 8080, targetPort: 8080 }]

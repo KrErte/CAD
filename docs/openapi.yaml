@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: AI-CAD Backend
+  version: 0.1.0
+  description: |
+    Estonian-language prompt → parametric CAD spec → STL.
+servers:
+  - url: http://localhost:8080
+  - url: https://cad.krerte.ee
+paths:
+  /api/templates:
+    get:
+      summary: List available parametric templates and their schemas
+      responses:
+        '200':
+          description: catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/TemplateSchema'
+  /api/spec:
+    post:
+      summary: Turn an Estonian prompt into a structured spec
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string, example: "vajan riiuliklambrit 32mm torule, 5kg koormus" }
+      responses:
+        '200':
+          description: structured spec
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Spec' }
+        '400':
+          description: no template matched
+  /api/generate:
+    post:
+      summary: Render STL for a (possibly user-tweaked) spec
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Spec' }
+      responses:
+        '200':
+          description: STL binary
+          content:
+            application/sla:
+              schema: { type: string, format: binary }
+  /api/meshy:
+    post:
+      summary: Free-form mesh fallback via Meshy.ai
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string }
+      responses:
+        '200':
+          description: GLB URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  model_url: { type: string, format: uri }
+                  format:    { type: string, example: glb }
+        '503':
+          description: Meshy not configured
+components:
+  schemas:
+    ParamSchema:
+      type: object
+      properties:
+        type:    { type: string, example: number }
+        unit:    { type: string, example: mm }
+        min:     { type: number }
+        max:     { type: number }
+        default: { type: number }
+    TemplateSchema:
+      type: object
+      properties:
+        description: { type: string }
+        params:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/ParamSchema' }
+    Spec:
+      type: object
+      required: [template, params]
+      properties:
+        template:   { type: string, example: shelf_bracket }
+        params:
+          type: object
+          additionalProperties: { type: number }
+        summary_et: { type: string }

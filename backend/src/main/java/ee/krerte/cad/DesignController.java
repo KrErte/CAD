@@ -20,11 +20,13 @@ public class DesignController {
 
     private final ClaudeClient claude;
     private final WorkerClient worker;
+    private final MeshyClient meshy;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public DesignController(ClaudeClient claude, WorkerClient worker) {
+    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy) {
         this.claude = claude;
         this.worker = worker;
+        this.meshy = meshy;
     }
 
     /** Just expose the worker catalog (what we can design today). */
@@ -57,5 +59,25 @@ public class DesignController {
                 .contentType(MediaType.parseMediaType("application/sla"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + name + "\"")
                 .body(stl);
+    }
+
+    /**
+     * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai.
+     * Returns JSON { "model_url": "..." } that the frontend loads as GLB.
+     */
+    @PostMapping("/meshy")
+    public ResponseEntity<?> meshy(@RequestBody DesignRequest req) {
+        if (!meshy.enabled()) {
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "meshy_disabled",
+                    "message", "Meshy API key pole konfigureeritud"));
+        }
+        try {
+            String url = meshy.textTo3D(req.prompt());
+            return ResponseEntity.ok(Map.of("model_url", url, "format", "glb"));
+        } catch (Exception e) {
+            log.error("Meshy generation failed", e);
+            return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", e.getMessage()));
+        }
     }
 }

@@ -1,0 +1,32 @@
+image:
+  registry: ghcr.io/krerte
+  tag: latest
+  pullPolicy: IfNotPresent
+
+backend:
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi }
+  env:
+    CLAUDE_MODEL: claude-opus-4-6
+
+worker:
+  replicas: 2
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits:   { cpu: 1,    memory: 1Gi }
+
+frontend:
+  replicas: 2
+
+ingress:
+  enabled: true
+  host: cad.krerte.ee
+  className: nginx
+  tlsSecret: ai-cad-tls
+
+# Provide via --set-string secrets.anthropicApiKey=...
+secrets:
+  anthropicApiKey: ""
+  meshyApiKey: ""

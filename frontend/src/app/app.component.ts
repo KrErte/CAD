@@ -14,6 +14,19 @@ interface Spec {
   summary_et?: string;
 }
 
+interface ParamSchema {
+  type: string;
+  unit: string;
+  min: number;
+  max: number;
+  default: number;
+}
+
+interface TemplateSchema {
+  description: string;
+  params: Record<string, ParamSchema>;
+}
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -34,9 +47,24 @@ interface Spec {
 
       <div class="card" *ngIf="spec() as s">
         <h2>{{ s.summary_et || s.template }}</h2>
+        <p style="color:#94a3b8;margin-top:-.4rem">
+          Template: <code>{{ s.template }}</code>
+          — {{ catalogFor(s.template)?.description }}
+        </p>
         <div *ngFor="let k of paramKeys(s)">
-          <label>{{ k }}</label>
-          <input type="number" [ngModel]="s.params[k]" (ngModelChange)="updateParam(k, $event)">
+          <label>
+            {{ k }}
+            <span style="color:#64748b">
+              ({{ schemaFor(s.template, k)?.min }}–{{ schemaFor(s.template, k)?.max }}
+              {{ schemaFor(s.template, k)?.unit }})
+            </span>
+            <strong style="float:right">{{ s.params[k] }}</strong>
+          </label>
+          <input type="range"
+            [min]="schemaFor(s.template, k)?.min || 0"
+            [max]="schemaFor(s.template, k)?.max || 100"
+            [step]="0.5"
+            [ngModel]="s.params[k]" (ngModelChange)="updateParam(k, $event)">
         </div>
         <button style="margin-top:1rem" (click)="generate()" [disabled]="loading()">
           {{ loading() ? 'Genereerin...' : 'Genereeri STL' }}
@@ -60,9 +88,17 @@ export class AppComponent implements AfterViewInit {
 
   prompt = '';
   spec = signal<Spec | null>(null);
+  catalog = signal<Record<string, TemplateSchema>>({});
   stlUrl = signal<string | null>(null);
   loading = signal(false);
   error = signal<string | null>(null);
+
+  catalogFor(name: string): TemplateSchema | undefined {
+    return this.catalog()[name];
+  }
+  schemaFor(name: string, param: string): ParamSchema | undefined {
+    return this.catalog()[name]?.params[param];
+  }
 
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
@@ -91,6 +127,8 @@ export class AppComponent implements AfterViewInit {
       this.renderer.render(this.scene, this.camera);
     };
     animate();
+    this.http.get<Record<string, TemplateSchema>>('/api/templates')
+      .subscribe(c => this.catalog.set(c));
   }
 
   paramKeys(s: Spec): string[] {
