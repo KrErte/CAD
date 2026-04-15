@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ai-cad-backend
+  servlet:
+    multipart:
+      max-file-size: 20MB
+
+app:
+  claude:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${CLAUDE_MODEL:claude-opus-4-6}
+    base-url: https://api.anthropic.com
+  worker:
+    url: ${WORKER_URL:http://localhost:8000}
+
+logging:
+  level:
+    ee.krerte: DEBUG

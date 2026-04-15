@@ -1,0 +1,14 @@
+target/
+build/
+node_modules/
+dist/
+.angular/
+.gradle/
+__pycache__/
+*.pyc
+.env
+*.stl
+/tmp/
+.idea/
+.vscode/
+*.iml
