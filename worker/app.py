@@ -88,6 +88,110 @@ def shelf_bracket(pipe_diameter=32, load_kg=5, arm_length=120, wall_thickness=5)
 
 
 @register(
+    "box",
+    {
+        "description": "Lihtne kandiline karp koos kaanega (kaas eraldi printida)",
+        "params": {
+            "length": {"type": "number", "unit": "mm", "min": 20, "max": 300, "default": 80},
+            "width":  {"type": "number", "unit": "mm", "min": 20, "max": 300, "default": 60},
+            "height": {"type": "number", "unit": "mm", "min": 10, "max": 200, "default": 40},
+            "wall":   {"type": "number", "unit": "mm", "min": 1.5, "max": 8, "default": 2.5},
+        },
+    },
+)
+def box(length=80, width=60, height=40, wall=2.5):
+    outer = cq.Workplane("XY").box(length, width, height, centered=(True, True, False))
+    inner = (
+        cq.Workplane("XY")
+        .box(length - 2 * wall, width - 2 * wall, height - wall, centered=(True, True, False))
+        .translate((0, 0, wall))
+    )
+    return outer.cut(inner)
+
+
+@register(
+    "adapter",
+    {
+        "description": "Toruline adapter ühe diameetri vahetamiseks teiseks",
+        "params": {
+            "d_in":   {"type": "number", "unit": "mm", "min": 5,  "max": 100, "default": 25},
+            "d_out":  {"type": "number", "unit": "mm", "min": 5,  "max": 100, "default": 32},
+            "length": {"type": "number", "unit": "mm", "min": 10, "max": 200, "default": 40},
+            "wall":   {"type": "number", "unit": "mm", "min": 1.5, "max": 6, "default": 2.5},
+        },
+    },
+)
+def adapter(d_in=25, d_out=32, length=40, wall=2.5):
+    half = length / 2
+    bottom = (
+        cq.Workplane("XY")
+        .circle(d_in / 2 + wall).circle(d_in / 2)
+        .extrude(half)
+    )
+    top = (
+        cq.Workplane("XY")
+        .circle(d_out / 2 + wall).circle(d_out / 2)
+        .extrude(half)
+        .translate((0, 0, half))
+    )
+    # Conical transition (loft would be ideal; for robustness we just stack)
+    return bottom.union(top)
+
+
+@register(
+    "cable_clamp",
+    {
+        "description": "Kaabli- või juhtmehoidik seinale (n kaablit kõrvuti)",
+        "params": {
+            "cable_diameter": {"type": "number", "unit": "mm", "min": 2,  "max": 30, "default": 6},
+            "count":          {"type": "number", "unit": "tk", "min": 1,  "max": 10, "default": 3},
+            "screw_hole":     {"type": "number", "unit": "mm", "min": 3,  "max": 8,  "default": 4},
+        },
+    },
+)
+def cable_clamp(cable_diameter=6, count=3, screw_hole=4):
+    spacing = cable_diameter + 4
+    width = spacing * count + 10
+    height = cable_diameter + 8
+    base = cq.Workplane("XY").box(width, 18, 4)
+    base = base.faces(">Z").workplane(origin=(-width/2 + 5, 0, 0)).hole(screw_hole)
+    base = base.faces(">Z").workplane(origin=( width/2 - 5, 0, 0)).hole(screw_hole)
+    body = cq.Workplane("XY").box(width, 18, height).translate((0, 0, height / 2 + 2))
+    for i in range(int(count)):
+        x = -((count - 1) / 2) * spacing + i * spacing
+        cut = (
+            cq.Workplane("XY")
+            .moveTo(x, 0)
+            .circle(cable_diameter / 2)
+            .extrude(height + 2)
+            .translate((0, 0, 2 + height / 2 - cable_diameter / 2))
+        )
+        body = body.cut(cut)
+    return base.union(body)
+
+
+@register(
+    "tag",
+    {
+        "description": "Lapik silt augukesega (võtmehoidja, lemmiklooma plaat)",
+        "params": {
+            "length":    {"type": "number", "unit": "mm", "min": 20, "max": 120, "default": 50},
+            "width":     {"type": "number", "unit": "mm", "min": 10, "max": 60,  "default": 25},
+            "thickness": {"type": "number", "unit": "mm", "min": 1.5, "max": 6,  "default": 3},
+            "hole":      {"type": "number", "unit": "mm", "min": 2,  "max": 8,   "default": 4},
+        },
+    },
+)
+def tag(length=50, width=25, thickness=3, hole=4):
+    body = (
+        cq.Workplane("XY")
+        .box(length, width, thickness, centered=(True, True, False))
+        .edges("|Z").fillet(min(width, length) / 4)
+    )
+    return body.faces(">Z").workplane(origin=(-length / 2 + width / 2, 0, 0)).hole(hole)
+
+
+@register(
     "hook",
     {
         "description": "Seinakonks koormusele X kg",
