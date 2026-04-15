@@ -1,7 +1,9 @@
 FROM python:3.11-slim
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      libgl1 libglu1-mesa libxrender1 libxext6 libsm6 curl \
+      libgl1 libglu1-mesa libxrender1 libxext6 libsm6 \
+      libosmesa6 libxi6 libxmu6 libfontconfig1 libfreetype6 \
+      libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir cadquery==2.4.0 \
