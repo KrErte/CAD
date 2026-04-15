@@ -6,9 +6,11 @@ USER $MAMBA_USER
 WORKDIR /app
 
 # CadQuery from conda-forge (pulls in OCP + OSMesa correctly)
+# numpy pinned <1.24 because cadquery 2.4 -> nptyping uses removed numpy.bool8.
+# vtk pinned to a wheel that ships with OSMesa support.
 RUN micromamba install -y -n base -c conda-forge \
-      python=3.11 cadquery=2.4 fastapi=0.115 uvicorn=0.30 pydantic=2.9 \
-      httptools uvloop \
+      python=3.11 "numpy<1.24" cadquery=2.4 vtk=9.2 \
+      fastapi=0.115 uvicorn=0.30 pydantic=2.9 httptools uvloop \
     && micromamba clean --all --yes
 
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
