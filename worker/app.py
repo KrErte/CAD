@@ -150,23 +150,32 @@ def adapter(d_in=25, d_out=32, length=40, wall=2.5):
     },
 )
 def cable_clamp(cable_diameter=6, count=3, screw_hole=4):
+    # Horizontal P-clamp: base plate with 2 end screw holes + body with
+    # tunnels going right through in the Y direction for cables.
     spacing = cable_diameter + 4
-    width = spacing * count + 10
-    height = cable_diameter + 8
-    base = cq.Workplane("XY").box(width, 18, 4)
-    base = base.faces(">Z").workplane(origin=(-width/2 + 5, 0, 0)).hole(screw_hole)
-    base = base.faces(">Z").workplane(origin=( width/2 - 5, 0, 0)).hole(screw_hole)
-    body = cq.Workplane("XY").box(width, 18, height).translate((0, 0, height / 2 + 2))
+    width = spacing * count + 20
+    depth = 18
+    base_h = 4
+    body_h = cable_diameter + 6
+
+    base = cq.Workplane("XY").box(width, depth, base_h, centered=(True, True, False))
+    base = (base.faces(">Z").workplane()
+            .pushPoints([(-width / 2 + 5, 0), (width / 2 - 5, 0)])
+            .hole(screw_hole))
+
+    body = (cq.Workplane("XY")
+            .box(width, depth, body_h, centered=(True, True, False))
+            .translate((0, 0, base_h)))
+
     for i in range(int(count)):
         x = -((count - 1) / 2) * spacing + i * spacing
-        cut = (
-            cq.Workplane("XY")
-            .moveTo(x, 0)
-            .circle(cable_diameter / 2)
-            .extrude(height + 2)
-            .translate((0, 0, 2 + height / 2 - cable_diameter / 2))
-        )
-        body = body.cut(cut)
+        z = base_h + body_h - cable_diameter / 2 - 0.5
+        tunnel = (cq.Workplane("XZ")
+                  .moveTo(x, z)
+                  .circle(cable_diameter / 2)
+                  .extrude(depth + 4)
+                  .translate((0, -(depth + 4) / 2, 0)))
+        body = body.cut(tunnel)
     return base.union(body)
 
 

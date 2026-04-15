@@ -32,9 +32,107 @@ interface TemplateSchema {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <main style="max-width: 960px; margin: 2rem auto; padding: 0 1rem;">
-      <h1>🛠 AI-CAD</h1>
-      <p style="color:#94a3b8;margin-top:0">Kirjelda eesti keeles mida vaja — saad 3D-printimisvalmis STL-faili.</p>
+    <section style="background:linear-gradient(135deg,#1e1b4b 0%,#0f172a 100%);padding:4rem 1rem;border-bottom:1px solid #1e293b">
+      <div style="max-width:960px;margin:0 auto">
+        <div style="display:inline-block;padding:.3rem .7rem;background:#312e81;border-radius:999px;font-size:.8rem;color:#c7d2fe;margin-bottom:1rem">
+          🇪🇪 Esimene eestikeelne AI-CAD tööriist
+        </div>
+        <h1 style="font-size:clamp(2rem,5vw,3.2rem);line-height:1.1;margin:0 0 1rem;background:linear-gradient(90deg,#a5b4fc,#f0abfc);-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+          🛠 AI-CAD — sõnadest 3D-detailini 30 sekundiga
+        </h1>
+        <p style="color:#cbd5e1;font-size:1.15rem;max-width:640px;margin-top:0">
+          Kirjelda eesti keeles mis sul vaja on. Saad printimisvalmis STL-faili,
+          mida saad kohe oma 3D-printeri juurde saata. Ei mingit CAD-i õppimist,
+          ei mingit Hiinast tellimist, ei mingit 3D-modelleerijaga vaidlemist mõõtude üle.
+        </p>
+        <div style="display:flex;gap:.6rem;margin-top:1.5rem;flex-wrap:wrap">
+          <a href="#app" style="background:#6366f1;color:white;padding:.7rem 1.2rem;border-radius:8px;text-decoration:none;font-weight:600">Proovi kohe →</a>
+          <a href="#why" style="color:#c7d2fe;padding:.7rem 1.2rem;text-decoration:none">Miks meid?</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="why" style="max-width:960px;margin:3rem auto;padding:0 1rem">
+      <h2 style="font-size:1.8rem;margin-bottom:.3rem">Miks just meid valida?</h2>
+      <p style="color:#94a3b8;margin-top:0">Võrdlus Eesti kontekstis — millised on sinu alternatiivid?</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin-top:1.5rem">
+        <div class="card">
+          <div style="font-size:1.8rem">⚡</div>
+          <h3 style="margin:.3rem 0">30 sekundit vs 5 päeva</h3>
+          <p style="color:#94a3b8;margin:0">3D-modelleerija võtab ühe detaili jaoks 2–5 päeva ja 100–500 €. Meilt saad sama 30 sekundiga, täpselt sinu mõõtudega.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:1.8rem">🇪🇪</div>
+          <h3 style="margin:.3rem 0">Eesti keel on emakeel</h3>
+          <p style="color:#94a3b8;margin:0">Fusion 360, Onshape, FreeCAD — kõik inglise keeles, õppimiskõver on pikk. Meie mõistame «riiuliklambrit 32mm torule».</p>
+        </div>
+        <div class="card">
+          <div style="font-size:1.8rem">🎯</div>
+          <h3 style="margin:.3rem 0">Parameetriline, mitte AI-mesh</h3>
+          <p style="color:#94a3b8;margin:0">Teised AI-tööriistad (Meshy, Tripo) teevad orgaanilisi mesh'e, mida ei saa printida kandekoormusele. Meil on päris tehnilised CadQuery-mudelid.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:1.8rem">🔧</div>
+          <h3 style="margin:.3rem 0">Kohandad brauseris</h3>
+          <p style="color:#94a3b8;margin:0">AI paneb parameetrid paika, aga sina liigutad liugurit — mõõt ei mahu 1mm piires? Paranda ja regenereeri sekundi jooksul.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:1.8rem">💸</div>
+          <h3 style="margin:.3rem 0">Tasuta kuni 3 STL-i kuus</h3>
+          <p style="color:#94a3b8;margin:0">Freemium — proovid ilma kaardita. Professionaalidele 4.99 €/kuu piiramatult või pay-per-print koos partnertrüki'aga.</p>
+        </div>
+        <div class="card">
+          <div style="font-size:1.8rem">🔒</div>
+          <h3 style="margin:.3rem 0">Sinu disain, sinu fail</h3>
+          <p style="color:#94a3b8;margin:0">STL jääb sinule. Laed alla, prindid kus tahad — meil Eesti partneritest (3DKoda, 3DPrinditud) kuni oma printeri garaažis.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top:2.5rem">Võrdlus alternatiividega</h3>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;color:#e2e8f0">
+          <thead style="background:#1e293b">
+            <tr>
+              <th style="text-align:left;padding:.8rem">&nbsp;</th>
+              <th style="padding:.8rem">AI-CAD</th>
+              <th style="padding:.8rem;color:#94a3b8">Thingiverse</th>
+              <th style="padding:.8rem;color:#94a3b8">Hiina tellimus</th>
+              <th style="padding:.8rem;color:#94a3b8">CAD-modelleerija</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="padding:.6rem .8rem">Aeg</td><td style="padding:.6rem .8rem;color:#a7f3d0">30 sek</td><td style="padding:.6rem .8rem">Tunde otsida</td><td style="padding:.6rem .8rem">2–4 nädalat</td><td style="padding:.6rem .8rem">2–5 päeva</td></tr>
+            <tr style="background:#0f172a"><td style="padding:.6rem .8rem">Hind</td><td style="padding:.6rem .8rem;color:#a7f3d0">Tasuta / 4.99 €</td><td style="padding:.6rem .8rem">Tasuta</td><td style="padding:.6rem .8rem">5–50 €</td><td style="padding:.6rem .8rem">100–500 €</td></tr>
+            <tr><td style="padding:.6rem .8rem">Täpsus</td><td style="padding:.6rem .8rem;color:#a7f3d0">Sinu mm-id</td><td style="padding:.6rem .8rem">Lähim variant</td><td style="padding:.6rem .8rem">Standardne</td><td style="padding:.6rem .8rem">Sinu mm-id</td></tr>
+            <tr style="background:#0f172a"><td style="padding:.6rem .8rem">Eesti keel</td><td style="padding:.6rem .8rem;color:#a7f3d0">✓</td><td style="padding:.6rem .8rem">✗</td><td style="padding:.6rem .8rem">✗</td><td style="padding:.6rem .8rem">Sõltub</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top:2.5rem">Kellele see sobib?</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">
+        <div class="card">
+          <strong>🚁 Droonitootjad</strong>
+          <p style="color:#94a3b8;margin:.4rem 0 0;font-size:.95rem">Kaabliklambrid, sensori-mount'id, jig'id — 24h iteratsioonitsükkel.</p>
+        </div>
+        <div class="card">
+          <strong>🏠 DIY-entusiastid</strong>
+          <p style="color:#94a3b8;margin:.4rem 0 0;font-size:.95rem">Riiuliklambrid ebatavalistele torudele, konksud, kaabliorganiseerijad.</p>
+        </div>
+        <div class="card">
+          <strong>🔧 Väiketootjad</strong>
+          <p style="color:#94a3b8;margin:.4rem 0 0;font-size:.95rem">Asendusosad, prototüübid, kliendispetsiifilised adapterid.</p>
+        </div>
+        <div class="card">
+          <strong>🎓 Koolid &amp; fablab'id</strong>
+          <p style="color:#94a3b8;margin:.4rem 0 0;font-size:.95rem">Õpilased saavad ideed 3D-ks muuta ilma CAD-tarkvara õppimata.</p>
+        </div>
+      </div>
+    </section>
+
+    <main id="app" style="max-width: 960px; margin: 2rem auto; padding: 0 1rem;">
+      <h2 style="margin-bottom:.3rem">Proovi kohe</h2>
+      <p style="color:#94a3b8;margin-top:0">Kirjelda mida vaja — saad printimisvalmis STL-i sekunditega.</p>
 
       <div class="card">
         <label>Kirjeldus</label>
