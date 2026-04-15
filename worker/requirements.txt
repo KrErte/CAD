@@ -1,4 +1,9 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 pydantic==2.9.2
+# Order matters — install numpy first to avoid cadquery pulling >=1.24
+numpy<1.24
+nptyping==2.0.1
 cadquery==2.4.0
+pytest==8.3.3
+httpx==0.27.2

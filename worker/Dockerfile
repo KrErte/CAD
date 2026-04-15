@@ -1,21 +1,21 @@
-FROM mambaorg/micromamba:1.5.10
-USER root
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+FROM python:3.11-slim
+
+# CadQuery 2.4 / VTK 9.2 need OSMesa + font stack for offscreen rendering.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl libosmesa6 libgl1 libxi6 libxmu6 libxrender1 libxext6 \
+      libfontconfig1 libfreetype6 libgomp1 libglu1-mesa libxkbcommon0 \
     && rm -rf /var/lib/apt/lists/*
-USER $MAMBA_USER
+
 WORKDIR /app
 
-# CadQuery from conda-forge (pulls in OCP + OSMesa correctly)
-# numpy pinned <1.24 because cadquery 2.4 -> nptyping uses removed numpy.bool8.
-# vtk pinned to a wheel that ships with OSMesa support.
-RUN micromamba install -y -n base -c conda-forge \
-      python=3.11 "numpy<1.24" cadquery=2.4 vtk=9.2 \
-      fastapi=0.115 uvicorn=0.30 pydantic=2.9 httptools uvloop \
-    && micromamba clean --all --yes
+# IMPORTANT: numpy must stay <1.24 — cadquery 2.4 drags in old nptyping which
+# references numpy.bool8 (removed in 1.24).
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-ARG MAMBA_DOCKERFILE_ACTIVATE=1
-COPY --chown=$MAMBA_USER:$MAMBA_USER app.py .
+COPY app.py test_app.py ./
 EXPOSE 8000
-HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=10 \
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=10 \
   CMD curl -fs http://localhost:8000/health || exit 1
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
