@@ -2,7 +2,7 @@
   "name": "ai-cad-frontend",
   "version": "0.1.0",
   "scripts": {
-    "start": "ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json",
+    "start": "ng serve --host 0.0.0.0 --port 4200 --disable-host-check --proxy-config proxy.conf.json",
     "build": "ng build"
   },
   "private": true,
