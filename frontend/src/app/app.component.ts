@@ -79,7 +79,7 @@ interface TemplateSchema {
         <div class="card">
           <div style="font-size:1.8rem">💸</div>
           <h3 style="margin:.3rem 0">Tasuta kuni 3 STL-i kuus</h3>
-          <p style="color:#94a3b8;margin:0">Freemium — proovid ilma kaardita. Professionaalidele 4.99 €/kuu piiramatult või pay-per-print koos partnertrüki'aga.</p>
+          <p style="color:#94a3b8;margin:0">Freemium — proovid ilma kaardita. Freemium — proovid ilma kaardita. Pro-pakett 9.99 €/kuu piiramatult.</p>
         </div>
         <div class="card">
           <div style="font-size:1.8rem">🔒</div>
@@ -102,7 +102,7 @@ interface TemplateSchema {
           </thead>
           <tbody>
             <tr><td style="padding:.6rem .8rem">Aeg</td><td style="padding:.6rem .8rem;color:#a7f3d0">30 sek</td><td style="padding:.6rem .8rem">Tunde otsida</td><td style="padding:.6rem .8rem">2–4 nädalat</td><td style="padding:.6rem .8rem">2–5 päeva</td></tr>
-            <tr style="background:#0f172a"><td style="padding:.6rem .8rem">Hind</td><td style="padding:.6rem .8rem;color:#a7f3d0">Tasuta / 4.99 €</td><td style="padding:.6rem .8rem">Tasuta</td><td style="padding:.6rem .8rem">5–50 €</td><td style="padding:.6rem .8rem">100–500 €</td></tr>
+            <tr style="background:#0f172a"><td style="padding:.6rem .8rem">Hind</td><td style="padding:.6rem .8rem;color:#a7f3d0">Tasuta / 9.99 €/kuu</td><td style="padding:.6rem .8rem">Tasuta</td><td style="padding:.6rem .8rem">5–50 €</td><td style="padding:.6rem .8rem">100–500 €</td></tr>
             <tr><td style="padding:.6rem .8rem">Täpsus</td><td style="padding:.6rem .8rem;color:#a7f3d0">Sinu mm-id</td><td style="padding:.6rem .8rem">Lähim variant</td><td style="padding:.6rem .8rem">Standardne</td><td style="padding:.6rem .8rem">Sinu mm-id</td></tr>
             <tr style="background:#0f172a"><td style="padding:.6rem .8rem">Eesti keel</td><td style="padding:.6rem .8rem;color:#a7f3d0">✓</td><td style="padding:.6rem .8rem">✗</td><td style="padding:.6rem .8rem">✗</td><td style="padding:.6rem .8rem">Sõltub</td></tr>
           </tbody>
