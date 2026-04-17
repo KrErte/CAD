@@ -2,8 +2,115 @@
 <html lang="et">
 <head>
   <meta charset="utf-8">
-  <title>AI-CAD — Eesti keeles 3D-disain</title>
+  <title>TehisAI CAD — Eesti keeles 3D-disain 30 sekundiga</title>
+  <meta name="description" content="Kirjelda eesti keeles mida vajad, saad 30 sekundiga 3D-prinditava STL-faili. Riiuliklambrid, kaablihoidjad, adaptrid, karbid — parameetriline CadQuery, mitte AI-mesh.">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://tehisaicad.ee/">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="TehisAI CAD — Eesti keeles 3D-disain 30 sekundiga">
+  <meta property="og:description" content="Sõnadest 3D-prinditavaks detailiks 30 sekundiga. Parameetriline, täpne, sinu mõõtudega.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tehisaicad.ee/">
+  <meta property="og:locale" content="et_EE">
+  <meta property="og:site_name" content="TehisAI CAD">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TehisAI CAD — Eesti keeles 3D-disain">
+  <meta name="twitter:description" content="Kirjelda eesti keeles, saad 30s printimisvalmis STL-faili.">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "TehisAI CAD",
+    "url": "https://tehisaicad.ee",
+    "description": "AI-põhine 3D-disaini tööriist, mis võtab eestikeelse kirjelduse ja genereerib 30 sekundiga 3D-prinditava STL-faili.",
+    "applicationCategory": "DesignApplication",
+    "operatingSystem": "Web",
+    "inLanguage": "et",
+    "offers": [
+      {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR",
+        "description": "Tasuta: 3 STL-i kuus"
+      },
+      {
+        "@type": "Offer",
+        "price": "4.99",
+        "priceCurrency": "EUR",
+        "description": "Hobi: piiramatult STL-e"
+      },
+      {
+        "@type": "Offer",
+        "price": "14.99",
+        "priceCurrency": "EUR",
+        "description": "Pro: STEP-eksport, API, kommertslitsents"
+      }
+    ],
+    "creator": {
+      "@type": "Organization",
+      "name": "TehisAI CAD",
+      "url": "https://tehisaicad.ee"
+    }
+  }
+  </script>
+
+  <!-- FAQ Structured Data (Google rich results) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Mis on TehisAI CAD?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "TehisAI CAD on eestikeelne AI-tööriist, mis muudab sinu kirjelduse 3D-prinditavaks STL-failiks 30 sekundiga. Kasutame parameetrilisi CadQuery mudeleid, mis on täpsed ja insenerikvaliteediga."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Kui palju TehisAI CAD maksab?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Tasuta paketiga saad 3 STL-faili kuus. Hobi pakett (4.99 €/kuu) annab piiramatult genereerimisi. Pro pakett (14.99 €/kuu) lisab STEP-ekspordi, API ja kommertslitsentsi."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Milliseid detaile saan genereerida?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Riiuliklambrid, kaablihoidjad, VESA adapterid, korpused, seina kinnitused, U-kanaliklambreid, spoolihoidjad, tööriistahoidjad ja palju muud. Uusi malle lisame pidevalt."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- Plausible Analytics (ei kasuta cookie'sid, GDPR-friendly) -->
+  <script defer data-domain="tehisaicad.ee" src="https://plausible.io/js/script.js"></script>
+
+  <!-- Sentry error tracking -->
+  <script src="https://browser.sentry-cdn.com/7.120.0/bundle.tracing.min.js"
+          integrity="sha384-gK3DFKAETUJhrqAZICi5a3K1iGlvn2WVWHnnAT4xkG8JEWJWLmAczZT2S88xkjSt"
+          crossorigin="anonymous"></script>
+  <script>
+    window.__SENTRY_DSN__ = ''; // set via server template or env.js
+    if (window.__SENTRY_DSN__ && window.Sentry) {
+      Sentry.init({
+        dsn: window.__SENTRY_DSN__,
+        environment: 'production',
+        tracesSampleRate: 0.1,
+      });
+    }
+  </script>
 </head>
 <body><app-root></app-root></body>
 </html>

@@ -17,14 +17,21 @@
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.json",
-            "assets": [],
+            "assets": [
+              { "glob": "robots.txt", "input": "src/", "output": "/" },
+              { "glob": "sitemap.xml", "input": "src/", "output": "/" },
+              { "glob": "favicon.ico", "input": "src/", "output": "/" }
+            ],
             "styles": ["src/styles.css"],
             "scripts": []
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
-          "options": { "buildTarget": "ai-cad-frontend:build" }
+          "options": {
+            "buildTarget": "ai-cad-frontend:build",
+            "allowedHosts": ["tehisaicad.ee", "www.tehisaicad.ee", "62.171.153.133", "localhost"]
+          }
         }
       }
     }

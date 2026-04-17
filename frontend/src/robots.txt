@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /oauth2/
+Disallow: /login/
+
+Sitemap: https://tehisaicad.ee/sitemap.xml

@@ -7,6 +7,19 @@ services:
       interval: 10s
       retries: 5
 
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aicad
+      POSTGRES_USER: aicad
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aicad}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aicad"]
+      interval: 5s
+      retries: 10
+
   backend:
     build: ./backend
     ports: ["8080:8080"]
@@ -15,8 +28,31 @@ services:
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-4-6}
       WORKER_URL: http://worker:8000
       MESHY_API_KEY: ${MESHY_API_KEY:-}
+      DB_URL: jdbc:postgresql://db:5432/aicad
+      DB_USER: aicad
+      DB_PASSWORD: ${DB_PASSWORD:-aicad}
+      JWT_SECRET: ${JWT_SECRET:-change-me-please-change-me-please-32bytes!!}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_HOBI: ${STRIPE_PRICE_HOBI:-}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENV: ${SENTRY_ENV:-production}
+      FREE_MONTHLY_QUOTA: ${FREE_MONTHLY_QUOTA:-3}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@tehisaicad.ee}
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-m6rnaja@gmail.com}
     depends_on:
       worker:
+        condition: service_healthy
+      db:
         condition: service_healthy
 
   frontend:
@@ -25,31 +61,5 @@ services:
     depends_on:
       - backend
 
-  umami:
-    image: ghcr.io/umami-software/umami:postgresql-latest
-    ports: ["3000:3000"]
-    environment:
-      DATABASE_URL: postgresql://umami:umami@umami-db:5432/umami
-      DATABASE_TYPE: postgresql
-      APP_SECRET: ${APP_SECRET:-replace-me-with-a-random-string}
-    depends_on:
-      umami-db:
-        condition: service_healthy
-    restart: always
-
-  umami-db:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: umami
-      POSTGRES_USER: umami
-      POSTGRES_PASSWORD: umami
-    volumes:
-      - umami-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U umami"]
-      interval: 5s
-      retries: 5
-    restart: always
-
 volumes:
-  umami-db-data:
+  pgdata:

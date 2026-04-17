@@ -1,0 +1,384 @@
+Client:
+ Version:           29.4.0
+ API version:       1.54
+ Go version:        go1.26.1
+ Git commit:        9d7ad9f
+ Built:             Tue Apr  7 08:39:39 2026
+ OS/Arch:           windows/amd64
+ Context:           desktop-linux
+
+Server: Docker Desktop 4.69.0 (224084)
+ Engine:
+  Version:          29.4.0
+  API version:      1.54 (minimum version 1.40)
+  Go version:       go1.26.1
+  Git commit:       daa0cb7
+  Built:            Tue Apr  7 08:36:03 2026
+  OS/Arch:          linux/amd64
+  Experimental:     false
+ containerd:
+  Version:          v2.2.1
+  GitCommit:        dea7da592f5d1d2b7755e3a161be07f43fad8f75
+ runc:
+  Version:          1.3.4
+  GitCommit:        v1.3.4-0-gd6d73eb8
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+ Image cad-backend Building 
+ Image cad-frontend Building 
+ Image cad-worker Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.36kB done
+#1 DONE 0.0s
+
+#2 [backend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 322B 0.0s done
+#2 DONE 0.0s
+
+#3 [worker internal] load build definition from Dockerfile
+#3 transferring dockerfile: 384B 0.0s done
+#3 DONE 0.0s
+
+#4 [frontend internal] load build definition from Dockerfile
+#4 transferring dockerfile: 179B 0.0s done
+#4 DONE 0.1s
+
+#5 [backend internal] load metadata for docker.io/library/eclipse-temurin:21-jre
+#5 ...
+
+#6 [worker internal] load metadata for docker.io/continuumio/miniconda3:latest
+#6 DONE 0.8s
+
+#7 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#7 DONE 0.8s
+
+#5 [backend internal] load metadata for docker.io/library/eclipse-temurin:21-jre
+#5 DONE 0.8s
+
+#8 [worker internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [frontend internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [frontend internal] load build context
+#10 transferring context: 356B done
+#10 DONE 0.0s
+
+#11 [worker internal] load build context
+#11 transferring context: 63B done
+#11 DONE 0.0s
+
+#12 [worker 1/6] FROM docker.io/continuumio/miniconda3:latest@sha256:b002473017c77d4b8bad6f8c49747e0298c37419a5ec69ca37ebe36d09ee417a
+#12 resolve docker.io/continuumio/miniconda3:latest@sha256:b002473017c77d4b8bad6f8c49747e0298c37419a5ec69ca37ebe36d09ee417a 0.0s done
+#12 DONE 0.1s
+
+#13 [worker 2/6] WORKDIR /app
+#13 CACHED
+
+#14 [worker 3/6] RUN conda install -c conda-forge -y cadquery=2.4 python=3.11 && conda clean -afy
+#14 CACHED
+
+#15 [worker 5/6] RUN pip install --no-cache-dir fastapi==0.115.0 "uvicorn[standard]==0.30.6" pydantic==2.9.2
+#15 CACHED
+
+#16 [worker 4/6] COPY requirements.txt .
+#16 CACHED
+
+#17 [worker 6/6] COPY app.py .
+#17 CACHED
+
+#18 [frontend 1/5] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
+#18 resolve docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c 0.0s done
+#18 DONE 0.1s
+
+#19 [frontend 2/5] WORKDIR /app
+#19 CACHED
+
+#20 [frontend 3/5] COPY package.json ./
+#20 CACHED
+
+#21 [frontend 4/5] RUN npm install --no-audit --no-fund
+#21 CACHED
+
+#22 [frontend 5/5] COPY . .
+#22 CACHED
+
+#23 [worker] exporting to image
+#23 exporting layers done
+#23 exporting manifest sha256:5d88fd61c7e4ecd2fd66d876be131cd29075d8e10c29e4d2d2d4af954bc0c3e6 done
+#23 exporting config sha256:f4c0f550b4bcdc8290e195fa7377177fd7c87052f3aab07ae3ad49448b2c1ead done
+#23 exporting attestation manifest sha256:ad60bd2a3366d163fcd9f59d4b93486403240e4349ee2b5853e0f83ef0d5053e 0.1s done
+#23 exporting manifest list sha256:a6e8980d7c82a7b6e3f598aaa10abbbded592a42e65d1dbffc54f42e45ae6050
+#23 exporting manifest list sha256:a6e8980d7c82a7b6e3f598aaa10abbbded592a42e65d1dbffc54f42e45ae6050 0.0s done
+#23 naming to docker.io/library/cad-worker:latest 0.0s done
+#23 unpacking to docker.io/library/cad-worker:latest 0.0s done
+#23 DONE 0.2s
+
+#24 [frontend] exporting to image
+#24 exporting layers done
+#24 exporting manifest sha256:90d1c45966d2053731d5b8865caaede81a9430e903aa954bc1514dd489228a8b done
+#24 exporting config sha256:7f330368840a33ae000c46e96da6b0fe3f3ea94c3c209ac56b0e25c7785e4f9d done
+#24 exporting attestation manifest sha256:cc7a102ed270583ccf6b75e5923ec5af7558b778a004546fd81c91c78c7ada27 0.1s done
+#24 exporting manifest list sha256:c1c7d44ded5f96f56eba4aa4bfcfbd0b2748a4130d6a7698d2cfc35585793e91 0.0s done
+#24 naming to docker.io/library/cad-frontend:latest done
+#24 unpacking to docker.io/library/cad-frontend:latest 0.0s done
+#24 DONE 0.3s
+
+#25 [backend internal] load metadata for docker.io/library/gradle:8.10-jdk21
+#25 ...
+
+#26 [frontend] resolving provenance for metadata file
+#26 DONE 0.0s
+
+#27 [worker] resolving provenance for metadata file
+#27 DONE 0.0s
+
+#25 [backend internal] load metadata for docker.io/library/gradle:8.10-jdk21
+#25 DONE 1.7s
+
+#28 [backend internal] load .dockerignore
+#28 transferring context: 2B done
+#28 DONE 0.0s
+
+#29 [backend internal] load build context
+#29 DONE 0.0s
+
+#30 [backend stage-1 1/3] FROM docker.io/library/eclipse-temurin:21-jre@sha256:3dd25c1b5049a59a84917f38d95230dfd43fcb95619e094ad77f6f61ff0f9db4
+#30 resolve docker.io/library/eclipse-temurin:21-jre@sha256:3dd25c1b5049a59a84917f38d95230dfd43fcb95619e094ad77f6f61ff0f9db4 0.1s done
+#30 DONE 0.1s
+
+#31 [backend build 1/5] FROM docker.io/library/gradle:8.10-jdk21@sha256:963d59f7f22767da4efbcf46b661361b61af5fb88b0309da1071c4234c647eba
+#31 resolve docker.io/library/gradle:8.10-jdk21@sha256:963d59f7f22767da4efbcf46b661361b61af5fb88b0309da1071c4234c647eba 0.1s done
+#31 DONE 0.1s
+
+#29 [backend internal] load build context
+#29 transferring context: 636B done
+#29 DONE 0.0s
+
+#32 [backend build 3/5] COPY build.gradle settings.gradle ./
+#32 CACHED
+
+#33 [backend stage-1 2/3] WORKDIR /app
+#33 CACHED
+
+#34 [backend build 2/5] WORKDIR /src
+#34 CACHED
+
+#35 [backend build 4/5] COPY src ./src
+#35 CACHED
+
+#36 [backend build 5/5] RUN gradle bootJar --no-daemon
+#36 CACHED
+
+#37 [backend stage-1 3/3] COPY --from=build /src/build/libs/*.jar app.jar
+#37 CACHED
+
+#38 [backend] exporting to image
+#38 exporting layers done
+#38 exporting manifest sha256:0842eac368b0546c39c8e5aeccff03d0aec6ca0567011388661a54a1d2ab01ef done
+#38 exporting config sha256:3a450df891d6bcbcefbb5a3352ab4eb0f437e884e11b4766c57e516b7b08185e done
+#38 exporting attestation manifest sha256:ea5308f35e8a63019b2eb307a2ddeeb8fbef702260b8c5f0ad3f05d61f1b053b 0.0s done
+#38 exporting manifest list sha256:6c081b4b5c6eb8e3f4863d6da3b17cdb2166f6624accad11ec4c221ac943fa91
+#38 exporting manifest list sha256:6c081b4b5c6eb8e3f4863d6da3b17cdb2166f6624accad11ec4c221ac943fa91 0.0s done
+#38 naming to docker.io/library/cad-backend:latest done
+#38 unpacking to docker.io/library/cad-backend:latest 0.0s done
+#38 DONE 0.2s
+
+#39 [backend] resolving provenance for metadata file
+#39 DONE 0.0s
+ Image cad-worker Built 
+ Image cad-backend Built 
+ Image cad-frontend Built 
+ Container cad-worker-1 Recreate 
+ Container cad-worker-1 Recreated 
+ Container cad-backend-1 Recreate 
+ Container cad-backend-1 Recreated 
+ Container cad-frontend-1 Recreate 
+ Container cad-frontend-1 Recreated 
+Attaching to backend-1, frontend-1, worker-1
+ Container cad-worker-1 Starting 
+ Container cad-worker-1 Started 
+ Container cad-backend-1 Starting 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint cad-backend-1 (cadae8baa53c025b396811fcc408a12eaf4885f7e4fe9bd0d911942e9fc60cec): Bind for 0.0.0.0:8080 failed: port is already allocated
+ Image cad-backend Building 
+ Image cad-frontend Building 
+ Image cad-worker Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.36kB done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 179B done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 322B 0.0s done
+#3 DONE 0.0s
+
+#4 [worker internal] load build definition from Dockerfile
+#4 transferring dockerfile: 384B done
+#4 DONE 0.0s
+
+#5 [worker internal] load metadata for docker.io/continuumio/miniconda3:latest
+#5 ...
+
+#6 [backend internal] load metadata for docker.io/library/eclipse-temurin:21-jre
+#6 DONE 0.3s
+
+#5 [worker internal] load metadata for docker.io/continuumio/miniconda3:latest
+#5 DONE 0.3s
+
+#7 [frontend internal] load metadata for docker.io/library/node:20-alpine
+#7 DONE 0.3s
+
+#8 [backend internal] load metadata for docker.io/library/gradle:8.10-jdk21
+#8 DONE 0.3s
+
+#9 [worker internal] load .dockerignore
+#9 transferring context: 2B done
+#9 DONE 0.0s
+
+#10 [frontend internal] load .dockerignore
+#10 transferring context: 2B done
+#10 DONE 0.0s
+
+#11 [backend internal] load .dockerignore
+#11 transferring context: 2B done
+#11 DONE 0.0s
+
+#12 [backend internal] load build context
+#12 DONE 0.0s
+
+#13 [worker internal] load build context
+#13 transferring context: 63B done
+#13 DONE 0.0s
+
+#14 [frontend internal] load build context
+#14 transferring context: 356B done
+#14 DONE 0.0s
+
+#15 [backend build 1/5] FROM docker.io/library/gradle:8.10-jdk21@sha256:963d59f7f22767da4efbcf46b661361b61af5fb88b0309da1071c4234c647eba
+#15 resolve docker.io/library/gradle:8.10-jdk21@sha256:963d59f7f22767da4efbcf46b661361b61af5fb88b0309da1071c4234c647eba
+#15 resolve docker.io/library/gradle:8.10-jdk21@sha256:963d59f7f22767da4efbcf46b661361b61af5fb88b0309da1071c4234c647eba 0.1s done
+#15 DONE 0.1s
+
+#16 [worker 1/6] FROM docker.io/continuumio/miniconda3:latest@sha256:b002473017c77d4b8bad6f8c49747e0298c37419a5ec69ca37ebe36d09ee417a
+#16 resolve docker.io/continuumio/miniconda3:latest@sha256:b002473017c77d4b8bad6f8c49747e0298c37419a5ec69ca37ebe36d09ee417a 0.1s done
+#16 DONE 0.1s
+
+#17 [worker 5/6] RUN pip install --no-cache-dir fastapi==0.115.0 "uvicorn[standard]==0.30.6" pydantic==2.9.2
+#17 CACHED
+
+#18 [worker 4/6] COPY requirements.txt .
+#18 CACHED
+
+#19 [worker 2/6] WORKDIR /app
+#19 CACHED
+
+#20 [worker 3/6] RUN conda install -c conda-forge -y cadquery=2.4 python=3.11 && conda clean -afy
+#20 CACHED
+
+#21 [worker 6/6] COPY app.py .
+#21 CACHED
+
+#22 [frontend 1/5] FROM docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c
+#22 resolve docker.io/library/node:20-alpine@sha256:f598378b5240225e6beab68fa9f356db1fb8efe55173e6d4d8153113bb8f333c 0.1s done
+#22 DONE 0.1s
+
+#23 [frontend 2/5] WORKDIR /app
+#23 CACHED
+
+#24 [frontend 3/5] COPY package.json ./
+#24 CACHED
+
+#25 [frontend 4/5] RUN npm install --no-audit --no-fund
+#25 CACHED
+
+#26 [frontend 5/5] COPY . .
+#26 CACHED
+
+#27 [backend stage-1 1/3] FROM docker.io/library/eclipse-temurin:21-jre@sha256:3dd25c1b5049a59a84917f38d95230dfd43fcb95619e094ad77f6f61ff0f9db4
+#27 resolve docker.io/library/eclipse-temurin:21-jre@sha256:3dd25c1b5049a59a84917f38d95230dfd43fcb95619e094ad77f6f61ff0f9db4 0.1s done
+#27 DONE 0.1s
+
+#12 [backend internal] load build context
+#12 transferring context: 636B done
+#12 DONE 0.0s
+
+#28 [backend build 3/5] COPY build.gradle settings.gradle ./
+#28 CACHED
+
+#29 [backend build 4/5] COPY src ./src
+#29 CACHED
+
+#30 [backend build 2/5] WORKDIR /src
+#30 CACHED
+
+#31 [backend stage-1 2/3] WORKDIR /app
+#31 CACHED
+
+#32 [backend build 5/5] RUN gradle bootJar --no-daemon
+#32 CACHED
+
+#33 [backend stage-1 3/3] COPY --from=build /src/build/libs/*.jar app.jar
+#33 CACHED
+
+#34 [backend] exporting to image
+#34 exporting layers
+#34 exporting layers done
+#34 exporting manifest sha256:0842eac368b0546c39c8e5aeccff03d0aec6ca0567011388661a54a1d2ab01ef 0.0s done
+#34 exporting config sha256:3a450df891d6bcbcefbb5a3352ab4eb0f437e884e11b4766c57e516b7b08185e 0.0s done
+#34 exporting attestation manifest sha256:8846a91e2eb11cdfa61be114d1b9b26d2a8d7b574ddc0591363515e57da51301
+#34 exporting attestation manifest sha256:8846a91e2eb11cdfa61be114d1b9b26d2a8d7b574ddc0591363515e57da51301 0.1s done
+#34 exporting manifest list sha256:a7536caecbcfbec4da2ef9793d0e129ca3c71c319651d55d5105b7c0b8f591b8 0.0s done
+#34 naming to docker.io/library/cad-backend:latest
+#34 naming to docker.io/library/cad-backend:latest 0.0s done
+#34 unpacking to docker.io/library/cad-backend:latest 0.0s done
+#34 DONE 0.3s
+
+#35 [worker] exporting to image
+#35 exporting layers done
+#35 exporting manifest sha256:5d88fd61c7e4ecd2fd66d876be131cd29075d8e10c29e4d2d2d4af954bc0c3e6 done
+#35 exporting config sha256:f4c0f550b4bcdc8290e195fa7377177fd7c87052f3aab07ae3ad49448b2c1ead done
+#35 exporting attestation manifest sha256:234c0173dce2801a2703808c823a2bffb4d2a9e10628aa341641e3bb5ac97abf 0.1s done
+#35 exporting manifest list sha256:f59ad04c0a8774caad726cbd64781a3a9d827a80649cd6b3da6de5b2826fb6a2 0.1s done
+#35 naming to docker.io/library/cad-worker:latest 0.0s done
+#35 unpacking to docker.io/library/cad-worker:latest 0.0s done
+#35 DONE 0.3s
+
+#36 [frontend] exporting to image
+#36 exporting layers done
+#36 exporting manifest sha256:90d1c45966d2053731d5b8865caaede81a9430e903aa954bc1514dd489228a8b done
+#36 exporting config sha256:7f330368840a33ae000c46e96da6b0fe3f3ea94c3c209ac56b0e25c7785e4f9d 0.0s done
+#36 exporting attestation manifest sha256:efab015975e2a34713e7db2f50f66b3f0cfe542a4c683460f41558adcf54d4ad 0.1s done
+#36 exporting manifest list sha256:372939294c4879480b33d21aa3caf830e4a423e29b02ec8a8955b88cdbf19074 0.1s done
+#36 naming to docker.io/library/cad-frontend:latest 0.0s done
+#36 unpacking to docker.io/library/cad-frontend:latest 0.0s done
+#36 DONE 0.3s
+
+#37 [worker] resolving provenance for metadata file
+#37 DONE 0.1s
+
+#38 [frontend] resolving provenance for metadata file
+#38 DONE 0.1s
+
+#39 [backend] resolving provenance for metadata file
+#39 DONE 0.0s
+ Image cad-worker Built 
+ Image cad-backend Built 
+ Image cad-frontend Built 
+ Container cad-worker-1 Recreate 
+ Container cad-worker-1 Recreated 
+ Container cad-backend-1 Recreate 
+ Container cad-backend-1 Recreated 
+ Container cad-frontend-1 Recreate 
+ Container cad-frontend-1 Recreated 
+Attaching to backend-1, frontend-1, worker-1
+ Container cad-worker-1 Starting 
+ Container cad-worker-1 Started 
+ Container cad-backend-1 Starting 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint cad-backend-1 (e56b922a273f0a488d2a9535b20260a0cb12efb9f38647e4af9f68060ab0de62): Bind for 0.0.0.0:8080 failed: port is already allocated

@@ -1,12 +1,47 @@
-tehisaicad.ee {
+# Caddy reverse proxy — automaatne Let's Encrypt HTTPS.
+#
+# Kasutus (serveris):
+#   1. apt install caddy
+#   2. vahetab selles failis tehisaicad.ee -> sinu päris domeeniks
+#   3. cp Caddyfile /etc/caddy/Caddyfile
+#   4. systemctl reload caddy
+#   5. DNS A-record tehisaicad.ee -> 62.171.153.133 peab eelnevalt seatud olema
+#
+# Caddy hangib Let's Encrypt sertifikaadi automaatselt, uuendab iga 60 päeva tagant.
+
+tehisaicad.ee, www.tehisaicad.ee {
+    encode gzip zstd
+
+    # Turvalisuse headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # API -> Spring Boot
     handle /api/* {
         reverse_proxy localhost:8080
     }
+
+    # OAuth2 callback + login flow -> Spring Boot
+    handle /oauth2/* {
+        reverse_proxy localhost:8080
+    }
+    handle /login/* {
+        reverse_proxy localhost:8080
+    }
+
+    # Kõik muu -> Angular frontend
     handle {
         reverse_proxy localhost:4200
     }
 }
 
-umami.tehisaicad.ee {
-    reverse_proxy localhost:3000
-}
+# www -> apex redirect (Caddy teeb automaatselt kui mõlemad on üles loetletud,
+# aga eksplitsiitne variant kindluse mõttes):
+# www.tehisaicad.ee {
+#     redir https://tehisaicad.ee{uri} permanent
+# }
