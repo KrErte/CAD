@@ -24,6 +24,21 @@ interface Metrics {
   overhang_risk: boolean;
 }
 
+/** Precise slicer-based preview. `source` tells us whether PrusaSlicer ran. */
+interface Preview {
+  source: 'slicer' | 'heuristic' | 'heuristic_slicer_failed';
+  preset?: string;
+  print_time_sec: number;
+  print_time_human: string;
+  filament_length_m?: number;
+  filament_volume_cm3?: number;
+  filament_g: number;
+  filament_cost_eur: number;
+  volume_cm3?: number;
+  bbox_mm?: { x: number; y: number; z: number };
+  overhang_risk?: boolean;
+}
+
 interface ParamSchema {
   type: string;
   unit: string;
@@ -419,12 +434,40 @@ interface TemplateSchema {
 
             <!-- Metrics -->
             <div class="card-glass" *ngIf="metrics() as m">
-              <h4 style="margin-bottom:.6rem;color:var(--text-secondary)">Detaili näitajad</h4>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+                <h4 style="margin:0;color:var(--text-secondary)">Detaili näitajad</h4>
+                <span *ngIf="preview() as p" class="preview-badge"
+                      [class.preview-exact]="p.source === 'slicer'"
+                      [title]="p.source === 'slicer' ? 'Reaalsed numbrid PrusaSlicer CLI-st' : 'Hinnang (slicer pole saadaval)'">
+                  {{ p.source === 'slicer' ? '&#10003; Täpne' : '&#126; Hinnang' }}
+                </span>
+                <span *ngIf="previewLoading()" class="preview-badge preview-loading">Arvutan...</span>
+              </div>
               <div class="metrics-grid">
                 <div class="metric"><span class="metric-label">Maht</span><span class="metric-value">{{ m.volume_cm3 }} cm³</span></div>
                 <div class="metric"><span class="metric-label">Mõõdud</span><span class="metric-value">{{ m.bbox_mm.x }}×{{ m.bbox_mm.y }}×{{ m.bbox_mm.z }}</span></div>
-                <div class="metric"><span class="metric-label">Kaal</span><span class="metric-value">{{ m.weight_g_pla }}g PLA</span></div>
-                <div class="metric"><span class="metric-label">Prindiaeg</span><span class="metric-value">~{{ m.print_time_min_estimate }} min</span></div>
+                <div class="metric">
+                  <span class="metric-label">Kaal</span>
+                  <span class="metric-value">
+                    {{ (preview()?.filament_g ?? m.weight_g_pla) | number:'1.0-1' }}g
+                    <small>{{ preview()?.preset === 'petg_default' ? 'PETG' : 'PLA' }}</small>
+                  </span>
+                </div>
+                <div class="metric">
+                  <span class="metric-label">Prindiaeg</span>
+                  <span class="metric-value">
+                    <ng-container *ngIf="preview() as p; else estTime">{{ p.print_time_human }}</ng-container>
+                    <ng-template #estTime>~{{ m.print_time_min_estimate }} min</ng-template>
+                  </span>
+                </div>
+                <div class="metric" *ngIf="preview() as p">
+                  <span class="metric-label">Filament</span>
+                  <span class="metric-value">{{ p.filament_length_m | number:'1.0-2' }} m</span>
+                </div>
+                <div class="metric" *ngIf="preview() as p">
+                  <span class="metric-label">Materjali hind</span>
+                  <span class="metric-value" style="color:var(--green)">{{ p.filament_cost_eur | number:'1.2-2' }} €</span>
+                </div>
               </div>
               <div *ngIf="m.overhang_risk" class="overhang-warning">
                 &#9888;&#65039; Võib vajada tugistruktuuri (supports)
@@ -712,6 +755,15 @@ interface TemplateSchema {
       background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2);
       color: var(--amber); font-size: .85rem;
     }
+    .preview-badge {
+      padding: .2rem .55rem; border-radius: 999px; font-size: .7rem; font-weight: 700;
+      background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border);
+      letter-spacing: .02em;
+    }
+    .preview-exact { color: var(--green); border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+    .preview-loading { color: var(--accent-2); animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 50% { opacity: .5; } }
+    .metric-value small { font-size: .72rem; color: var(--text-muted); font-weight: 500; margin-left: .2rem; }
 
     /* Download */
     .download-card { text-align: center; }
@@ -787,6 +839,8 @@ export class AppComponent implements AfterViewInit {
   catalog = signal<Record<string, TemplateSchema>>({});
   stlUrl = signal<string | null>(null);
   metrics = signal<Metrics | null>(null);
+  preview = signal<Preview | null>(null);
+  previewLoading = signal(false);
   myDesigns = signal<Array<{id:number;template:string;summary_et:string;size_bytes:number;created_at:string}>>([]);
   suggestions = signal<string[]>([]);
   loading = signal(false);
@@ -924,6 +978,8 @@ export class AppComponent implements AfterViewInit {
     const next = { ...s, params: { ...s.params, [k]: +v } };
     this.spec.set(next);
     this.fetchMetrics(next);
+    // Invalidate the precise slicer preview — params changed, numbers are stale.
+    this.preview.set(null);
   }
 
   private metricsTimer: any;
@@ -965,6 +1021,7 @@ export class AppComponent implements AfterViewInit {
     const s = this.spec();
     if (!s) return;
     this.loading.set(true);
+    this.preview.set(null);
     this.http.post('/api/generate', s, { responseType: 'arraybuffer' }).subscribe({
       next: buf => {
         const blob = new Blob([buf], { type: 'application/sla' });
@@ -972,6 +1029,8 @@ export class AppComponent implements AfterViewInit {
         this.renderSTL(buf);
         this.loading.set(false);
         this.auth.refreshMe();
+        // Fire precise slicer preview in parallel — UI keeps working while it resolves.
+        this.fetchPreview(s);
       },
       error: e => {
         if (e.status === 402) this.error.set('Tasuta piir on täis. Uuenda PRO-le.');
@@ -979,6 +1038,19 @@ export class AppComponent implements AfterViewInit {
         else this.error.set(e.error?.message || e.message);
         this.loading.set(false);
       },
+    });
+  }
+
+  /**
+   * Ask backend for PrusaSlicer-precise print time / filament mass / cost.
+   * Backend silently falls back to the worker heuristic if the slicer sidecar
+   * is down, so this is always safe to call.
+   */
+  fetchPreview(s: Spec) {
+    this.previewLoading.set(true);
+    this.http.post<Preview>('/api/preview', s).subscribe({
+      next: p => { this.preview.set(p); this.previewLoading.set(false); },
+      error: () => { this.preview.set(null); this.previewLoading.set(false); },
     });
   }
 

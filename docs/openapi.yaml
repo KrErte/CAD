@@ -54,6 +54,45 @@ paths:
           content:
             application/sla:
               schema: { type: string, format: binary }
+  /api/metrics:
+    post:
+      summary: Fast heuristic volume/bbox/rough-print-time (debounced slider feedback)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Spec' }
+      responses:
+        '200':
+          description: heuristic metrics
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Metrics' }
+  /api/preview:
+    post:
+      summary: |
+        Precise slicer-based print time, filament mass and EUR cost for a spec.
+        Generates the STL internally and routes it through the PrusaSlicer
+        sidecar. Falls back to the heuristic if the slicer is not configured
+        or fails — the `source` field distinguishes the two.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Spec'
+                - type: object
+                  properties:
+                    material:     { type: string, enum: [pla, petg] }
+                    fillDensity:  { type: string, example: "20" }
+                    layerHeight:  { type: string, example: "0.2" }
+      responses:
+        '200':
+          description: precise (or fallback-heuristic) preview
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Preview' }
   /api/meshy:
     post:
       summary: Free-form mesh fallback via Meshy.ai
@@ -104,3 +143,35 @@ components:
           type: object
           additionalProperties: { type: number }
         summary_et: { type: string }
+    Metrics:
+      type: object
+      properties:
+        volume_cm3:               { type: number }
+        bbox_mm:
+          type: object
+          properties:
+            x: { type: number }
+            y: { type: number }
+            z: { type: number }
+        weight_g_pla:             { type: number }
+        print_time_min_estimate:  { type: integer }
+        overhang_risk:            { type: boolean }
+    Preview:
+      type: object
+      properties:
+        source:              { type: string, enum: [slicer, heuristic, heuristic_slicer_failed] }
+        preset:              { type: string, example: pla_default }
+        print_time_sec:      { type: integer, example: 1397 }
+        print_time_human:    { type: string, example: "23min 17s" }
+        filament_length_m:   { type: number }
+        filament_volume_cm3: { type: number }
+        filament_g:          { type: number, example: 7.4 }
+        filament_cost_eur:   { type: number, example: 0.19 }
+        volume_cm3:          { type: number }
+        bbox_mm:
+          type: object
+          properties:
+            x: { type: number }
+            y: { type: number }
+            z: { type: number }
+        overhang_risk:       { type: boolean }

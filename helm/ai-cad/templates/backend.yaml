@@ -16,6 +16,10 @@ spec:
           env:
             - name: WORKER_URL
               value: "http://worker:8000"
+            {{- if .Values.slicer.enabled }}
+            - name: SLICER_URL
+              value: "http://slicer:8100"
+            {{- end }}
             - name: CLAUDE_MODEL
               value: {{ .Values.backend.env.CLAUDE_MODEL | quote }}
             - name: ANTHROPIC_API_KEY

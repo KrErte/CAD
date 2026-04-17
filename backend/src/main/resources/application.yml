@@ -45,6 +45,9 @@ app:
     base-url: https://api.anthropic.com
   worker:
     url: ${WORKER_URL:http://localhost:8000}
+  slicer:
+    url: ${SLICER_URL:}
+    timeout-seconds: ${SLICER_TIMEOUT_SEC:150}
   meshy:
     api-key: ${MESHY_API_KEY:}
   jwt:

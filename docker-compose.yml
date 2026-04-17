@@ -7,6 +7,16 @@ services:
       interval: 10s
       retries: 5
 
+  slicer:
+    build: ./slicer
+    ports: ["8100:8100"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+
   db:
     image: postgres:16-alpine
     environment:
@@ -27,6 +37,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-4-6}
       WORKER_URL: http://worker:8000
+      SLICER_URL: http://slicer:8100
       MESHY_API_KEY: ${MESHY_API_KEY:-}
       DB_URL: jdbc:postgresql://db:5432/aicad
       DB_USER: aicad
@@ -51,6 +62,8 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS:-m6rnaja@gmail.com}
     depends_on:
       worker:
+        condition: service_healthy
+      slicer:
         condition: service_healthy
       db:
         condition: service_healthy

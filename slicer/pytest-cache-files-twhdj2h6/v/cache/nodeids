@@ -1,0 +1,12 @@
+[
+  "test_app.py::test_health_lists_presets",
+  "test_app.py::test_human_duration_formats",
+  "test_app.py::test_parse_duration_regex_handles_missing_fields",
+  "test_app.py::test_parse_gcode_header_multi_day_print",
+  "test_app.py::test_parse_gcode_header_rejects_garbage",
+  "test_app.py::test_parse_gcode_header_small_print",
+  "test_app.py::test_presets_endpoint",
+  "test_app.py::test_slice_happy_path_with_mocked_slicer",
+  "test_app.py::test_slice_rejects_empty_upload",
+  "test_app.py::test_slice_rejects_unknown_preset"
+]

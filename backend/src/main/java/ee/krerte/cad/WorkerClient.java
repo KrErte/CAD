@@ -36,4 +36,18 @@ public class WorkerClient {
                 .bodyToMono(byte[].class)
                 .block();
     }
+
+    /**
+     * Fast heuristic metrics (volume / bbox / rough print-time) — doesn't
+     * shell out to PrusaSlicer, safe to call on every slider tick.
+     */
+    public JsonNode metrics(JsonNode spec) {
+        return webClient.post()
+                .uri(workerUrl + "/metrics")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(spec)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
 }

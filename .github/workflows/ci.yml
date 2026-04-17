@@ -60,9 +60,27 @@ jobs:
           pip install fastapi pydantic httpx uvicorn
           python -c "from importlib.util import find_spec; print('FastAPI OK')"
 
+  slicer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: slicer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      # PrusaSlicer is NOT needed for unit tests — the happy-path test
+      # monkey-patches the subprocess call and feeds a fixture gcode.
+      - name: Install test deps
+        run: pip install -r requirements.txt pytest httpx
+      - name: Run tests
+        run: pytest -v
+
   # ────────────────── Deploy (only on main push) ──────────────────
   deploy:
-    needs: [backend, frontend, worker]
+    needs: [backend, frontend, worker, slicer]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production

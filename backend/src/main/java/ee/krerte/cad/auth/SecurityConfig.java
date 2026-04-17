@@ -28,7 +28,7 @@ public class SecurityConfig {
                                  "/api/templates", "/api/health",
                                  "/oauth2/**", "/login/**").permitAll()
                 .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/meshy",
-                                 "/api/metrics", "/api/billing/**",
+                                 "/api/metrics", "/api/preview", "/api/billing/**",
                                  "/api/designs/**", "/api/admin/**").authenticated()
                 .anyRequest().permitAll())
             .oauth2Login(o -> o

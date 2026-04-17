@@ -23,10 +23,16 @@ kasutaja laeb alla ja saadab valitud 3D-print-teenusele.
 **Fallback**: kui ükski template ei sobi, kasutame [Meshy.ai](https://meshy.ai)
 text-to-3D API-t (vabavormiline mesh, GLB).
 
+**Slicer preview**: peale STL-i genereerimist pakub rakendus `POST /api/preview`
+kaudu täpsed numbrid (prindiaeg, filamendi mass, hind €) — sidecar PrusaSlicer
+CLI kaudu. Kui slicer pole saadaval, langetakse tagasi heuristilisele
+hinnangule (volume × PLA tihedus).
+
 ## Stack
 
-- **Backend**: Spring Boot 3 / Java 21 — REST API + Claude/Meshy proxy
+- **Backend**: Spring Boot 3 / Java 21 — REST API + Claude/Meshy/Slicer proxy
 - **Worker**: Python 3.11 + FastAPI + CadQuery 2.4 (OCP / OpenCascade)
+- **Slicer**: Ubuntu 22.04 + PrusaSlicer CLI + FastAPI sidecar
 - **Frontend**: Angular 18 (standalone + signals) + three.js
 - **Pakettimine**: Docker, Docker Compose, Helm chart, k8s manifestid
 - **CI/CD**: GitHub Actions → ghcr.io
@@ -44,11 +50,13 @@ docker compose up --build
 - Frontend: <http://localhost:4200>
 - Backend:  <http://localhost:8080/api/templates>
 - Worker:   <http://localhost:8000/health>
+- Slicer:   <http://localhost:8100/health>
 
 ## Testid
 
 ```bash
 cd worker && pytest -v          # template smoke-tests
+cd slicer && pytest -v          # gcode-header parser + mocked /slice
 cd backend && ./gradlew test    # backend unit-tests
 cd frontend && npm test         # Angular tests
 ```
@@ -77,8 +85,9 @@ kubectl apply -f k8s/
 ## Repo struktuur
 
 ```
-backend/   Spring Boot 3 (ClaudeClient, WorkerClient, MeshyClient)
+backend/   Spring Boot 3 (ClaudeClient, WorkerClient, SlicerClient, MeshyClient)
 worker/    FastAPI + CadQuery, üks @register decorator iga template kohta
+slicer/    FastAPI + PrusaSlicer CLI sidecar (print-time + filament + hind)
 frontend/  Angular 18 + three.js viewer
 k8s/       Plain manifestid (Deployment + Service + Ingress + Secret)
 helm/      Helm chart sama jaoks
@@ -90,5 +99,5 @@ docs/      ARCHITECTURE.md, openapi.yaml
 
 - LLM-juhitud uute template'ide loomine (review queue, mitte auto-merge)
 - Mitmeosalised assembly'd + poltide arvu solver
-- Print-time/filament-mass eelvaade (PrusaSlicer CLI sidecar)
+- ~~Print-time/filament-mass eelvaade (PrusaSlicer CLI sidecar)~~ ✅ olemas
 - Kasutajakontod, tellimuste ajalugu, partnerite API (3DKoda, 3DPrinditud)

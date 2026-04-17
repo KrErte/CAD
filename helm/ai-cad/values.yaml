@@ -17,6 +17,15 @@ worker:
     requests: { cpu: 200m, memory: 512Mi }
     limits:   { cpu: 1,    memory: 1Gi }
 
+slicer:
+  enabled: true
+  replicas: 1
+  # PrusaSlicer slicing is CPU-bound; limit more generously to let a single
+  # long multi-day print slice finish instead of OOM/CPU-throttling.
+  resources:
+    requests: { cpu: 300m, memory: 512Mi }
+    limits:   { cpu: 2,    memory: 2Gi }
+
 frontend:
   replicas: 2
 
