@@ -6,3 +6,7 @@ tehisaicad.ee {
         reverse_proxy localhost:4200
     }
 }
+
+umami.tehisaicad.ee {
+    reverse_proxy localhost:3000
+}
