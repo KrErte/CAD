@@ -26,8 +26,7 @@ public class Design {
     @Column(name = "summary_et")
     private String summaryEt;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "bytea")
     private byte[] stl;
 
     @Column(name = "size_bytes", nullable = false)
