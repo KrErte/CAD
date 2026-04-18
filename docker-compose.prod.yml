@@ -1,0 +1,30 @@
+services:
+  worker:
+    image: ghcr.io/krerte/cad-worker:latest
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      retries: 5
+
+  backend:
+    image: ghcr.io/krerte/cad-backend:latest
+    ports: ["8080:8080"]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-4-6}
+      WORKER_URL: http://worker:8000
+      MESHY_API_KEY: ${MESHY_API_KEY:-}
+    depends_on:
+      worker:
+        condition: service_healthy
+
+  slicer:
+    image: ghcr.io/krerte/cad-slicer:latest
+    ports: ["8001:8001"]
+
+  frontend:
+    image: ghcr.io/krerte/cad-frontend:latest
+    ports: ["4200:4200"]
+    depends_on:
+      - backend
