@@ -67,7 +67,9 @@ public class FreeformController {
                     "error_kind", "unauthorized"));
         }
         User u = uOpt.get();
-        String plan = u.getPlan() == null ? "FREE" : u.getPlan().toUpperCase();
+        // User.Plan on enum (FREE, PRO). .name() annab String'i.
+        // Kui tulevikus lisanduvad TEAM/ENTERPRISE, laieneb kontroll automaatselt.
+        String plan = u.getPlan() == null ? "FREE" : u.getPlan().name();
         if (!plan.equals("PRO") && !plan.equals("TEAM") && !plan.equals("ENTERPRISE")) {
             return ResponseEntity.status(403).body(Map.of(
                     "ok", false,
