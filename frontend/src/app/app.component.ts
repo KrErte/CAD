@@ -1,9 +1,10 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from './auth.service';
-import { EXAMPLES, Example } from './examples';
+import { EXAMPLES, FEATURED_EXAMPLES, Example } from './examples';
 import * as THREE from 'three';
 // @ts-ignore — STLLoader ships without types in @types/three
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
@@ -22,6 +23,24 @@ interface Metrics {
   weight_g_pla: number;
   print_time_min_estimate: number;
   overhang_risk: boolean;
+}
+
+/** One actionable suggestion from the AI review. If `param`+`new_value` are set,
+ *  the UI can offer a one-click auto-apply that tweaks the slider and regenerates. */
+interface Suggestion {
+  label_et: string;
+  rationale_et: string;
+  param?: string;
+  new_value?: number;
+}
+
+/** Structured AI design review from /api/review — Claude-vision critique. */
+interface Review {
+  score: number;
+  verdict_et: string;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: Suggestion[];
 }
 
 /** Precise slicer-based preview. `source` tells us whether PrusaSlicer ran. */
@@ -66,8 +85,10 @@ interface TemplateSchema {
         </a>
         <nav class="header-nav" *ngIf="!auth.me()">
           <a href="#how">Kuidas?</a>
+          <a href="#darwin" style="color:var(--accent-2);font-weight:600">Darwin CAD</a>
           <a href="#examples">Näited</a>
           <a href="#pricing">Hinnad</a>
+          <a href="#faq">KKK</a>
           <button (click)="auth.loginWithGoogle()" class="btn-login">
             Logi sisse
           </button>
@@ -83,45 +104,103 @@ interface TemplateSchema {
       </div>
     </header>
 
-    <!-- ═══════ HERO ═══════ -->
+    <!-- ═══════ HERO — Darwin-animated ═══════ -->
     <section class="hero-bg">
       <div class="grid-overlay"></div>
-      <div class="hero-content">
-        <div class="badge animate-in">
-          &#127466;&#127466;&nbsp; Esimene eestikeelne AI-CAD
-        </div>
-        <h1 class="hero-title animate-in animate-in-delay-1">
-          Kirjelda.<br>
-          <span class="gradient-text">Genereeri.</span><br>
-          Prindi.
-        </h1>
-        <p class="hero-subtitle animate-in animate-in-delay-2">
-          Kirjelda eesti keeles mida vajad — saad <strong>30 sekundiga</strong>
-          printimisvalmis STL-faili. Parameetriline insenerikvaliteet,
-          mitte AI-mesh.
-        </p>
-        <div class="hero-actions animate-in animate-in-delay-3">
-          <a href="#app" class="btn-cta">
-            Proovi tasuta &rarr;
-          </a>
-          <a href="#how" class="btn-secondary">
-            Vaata kuidas &darr;
-          </a>
-        </div>
-        <div class="hero-stats animate-in animate-in-delay-4">
-          <div class="hero-stat">
-            <span class="hero-stat-number">23</span>
-            <span class="hero-stat-label">malli</span>
+      <div class="hero-content hero-with-demo">
+        <div class="hero-left">
+          <div class="badge animate-in">
+            &#127466;&#127466;&nbsp; Maailma esimene evolutsiooniline text-to-CAD
           </div>
-          <div class="hero-stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-number">30s</span>
-            <span class="hero-stat-label">genereerimine</span>
+          <h1 class="hero-title animate-in animate-in-delay-1">
+            Üks lause.<br>
+            <span class="gradient-text">Kuus disaini.</span><br>
+            AI valib parima.
+          </h1>
+          <p class="hero-subtitle animate-in animate-in-delay-2">
+            Kirjelda eesti keeles — saad <strong>6 varianti hinnetega</strong>,
+            valid lemmikud, <strong>AI evolveerib</strong> järgmise põlvkonna.
+            Zoo, Backflip, Adam — kõik teevad «üks-prompt-üks-vastus».
+            Meie evolveerime.
+          </p>
+          <div class="hero-actions animate-in animate-in-delay-3">
+            <a href="#darwin" class="btn-cta">
+              Vaata Darwinit tööl &rarr;
+            </a>
+            <a href="#app" class="btn-secondary">
+              Proovi tavaline &darr;
+            </a>
           </div>
-          <div class="hero-stat-divider"></div>
-          <div class="hero-stat">
-            <span class="hero-stat-number">0.1mm</span>
-            <span class="hero-stat-label">täpsus</span>
+          <div class="hero-stats animate-in animate-in-delay-4">
+            <div class="hero-stat">
+              <span class="hero-stat-number">6</span>
+              <span class="hero-stat-label">varianti / prompt</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-number">30s</span>
+              <span class="hero-stat-label">genereerimine</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+              <span class="hero-stat-number">STL+STEP</span>
+              <span class="hero-stat-label">valmis</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero right: animeeritud Darwin-eelvaade — 6 SVG varianti loopivad sisse -->
+        <div class="hero-right animate-in animate-in-delay-2">
+          <div class="hero-demo card-glass">
+            <div class="hero-demo-header">
+              <div class="hero-demo-dot" style="background:#ff5f56"></div>
+              <div class="hero-demo-dot" style="background:#ffbd2e"></div>
+              <div class="hero-demo-dot" style="background:#27c93f"></div>
+              <span class="hero-demo-label">darwin.cad — põlvkond {{ heroGen() }}</span>
+            </div>
+            <div class="hero-demo-prompt">
+              &ldquo;{{ heroPrompt() }}&rdquo;
+            </div>
+            <div class="hero-demo-grid">
+              <div class="hero-variant" *ngFor="let v of heroVariants(); let i = index"
+                   [class.hero-variant-winner]="v.rank === 0"
+                   [style.animation-delay]="(i * 80) + 'ms'">
+                <div class="hero-variant-svg" [innerHTML]="v.svg"></div>
+                <div class="hero-variant-meta">
+                  <span class="hero-variant-rank">#{{ v.rank + 1 }}</span>
+                  <span class="hero-variant-score">{{ v.score }}/10</span>
+                </div>
+              </div>
+            </div>
+            <div class="hero-demo-footer">
+              <span style="color:var(--green)">&#9679;</span> AI hindas —
+              parim: <strong>{{ heroWinnerReason() }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ FEATURED USE CASES — "Päris elust" ═══════ -->
+    <section class="section" id="use-cases">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge">PÄRIS ELUST</div>
+          <h2 class="section-title">Kolm asja, mida inimesed <span class="gradient-text">eile tegid</span></h2>
+          <p class="section-subtitle">Klõpsa — tekst liigub redaktorisse ja sa näed kuidas töötab.</p>
+        </div>
+        <div class="usecase-grid">
+          <div *ngFor="let ex of featuredExamples" class="usecase-card card-glass"
+               (click)="tryExample(ex); scrollToApp()">
+            <div class="usecase-emoji">{{ ex.emoji }}</div>
+            <div class="usecase-pain">{{ ex.painPoint }}</div>
+            <div class="usecase-solution">
+              <div class="usecase-title">{{ ex.title }}</div>
+              <div class="usecase-meta">{{ ex.useCase }}</div>
+            </div>
+            <div class="usecase-cta">
+              Proovi seda <span style="margin-left:.3rem">&rarr;</span>
+            </div>
           </div>
         </div>
       </div>
@@ -229,10 +308,17 @@ interface TemplateSchema {
               </tr>
               <tr>
                 <td><strong>Hind</strong></td>
-                <td style="color:var(--green);font-weight:700">0–14.99 €/kuu</td>
-                <td>Tasuta</td>
-                <td>5–50 €/tk</td>
-                <td>100–500 €</td>
+                <td style="color:var(--green);font-weight:700">12.99–79 €/kuu</td>
+                <td>Tasuta (aga kulutad tundide kaupa aega)</td>
+                <td>5–50 €/tk + saadetus</td>
+                <td>100–500 € + inseneri tunnitasu</td>
+              </tr>
+              <tr>
+                <td><strong>ROI (ühe detaili peal)</strong></td>
+                <td style="color:var(--green);font-weight:700">≈ 0.40 € per STL</td>
+                <td>Aja väärtus 15 €/h × 2h = 30 €</td>
+                <td>35 € (keskmine)</td>
+                <td>200 € (keskmine)</td>
               </tr>
               <tr>
                 <td><strong>Täpsus</strong></td>
@@ -323,62 +409,417 @@ interface TemplateSchema {
       <div class="container">
         <div class="section-header">
           <div class="badge">HINNAD</div>
-          <h2 class="section-title">Lihtne hinnastus. Peidetud tasusid pole.</h2>
-          <p class="section-subtitle">Proovi tasuta. Uuenda kui vajad rohkem.</p>
+          <h2 class="section-title">Hinnapoliitika insenerile, mitte mänguasjale.</h2>
+          <p class="section-subtitle">
+            Zoo.dev küsib $20, Backflip $20, Shapr3D $25, Fusion 360 $70.
+            Meie Maker plaan on <strong>poole odavam</strong> — aga ainsana tehnik tõlgib eesti keelt
+            ja ainsana evolveerib disaini.
+          </p>
         </div>
-        <div class="pricing-grid">
+
+        <!-- Kuu/aasta toggle -->
+        <div style="display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem">
+          <button class="pricing-toggle" [class.active]="billingCycle() === 'month'"
+                  (click)="billingCycle.set('month')">Kuu</button>
+          <button class="pricing-toggle" [class.active]="billingCycle() === 'year'"
+                  (click)="billingCycle.set('year')">
+            Aasta <span style="color:var(--green);font-weight:700;margin-left:.4rem">−17%</span>
+          </button>
+        </div>
+
+        <div class="pricing-grid pricing-grid-4">
+          <!-- FREE -->
           <div class="pricing-card card-glass">
             <div class="pricing-tier">Free</div>
             <div class="pricing-price">0 €<span class="pricing-period">/kuu</span></div>
+            <div class="pricing-tagline">Proovi ilma kaardita</div>
             <ul class="pricing-features">
-              <li>3 STL-i kuus</li>
-              <li>Kõik 23 malli</li>
+              <li>5 STL-i kuus</li>
+              <li>5 baas-malli</li>
               <li>Eestikeelne AI</li>
-              <li>Brauseris kohandamine</li>
-              <li>3D eelvaade</li>
+              <li>Vesimärgiga eelvaade</li>
+              <li style="color:var(--text-muted)">Ei STEP · Ei Darwin · Ei kommerts</li>
             </ul>
             <button *ngIf="!auth.me()" class="pricing-btn" style="background:var(--bg-card)"
                     (click)="auth.loginWithGoogle()">Alusta tasuta</button>
             <div *ngIf="auth.me()?.plan === 'FREE'" class="pricing-current">Praegune plaan</div>
           </div>
 
-          <div class="pricing-card card-glass pricing-popular">
-            <div class="pricing-tier">Hobi</div>
-            <div class="pricing-price">4.99 €<span class="pricing-period">/kuu</span></div>
-            <div class="pricing-save">49 €/a — säästad 2 kuud</div>
+          <!-- MAKER (asendab Hobi-t) -->
+          <div class="pricing-card card-glass">
+            <div class="pricing-tier">Maker</div>
+            <div class="pricing-price">
+              {{ billingCycle() === 'year' ? '10.75' : '12.99' }} €<span class="pricing-period">/kuu</span>
+            </div>
+            <div class="pricing-save">
+              {{ billingCycle() === 'year' ? '129 €/a — säästad 2 kuud' : 'või 129 €/a (−17%)' }}
+            </div>
+            <div class="pricing-tagline">3D-printijatele, koolilastele, DIY</div>
             <ul class="pricing-features">
-              <li><strong>Piiramatult</strong> STL-i</li>
+              <li><strong>100 STL-i kuus</strong></li>
+              <li>Kõik 23 malli</li>
               <li>Ajalugu + re-download</li>
-              <li>Uued mallid automaatselt</li>
-              <li>E-mail tugi</li>
+              <li>Eelvaade ilma vesimärgita</li>
+              <li>E-mail tugi (48h)</li>
               <li>Metrika (kaal, aeg, mõõdud)</li>
             </ul>
-            <button class="pricing-btn btn-cta" (click)="upgrade('hobi')"
-                    [disabled]="auth.me()?.plan === 'PRO'">
-              {{ auth.me()?.plan === 'PRO' ? 'Aktiivne' : 'Uuenda' }}
+            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('maker')"
+                    [disabled]="isCurrentPlan('MAKER')">
+              {{ isCurrentPlan('MAKER') ? 'Aktiivne' : 'Alusta Maker' }}
             </button>
           </div>
 
-          <div class="pricing-card card-glass">
+          <!-- PRO (populaarne) -->
+          <div class="pricing-card card-glass pricing-popular">
+            <div class="pricing-badge-top">POPULAARSEIM</div>
             <div class="pricing-tier">Pro</div>
-            <div class="pricing-price">14.99 €<span class="pricing-period">/kuu</span></div>
-            <div class="pricing-save">149 €/a</div>
+            <div class="pricing-price">
+              {{ billingCycle() === 'year' ? '24.90' : '29.99' }} €<span class="pricing-period">/kuu</span>
+            </div>
+            <div class="pricing-save">
+              {{ billingCycle() === 'year' ? '299 €/a — säästad 2 kuud' : 'või 299 €/a (−17%)' }}
+            </div>
+            <div class="pricing-tagline">Inseneridele, tootearendajatele, idufirmadele</div>
             <ul class="pricing-features">
-              <li>Kõik Hobi omadused</li>
-              <li><strong>STEP-eksport</strong></li>
-              <li>API (1000 calls/kuu)</li>
-              <li>Prioriteetne järjekord</li>
-              <li>Kommertslitsents</li>
+              <li><strong>Piiramatult</strong> STL + STEP</li>
+              <li><strong>STEP-eksport</strong> (insenerifail)</li>
+              <li><strong>Darwin CAD</strong> — 20 sessiooni/kuu</li>
+              <li>Freeform Python-gen (sandbox)</li>
+              <li>API 500 calls/kuu</li>
+              <li><strong>Kommertslitsents</strong></li>
+              <li>Prioriteetne järjekord (&lt;10s)</li>
             </ul>
-            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('pro')">
-              Uuenda Pro-le
+            <button class="pricing-btn btn-cta" (click)="upgrade('pro')"
+                    [disabled]="isCurrentPlan('PRO')">
+              {{ isCurrentPlan('PRO') ? 'Aktiivne' : 'Uuenda Pro' }}
+            </button>
+          </div>
+
+          <!-- TEAM -->
+          <div class="pricing-card card-glass">
+            <div class="pricing-tier">Team</div>
+            <div class="pricing-price">
+              {{ billingCycle() === 'year' ? '65' : '79' }} €<span class="pricing-period">/koht/kuu</span>
+            </div>
+            <div class="pricing-save">Alates 3 kohast</div>
+            <div class="pricing-tagline">Tootmis-tiimidele, agentuuridele</div>
+            <ul class="pricing-features">
+              <li>Kõik Pro omadused</li>
+              <li><strong>Darwin CAD piiramatult</strong></li>
+              <li>API 2 000 calls/kuu (jagatud)</li>
+              <li>Jagatud ajalugu + rollid</li>
+              <li>SSO (Google Workspace)</li>
+              <li>24h tugi + Slack-kanal</li>
+              <li>Usage analytics dashboard</li>
+            </ul>
+            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('team')"
+                    [disabled]="isCurrentPlan('TEAM')">
+              {{ isCurrentPlan('TEAM') ? 'Aktiivne' : 'Räägi müügiga' }}
             </button>
           </div>
         </div>
+
+        <!-- Enterprise strip -->
+        <div class="enterprise-strip card-glass" style="margin-top:2rem;padding:1.5rem 2rem;
+             display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div>
+            <div style="font-weight:700;font-size:1.1rem">Enterprise — alates 499 €/kuu</div>
+            <div style="color:var(--text-muted);font-size:.9rem;margin-top:.25rem">
+              On-prem / VPC · SLA 99.9% · Audit log · SSO/SAML · Custom fine-tune · Dedikeeritud CSM
+            </div>
+          </div>
+          <a href="mailto:sales@tehisaicad.ee?subject=Enterprise%20hinnang"
+             class="pricing-btn" style="padding:.7rem 1.5rem;text-decoration:none">
+            Telli demo
+          </a>
+        </div>
+
+        <!-- Garantii + trust -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+             gap:1rem;margin-top:2rem;text-align:center">
+          <div style="padding:1rem">
+            <div style="font-size:1.8rem">🛡️</div>
+            <div style="font-weight:700;margin-top:.4rem">30 päeva tagasi­makse</div>
+            <div style="color:var(--text-muted);font-size:.85rem">Küsimata põhjusi</div>
+          </div>
+          <div style="padding:1rem">
+            <div style="font-size:1.8rem">🇪🇪</div>
+            <div style="font-weight:700;margin-top:.4rem">Eesti ettevõte</div>
+            <div style="color:var(--text-muted);font-size:.85rem">Reg-nr + e-arve</div>
+          </div>
+          <div style="padding:1rem">
+            <div style="font-size:1.8rem">⏱️</div>
+            <div style="font-weight:700;margin-top:.4rem">Tühista 1 kliki</div>
+            <div style="color:var(--text-muted);font-size:.85rem">Ei küsi "miks"</div>
+          </div>
+          <div style="padding:1rem">
+            <div style="font-size:1.8rem">🔒</div>
+            <div style="font-weight:700;margin-top:.4rem">GDPR + Stripe</div>
+            <div style="color:var(--text-muted);font-size:.85rem">Kaardi­andmed meie süsteemis ei salvesta</div>
+          </div>
+        </div>
+
         <p style="color:var(--text-muted);font-size:.85rem;margin-top:2rem;text-align:center">
-          Kõik hinnad sis. KM. Tühista millal tahes. B2B alates 199 €/kuu —
-          <a href="mailto:hello@tehisaicad.ee">võta ühendust</a>.
+          Kõik hinnad sis. KM (22%). B2B e-arve saadaval. Aasta-plaanid tasuta 14-päeva proovi­periood.
         </p>
+      </div>
+    </section>
+
+    <!-- ═══════ FAQ ═══════ -->
+    <section class="section" id="faq">
+      <div class="container" style="max-width:820px">
+        <div class="section-header">
+          <div class="badge">KKK</div>
+          <h2 class="section-title">Küsimused, mida teised küsivad</h2>
+        </div>
+        <div class="faq-list">
+          <details class="faq-item card-glass">
+            <summary>Miks kallim kui Free-Hobi-Pro mängu­plaan oli?</summary>
+            <p>
+              Varasem 4.99 € oli turu tunnetamise eksperiment. Tegelik kulu — Claude API,
+              CadQuery render, PrusaSlicer, salvestamine — tähendab, et piiramatu STL
+              4.99 € eest ei ole jätku­suutlik. Vali: odav ja suletud 6 kuu pärast, või
+              mõistlik ja kestev. Maker 12.99 € on endiselt <strong>35% odavam</strong>
+              kui Zoo.dev ($20 ≈ 18.50 €).
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Mida Darwin CAD tegelikult annab?</summary>
+            <p>
+              Ühe promptiga saad 6 varianti, AI paneb neile hinded (1–10) ja põhjenduse.
+              Valid lemmikud, klõpsad "Evolveeri" — saad järgmise põlvkonna nende
+              omadustega. See pole keegi teine maailmas — Zoo, Backflip, Adam CAD teevad
+              "üks-prompt-üks-vastus". 20 sessiooni Pro-plaanis = 120 disaini­varianti.
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Kas ma võin STL/STEP müüa või firmas kasutada?</summary>
+            <p>
+              <strong>Pro ja Team plaanides jah</strong> — täis kommertslitsents, saad
+              toodet müüa, 3D-printida ja firmas kasutada ilma lisatasuta. Free ja Maker
+              on isiklikuks kasutuseks — kui tekib äri, upgrade'id.
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Mis saab, kui tühistan?</summary>
+            <p>
+              Ajaloolised STL/STEP failid jäävad sulle alles (Maker+) ja saad neid 90
+              päeva veel alla laadida. Uusi generatsioone Free-piiranguga (5/kuu).
+              Tühista ühe klõpsuga seadete alt, ei küsi põhjust.
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Kas raha tagasi, kui ei meeldi?</summary>
+            <p>
+              Jah — <strong>30 päeva tingimusteta</strong>. Kirjuta
+              <a href="mailto:refund@tehisaicad.ee">refund&#64;tehisaicad.ee</a> ja raha tuleb
+              5 tööpäevaga tagasi. Ei küsi "aga miks?" — see on sinu raha.
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Kas saan e-arve / B2B-arve?</summary>
+            <p>
+              Jah, Team ja Enterprise plaanidel automaatne e-arve igal kuul. Maker/Pro
+              plaanil küsi kord (billing&#64;tehisaicad.ee), lülitame sisse.
+            </p>
+          </details>
+          <details class="faq-item card-glass">
+            <summary>Miks peaksin uskuma, et see pole vaporware?</summary>
+            <p>
+              Koodi­baas on lahtine (<a href="https://github.com/KrErte/CAD" target="_blank">GitHub</a>),
+              worker on CadQuery (OpenCascade) — 20 aastat vana tõsine B-Rep kernel, mitte
+              AI-hallutsinatsioon. STL-id on matemaatiliselt korrektsed, mitte "paistavad
+              õiged". STEP failid avanevad SolidWorks / Fusion / FreeCAD.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════ DARWIN CAD ═══════ -->
+    <section id="darwin" class="section darwin-section">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge" style="background:rgba(139,92,246,0.15);color:#c4b5fd">
+            ENNEOLEMATU · PRO+ PLAAN
+          </div>
+          <h2 class="section-title">
+            Darwin CAD — <span class="gradient-text">AI evolveerib sinu disaini</span>
+          </h2>
+          <p class="section-subtitle">
+            Üks lause → 6 varianti → AI paneb hinded → valid lemmikud → järgmine põlvkond.
+            Nii disainib bioloogia. Nii ei disaini mitte keegi teine text-to-CAD turul.
+          </p>
+        </div>
+
+        <div class="darwin-app card-glass">
+          <div class="darwin-input-row">
+            <input class="darwin-prompt" type="text" [(ngModel)]="darwinPrompt"
+                   placeholder="nt: riiuliklamber 32mm veetorule, 5kg koormus, 2 kruvi M4"
+                   (keyup.enter)="darwinSeed()">
+            <select class="darwin-n" [(ngModel)]="darwinN">
+              <option [ngValue]="4">4 varianti</option>
+              <option [ngValue]="6">6 varianti</option>
+              <option [ngValue]="8">8 varianti</option>
+            </select>
+            <button class="btn-cta darwin-go" (click)="darwinSeed()"
+                    [disabled]="darwinLoading() || !darwinPrompt()">
+              {{ darwinLoading() ? 'Evolveerib...' : 'Alusta evolutsiooni' }}
+            </button>
+          </div>
+
+          <div *ngIf="darwinVariants().length" class="darwin-gen-header">
+            <div>
+              <span class="darwin-gen-badge">Põlvkond {{ darwinGeneration() }}</span>
+              <span class="darwin-gen-info">
+                {{ darwinVariants().length }} varianti ·
+                <span *ngIf="darwinRankingSource() === 'claude'" style="color:var(--green)">AI Vision hindas</span>
+                <span *ngIf="darwinRankingSource() === 'heuristic'" style="color:var(--amber)">Heuristiline hinnang</span>
+              </span>
+            </div>
+            <div class="darwin-actions">
+              <button class="btn-secondary" (click)="darwinReset()">Alusta algusest</button>
+              <button class="btn-cta" (click)="darwinEvolve()"
+                      [disabled]="!darwinSelected().size || darwinLoading()">
+                Evolveeri valitud ({{ darwinSelected().size }}) →
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="darwinVariants().length" class="darwin-variants">
+            <div *ngFor="let v of darwinVariants(); let i = index"
+                 class="darwin-variant card-glass"
+                 [class.darwin-variant-selected]="darwinSelected().has(v.variant_id)"
+                 [class.darwin-variant-winner]="v.rank === 0"
+                 (click)="darwinToggleSelect(v.variant_id)">
+              <div class="darwin-variant-badges">
+                <span class="darwin-rank-badge" [class.darwin-rank-1]="v.rank === 0">
+                  #{{ v.rank + 1 }}
+                </span>
+                <span class="darwin-score-badge"
+                      [class.darwin-score-high]="v.score >= 8"
+                      [class.darwin-score-mid]="v.score >= 5 && v.score < 8">
+                  {{ v.score }}/10
+                </span>
+              </div>
+              <div class="darwin-variant-svg" [innerHTML]="v.svg_safe"></div>
+              <div class="darwin-variant-metrics" *ngIf="v.metrics as m">
+                <span>{{ m.weight_g_pla | number:'1.0-0' }} g</span>
+                <span>· {{ m.print_time_min_estimate | number:'1.0-0' }} min</span>
+                <span *ngIf="m.overhang_risk" style="color:var(--amber)">· ⚠ kalded</span>
+              </div>
+              <div class="darwin-variant-reason">{{ v.reasoning_et }}</div>
+              <div *ngIf="darwinSelected().has(v.variant_id)" class="darwin-selected-check">✓ Valitud</div>
+            </div>
+          </div>
+
+          <div *ngIf="!darwinVariants().length && !darwinLoading()" class="darwin-empty">
+            <div class="darwin-empty-icon">🧬</div>
+            <p>Kirjelda mida tahad ja vajuta «Alusta evolutsiooni»</p>
+            <p style="color:var(--text-muted);font-size:.85rem;margin-top:.5rem">
+              Kuluta üks päev insenerile — või üks minut Darwinile.
+            </p>
+          </div>
+
+          <div *ngIf="darwinLoading()" class="darwin-empty">
+            <div class="darwin-empty-icon" style="animation:spin 1s linear infinite">⚙️</div>
+            <p>AI genereerib {{ darwinN }} varianti ja hindab...</p>
+          </div>
+
+          <div *ngIf="darwinError()" class="darwin-error">
+            ❌ {{ darwinError() }}
+          </div>
+        </div>
+
+        <div *ngIf="darwinHistory().length > 1" class="darwin-history">
+          <h4 style="margin:2rem 0 .8rem;color:var(--text-muted);font-size:.85rem;letter-spacing:.1em;text-transform:uppercase">Evolutsioon</h4>
+          <div class="darwin-history-row">
+            <div *ngFor="let gen of darwinHistory(); let i = index" class="darwin-history-gen">
+              <div class="darwin-history-svg" [innerHTML]="gen.winner_svg"></div>
+              <div class="darwin-history-label">Põlvkond {{ i + 1 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════ FREEFORM EXPERT MODE ═══════ -->
+    <section id="expert" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge" style="background:rgba(251,191,36,0.15);color:#fde68a">
+            EKSPERT-REŽIIM · PRO PLAAN
+          </div>
+          <h2 class="section-title">
+            Freeform — <span class="gradient-text">kirjuta CadQuery Pythonit</span>
+          </h2>
+          <p class="section-subtitle">
+            Kui 23 malli pole piisav, kirjuta ise. Sandbox: 15s timeout, 512MB mälu,
+            AST-whitelist, ainult <code>cadquery + math + random</code>.
+            Output: STL + STEP kohe.
+          </p>
+        </div>
+
+        <div class="expert-grid card-glass">
+          <div class="expert-editor-wrap">
+            <div class="expert-header">
+              <span class="expert-header-title">freeform.py</span>
+              <div class="expert-header-actions">
+                <button class="btn-secondary" (click)="ffLoadTemplate()">Laadi näidis</button>
+                <button class="btn-cta" (click)="ffRun()" [disabled]="ffLoading() || !ffCode()">
+                  {{ ffLoading() ? 'Jookseb...' : 'Run ▶' }}
+                </button>
+              </div>
+            </div>
+            <textarea class="expert-editor" rows="18" spellcheck="false"
+                      [(ngModel)]="ffCode"
+                      (keydown)="ffKeydown($event)"
+                      placeholder="import cadquery as cq&#10;&#10;result = cq.Workplane('XY').box(40, 20, 10)\n                   .faces('>Z').workplane()\n                   .hole(6)"></textarea>
+            <div class="expert-footer">
+              <span>Ctrl+Enter = Run</span>
+              <span>·</span>
+              <span>Ainult <code>result</code> muutuja eksporditakse STL+STEP-i</span>
+            </div>
+          </div>
+          <div class="expert-output-wrap">
+            <div class="expert-header">
+              <span class="expert-header-title">Output</span>
+              <span *ngIf="ffResult() as r"
+                    [style.color]="r.ok ? 'var(--green)' : '#ef4444'">
+                {{ r.ok ? '✓ OK · ' + r.elapsed_ms + 'ms' : '❌ ' + (r.error_kind || 'viga') }}
+              </span>
+            </div>
+            <div class="expert-output">
+              <div *ngIf="!ffResult() && !ffLoading()" class="expert-output-placeholder">
+                Kirjuta CadQuery kood vasakule ja vajuta Run — STL + STEP ilmuvad siia.
+              </div>
+              <div *ngIf="ffLoading()" class="expert-output-placeholder">
+                <div style="font-size:2rem;animation:spin 1s linear infinite">⚙️</div>
+                <p>Sandbox jookseb... (max 15 sekundit)</p>
+              </div>
+              <div *ngIf="ffResult() as r">
+                <pre *ngIf="!r.ok" class="expert-error">{{ r.error }}</pre>
+                <div *ngIf="r.ok">
+                  <div class="expert-downloads">
+                    <a [href]="ffStlUrl()" download="model.stl" class="btn-cta">
+                      ⬇ STL
+                    </a>
+                    <a *ngIf="ffStepUrl()" [href]="ffStepUrl()" download="model.step" class="btn-secondary">
+                      ⬇ STEP
+                    </a>
+                  </div>
+                  <div class="expert-success-meta">
+                    Elapsed: {{ r.elapsed_ms }}ms
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -479,6 +920,58 @@ interface TemplateSchema {
               <a [href]="stlUrl()" download="model.stl" class="download-link">
                 &#11015; Lae STL alla
               </a>
+              <button class="review-btn"
+                      (click)="askReview()"
+                      [disabled]="reviewLoading()"
+                      *ngIf="!review()">
+                <span *ngIf="!reviewLoading()">&#129302; Küsi AI ülevaadet</span>
+                <span *ngIf="reviewLoading()">&#9203; Claude vaatab detaili üle...</span>
+              </button>
+              <div *ngIf="reviewError()" class="review-error">{{ reviewError() }}</div>
+            </div>
+
+            <!-- AI Design Review card -->
+            <div class="card-glass review-card" *ngIf="review() as r">
+              <div class="review-header">
+                <div class="review-score" [style.color]="scoreColor(r.score)"
+                     [style.borderColor]="scoreColor(r.score)">
+                  {{ r.score }}<small>/10</small>
+                </div>
+                <div class="review-verdict">
+                  <div class="review-label">AI ülevaade</div>
+                  <div class="review-text">{{ r.verdict_et }}</div>
+                </div>
+              </div>
+
+              <div class="review-section" *ngIf="r.strengths?.length">
+                <h5>&#10003; Tugevused</h5>
+                <ul><li *ngFor="let s of r.strengths">{{ s }}</li></ul>
+              </div>
+
+              <div class="review-section" *ngIf="r.weaknesses?.length">
+                <h5>&#9888; Mured</h5>
+                <ul><li *ngFor="let w of r.weaknesses">{{ w }}</li></ul>
+              </div>
+
+              <div class="review-section" *ngIf="r.suggestions?.length">
+                <h5>&#128161; Soovitused</h5>
+                <div class="suggestion-list">
+                  <button *ngFor="let sug of r.suggestions"
+                          class="suggestion-item"
+                          [class.suggestion-actionable]="sug.param && sug.new_value !== null && sug.new_value !== undefined"
+                          (click)="applySuggestion(sug)"
+                          [title]="sug.rationale_et">
+                    <div class="sug-label">
+                      {{ sug.label_et }}
+                      <span *ngIf="sug.param && sug.new_value !== null && sug.new_value !== undefined"
+                            class="sug-apply">&#8634; Rakenda</span>
+                    </div>
+                    <div class="sug-reason">{{ sug.rationale_et }}</div>
+                  </button>
+                </div>
+              </div>
+
+              <button class="review-dismiss" (click)="review.set(null)">Sulge ülevaade</button>
             </div>
 
             <!-- Error -->
@@ -765,6 +1258,81 @@ interface TemplateSchema {
     @keyframes pulse { 50% { opacity: .5; } }
     .metric-value small { font-size: .72rem; color: var(--text-muted); font-weight: 500; margin-left: .2rem; }
 
+    /* AI Review */
+    .review-btn {
+      width: 100%; margin-top: .8rem; padding: .8rem 1rem; border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(99,102,241,0.12));
+      border: 1px solid rgba(139,92,246,0.35);
+      color: var(--text-primary); font-weight: 600; font-size: .92rem; cursor: pointer;
+      transition: all .15s ease;
+    }
+    .review-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(139,92,246,0.28), rgba(99,102,241,0.2));
+      border-color: rgba(139,92,246,0.55); transform: translateY(-1px);
+    }
+    .review-btn:disabled { opacity: .6; cursor: wait; }
+    .review-error {
+      margin-top: .6rem; padding: .5rem .7rem; border-radius: var(--radius-md);
+      background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25);
+      color: #fca5a5; font-size: .82rem;
+    }
+    .review-card {
+      margin-top: 1rem; padding: 1.4rem 1.3rem 1rem;
+      background: linear-gradient(160deg, rgba(139,92,246,0.08), rgba(15,23,42,0.6));
+      border: 1px solid rgba(139,92,246,0.25);
+    }
+    .review-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .review-score {
+      flex: 0 0 auto; display: flex; align-items: baseline; justify-content: center;
+      min-width: 72px; padding: .6rem .3rem; border-radius: var(--radius-md);
+      border: 2px solid; font-size: 2rem; font-weight: 800;
+      background: rgba(0,0,0,0.25); font-family: var(--font-mono, monospace);
+    }
+    .review-score small { font-size: .7rem; opacity: .65; margin-left: .1rem; font-weight: 600; }
+    .review-verdict { flex: 1; min-width: 0; }
+    .review-label {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-muted); font-weight: 700; margin-bottom: .25rem;
+    }
+    .review-text { color: var(--text-primary); font-size: .95rem; line-height: 1.4; }
+    .review-section { margin-top: 1rem; }
+    .review-section h5 {
+      font-size: .78rem; text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-secondary); margin: 0 0 .5rem; font-weight: 700;
+    }
+    .review-section ul { margin: 0; padding-left: 1.2rem; color: var(--text-secondary); }
+    .review-section ul li { margin-bottom: .3rem; font-size: .88rem; line-height: 1.4; }
+    .suggestion-list { display: flex; flex-direction: column; gap: .5rem; }
+    .suggestion-item {
+      text-align: left; padding: .7rem .85rem; border-radius: var(--radius-md);
+      background: rgba(15,23,42,0.5); border: 1px solid var(--border);
+      color: var(--text-primary); cursor: default; transition: all .15s ease;
+      display: flex; flex-direction: column; gap: .25rem;
+    }
+    .suggestion-item.suggestion-actionable {
+      cursor: pointer; border-color: rgba(99,102,241,0.4);
+      background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(15,23,42,0.5));
+    }
+    .suggestion-item.suggestion-actionable:hover {
+      transform: translateY(-1px); border-color: rgba(99,102,241,0.65);
+      background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(15,23,42,0.5));
+    }
+    .sug-label {
+      font-weight: 600; font-size: .9rem; display: flex; justify-content: space-between;
+      align-items: center; gap: .5rem;
+    }
+    .sug-apply {
+      font-size: .7rem; font-weight: 700; padding: .18rem .5rem; border-radius: 999px;
+      background: rgba(99,102,241,0.25); color: var(--accent-2); letter-spacing: .03em;
+    }
+    .sug-reason { font-size: .8rem; color: var(--text-muted); line-height: 1.35; }
+    .review-dismiss {
+      display: block; width: 100%; margin-top: 1rem; padding: .5rem;
+      background: transparent; border: none; color: var(--text-muted);
+      font-size: .78rem; cursor: pointer; letter-spacing: .03em;
+    }
+    .review-dismiss:hover { color: var(--text-secondary); }
+
     /* Download */
     .download-card { text-align: center; }
     .download-link {
@@ -830,17 +1398,23 @@ interface TemplateSchema {
     }
   `],
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
   @ViewChild('viewer', { static: true }) viewer!: ElementRef<HTMLDivElement>;
+
+  private sanitizer = inject(DomSanitizer);
 
   prompt = '';
   examples = EXAMPLES;
+  featuredExamples = FEATURED_EXAMPLES;
   spec = signal<Spec | null>(null);
   catalog = signal<Record<string, TemplateSchema>>({});
   stlUrl = signal<string | null>(null);
   metrics = signal<Metrics | null>(null);
   preview = signal<Preview | null>(null);
   previewLoading = signal(false);
+  review = signal<Review | null>(null);
+  reviewLoading = signal(false);
+  reviewError = signal<string | null>(null);
   myDesigns = signal<Array<{id:number;template:string;summary_et:string;size_bytes:number;created_at:string}>>([]);
   suggestions = signal<string[]>([]);
   loading = signal(false);
@@ -848,6 +1422,292 @@ export class AppComponent implements AfterViewInit {
   adminStats = signal<any>(null);
   adminUsers = signal<any[]>([]);
   isAdmin = signal(false);
+  // Pricing: kuu/aasta lüliti
+  billingCycle = signal<'month' | 'year'>('month');
+
+  isCurrentPlan(tier: 'MAKER' | 'PRO' | 'TEAM'): boolean {
+    const p = this.auth.me()?.plan;
+    return p === tier || (tier === 'MAKER' && p === 'HOBI'); // HOBI legacy alias
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Hero animatsioon — 4 rotating prompti, iga 6 bracket-variandiga
+  // ─────────────────────────────────────────────────────────────────────
+  private HERO_SHOWS = [
+    {
+      prompt: 'riiuliklamber 32mm veetorule, 5kg koormus',
+      winner: 'paksem arm = kindlam 5kg kohta',
+      seed: 1,
+    },
+    {
+      prompt: 'kaablihoidja 4 kaablile, lauaserv',
+      winner: 'laiem põhi stabiilsem',
+      seed: 2,
+    },
+    {
+      prompt: 'karp 80×60×40 Arduinole, pealt lahtine',
+      winner: 'ümarnurgad + vent-auk',
+      seed: 3,
+    },
+    {
+      prompt: 'konks 3kg seinale, 2 kruvi M4',
+      winner: 'sügavam haak = turvalisem',
+      seed: 4,
+    },
+  ];
+  heroShowIdx = signal(0);
+  heroGen = signal(1);
+  heroVariants = signal<Array<{ svg: SafeHtml; score: number; rank: number }>>([]);
+  private heroTimer: any;
+
+  heroPrompt() { return this.HERO_SHOWS[this.heroShowIdx()].prompt; }
+  heroWinnerReason() { return this.HERO_SHOWS[this.heroShowIdx()].winner; }
+
+  private heroRotate() {
+    const show = this.HERO_SHOWS[this.heroShowIdx()];
+    const variants = this.generateHeroVariants(show.seed);
+    // rank: AI-like — top 2 kõrgeim score
+    const scored = variants.map((v, i) => ({ ...v, score: 5 + Math.floor(Math.random() * 5) }));
+    scored.sort((a, b) => b.score - a.score);
+    this.heroVariants.set(scored.map((v, i) => ({ ...v, rank: i })));
+    this.heroGen.set(this.heroShowIdx() + 1);
+  }
+
+  private generateHeroVariants(seed: number) {
+    // 6 shelf-bracket SVG variations — seed-põhised variatsioonid
+    const variants: Array<{ svg: SafeHtml; score: number; rank: number }> = [];
+    for (let i = 0; i < 6; i++) {
+      const t = (seed + i) % 6;
+      const pipeR = 14 + t * 1.2;
+      const armL = 30 + (i % 3) * 6;
+      const thick = 3 + (i % 2) * 1.5;
+      const svg = `
+        <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+          <rect x="8" y="${35 - thick}" width="${armL}" height="${thick * 2}" rx="1.5"
+                fill="url(#g${seed}${i})" stroke="#8a6fff" stroke-width="0.3"/>
+          <circle cx="${8 + armL + pipeR/2}" cy="35" r="${pipeR/1.8}"
+                  fill="none" stroke="#c4b5fd" stroke-width="${thick/2}"/>
+          <circle cx="15" cy="${28 - thick}" r="1.5" fill="#0b0b12"/>
+          <circle cx="15" cy="${42 + thick}" r="1.5" fill="#0b0b12"/>
+          <defs>
+            <linearGradient id="g${seed}${i}" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>`;
+      variants.push({ svg: this.sanitizer.bypassSecurityTrustHtml(svg), score: 0, rank: 0 });
+    }
+    return variants;
+  }
+
+  private heroStart() {
+    this.heroRotate();
+    this.heroTimer = setInterval(() => {
+      this.heroShowIdx.set((this.heroShowIdx() + 1) % this.HERO_SHOWS.length);
+      this.heroRotate();
+    }, 5500);
+  }
+
+  private heroStop() {
+    if (this.heroTimer) clearInterval(this.heroTimer);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Darwin CAD — päris API
+  // ─────────────────────────────────────────────────────────────────────
+  darwinPrompt = '';
+  darwinN = 6;
+  darwinLoading = signal(false);
+  darwinError = signal<string | null>(null);
+  darwinVariants = signal<Array<any>>([]);
+  darwinGeneration = signal(1);
+  darwinTemplate = signal('');
+  darwinRankingSource = signal<'claude' | 'heuristic'>('claude');
+  darwinSelected = signal<Set<string>>(new Set());
+  darwinHistory = signal<Array<{ generation: number; winner_svg: SafeHtml }>>([]);
+
+  fallbackSvg(): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(
+      `<svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:.3">
+         <rect x="10" y="25" width="80" height="20" rx="2" fill="#6366f1"/>
+       </svg>`);
+  }
+
+  private sanitizeVariant(v: any) {
+    // Worker saadab SVG-raw stringi "svg" nime all; mõned tagastavad ka "svg_dataurl"
+    let rawSvg = v.svg || '';
+    if (v.svg_dataurl && typeof v.svg_dataurl === 'string' && v.svg_dataurl.startsWith('data:image/svg')) {
+      // dataurl → embed img
+      rawSvg = `<img src="${v.svg_dataurl}" style="width:100%;height:100%;object-fit:contain" alt="variant">`;
+    }
+    if (!rawSvg) rawSvg = `<svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+       <rect x="10" y="25" width="80" height="20" rx="2" fill="#6366f1" opacity="0.3"/></svg>`;
+    v.svg_safe = this.sanitizer.bypassSecurityTrustHtml(rawSvg);
+    return v;
+  }
+
+  darwinSeed() {
+    if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
+    if (!this.darwinPrompt || !this.darwinPrompt.trim()) return;
+    this.darwinError.set(null);
+    this.darwinLoading.set(true);
+    this.darwinVariants.set([]);
+    this.darwinSelected.set(new Set());
+    this.darwinHistory.set([]);
+
+    this.http.post<any>('/api/evolve/seed', {
+      prompt_et: this.darwinPrompt,
+      n: this.darwinN,
+    }).subscribe({
+      next: (r) => {
+        this.darwinLoading.set(false);
+        const variants = (r.variants || []).map((v: any) => this.sanitizeVariant({...v}));
+        this.darwinVariants.set(variants);
+        this.darwinGeneration.set(r.generation || 1);
+        this.darwinTemplate.set(r.template || '');
+        this.darwinRankingSource.set(r.ranking_source === 'heuristic' ? 'heuristic' : 'claude');
+        this.appendHistory(variants[0]);
+      },
+      error: (e) => {
+        this.darwinLoading.set(false);
+        this.darwinError.set(e.error?.message || 'Darwin ebaõnnestus. Kontrolli API-võtit.');
+      },
+    });
+  }
+
+  darwinToggleSelect(id: string) {
+    const s = new Set(this.darwinSelected());
+    if (s.has(id)) s.delete(id); else s.add(id);
+    if (s.size > 3) {
+      // Max 3 vanemat korraga — eemaldame vanima
+      const first = s.values().next().value;
+      if (first) s.delete(first);
+    }
+    this.darwinSelected.set(s);
+  }
+
+  darwinEvolve() {
+    const selectedIds = this.darwinSelected();
+    if (!selectedIds.size) return;
+    this.darwinError.set(null);
+    this.darwinLoading.set(true);
+
+    const parents = this.darwinVariants().filter(v => selectedIds.has(v.variant_id));
+    this.http.post<any>('/api/evolve/cross', {
+      parents,
+      n: this.darwinN,
+      mutation: 0.2,
+      prompt_et: this.darwinPrompt,
+    }).subscribe({
+      next: (r) => {
+        this.darwinLoading.set(false);
+        const variants = (r.variants || []).map((v: any) => this.sanitizeVariant({...v}));
+        this.darwinVariants.set(variants);
+        this.darwinGeneration.set(r.generation || this.darwinGeneration() + 1);
+        this.darwinRankingSource.set(r.ranking_source === 'heuristic' ? 'heuristic' : 'claude');
+        this.darwinSelected.set(new Set());
+        this.appendHistory(variants[0]);
+      },
+      error: (e) => {
+        this.darwinLoading.set(false);
+        this.darwinError.set(e.error?.message || 'Evolutsioon ebaõnnestus.');
+      },
+    });
+  }
+
+  darwinReset() {
+    this.darwinVariants.set([]);
+    this.darwinSelected.set(new Set());
+    this.darwinHistory.set([]);
+    this.darwinGeneration.set(1);
+    this.darwinError.set(null);
+  }
+
+  private appendHistory(winner: any) {
+    if (!winner) return;
+    const h = this.darwinHistory();
+    h.push({ generation: this.darwinGeneration(), winner_svg: winner.svg_safe });
+    this.darwinHistory.set([...h]);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Freeform sandbox — Pro plaan
+  // ─────────────────────────────────────────────────────────────────────
+  ffCode = '';
+  ffLoading = signal(false);
+  ffResult = signal<any | null>(null);
+
+  private FF_TEMPLATE = `import cadquery as cq
+
+# Muuda mõõte siin ja vajuta Run ▶
+WIDTH  = 60
+DEPTH  = 40
+HEIGHT = 25
+WALL   = 2.5
+
+result = (
+    cq.Workplane("XY")
+    .box(WIDTH, DEPTH, HEIGHT)
+    .faces(">Z").workplane()
+    .rect(WIDTH - 2*WALL, DEPTH - 2*WALL)
+    .cutBlind(-(HEIGHT - WALL))
+    .edges("|Z").fillet(3)
+)
+`;
+
+  ffLoadTemplate() {
+    this.ffCode = this.FF_TEMPLATE;
+  }
+
+  ffKeydown(e: KeyboardEvent) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      this.ffRun();
+    }
+  }
+
+  ffRun() {
+    if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
+    if (!this.ffCode) return;
+    this.ffLoading.set(true);
+    this.ffResult.set(null);
+    this.http.post<any>('/api/freeform/generate', { code: this.ffCode })
+      .subscribe({
+        next: (r) => { this.ffLoading.set(false); this.ffResult.set(r); },
+        error: (e) => {
+          this.ffLoading.set(false);
+          this.ffResult.set({
+            ok: false,
+            error: e.error?.message || e.message || 'Sandbox ebaõnnestus',
+            error_kind: e.error?.error_kind || 'network',
+          });
+        },
+      });
+  }
+
+  ffStlUrl(): string | null {
+    const stl = this.ffResult()?.files?.stl;
+    return stl ? 'data:model/stl;base64,' + stl : null;
+  }
+
+  ffStepUrl(): string | null {
+    const step = this.ffResult()?.files?.step;
+    return step ? 'data:model/step;base64,' + step : null;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  scrollToApp() {
+    document.getElementById('app')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  ngOnInit() {
+    this.heroStart();
+  }
+
+  ngOnDestroy() {
+    this.heroStop();
+  }
 
   catalogFor(name: string): TemplateSchema | undefined { return this.catalog()[name]; }
   schemaFor(name: string, param: string): ParamSchema | undefined { return this.catalog()[name]?.params[param]; }
@@ -877,7 +1737,9 @@ export class AppComponent implements AfterViewInit {
     this.scene.background = new THREE.Color(0x050a18);
     this.camera = new THREE.PerspectiveCamera(45, el.clientWidth / el.clientHeight, 1, 2000);
     this.camera.position.set(200, 200, 200);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    // preserveDrawingBuffer: keep canvas contents around so toDataURL() works
+    // for the AI review screenshot. Small perf cost, never noticeable in practice.
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     this.renderer.setSize(el.clientWidth, el.clientHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     el.appendChild(this.renderer.domElement);
@@ -964,9 +1826,10 @@ export class AppComponent implements AfterViewInit {
     document.getElementById('app')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  upgrade(tier: 'hobi' | 'pro') {
+  upgrade(tier: 'maker' | 'pro' | 'team' | 'hobi') {
     if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
-    this.http.post<{ url: string }>('/api/billing/checkout', { tier }).subscribe({
+    const cycle = this.billingCycle();
+    this.http.post<{ url: string }>('/api/billing/checkout', { tier, cycle }).subscribe({
       next: r => { window.location.href = r.url; },
       error: e => this.error.set(e.error?.message || 'Stripe pole veel seadistatud — tule tagasi peagi!'),
     });
@@ -1022,6 +1885,8 @@ export class AppComponent implements AfterViewInit {
     if (!s) return;
     this.loading.set(true);
     this.preview.set(null);
+    this.review.set(null);
+    this.reviewError.set(null);
     this.http.post('/api/generate', s, { responseType: 'arraybuffer' }).subscribe({
       next: buf => {
         const blob = new Blob([buf], { type: 'application/sla' });
@@ -1039,6 +1904,74 @@ export class AppComponent implements AfterViewInit {
         this.loading.set(false);
       },
     });
+  }
+
+  /** Grab the three.js canvas as a base64 PNG (no data: prefix). */
+  private captureCanvasPng(): string | null {
+    try {
+      // Force a fresh render so preserveDrawingBuffer captures the latest frame.
+      if (this.renderer && this.scene && this.camera) {
+        this.renderer.render(this.scene, this.camera);
+        const dataUrl = this.renderer.domElement.toDataURL('image/png');
+        const comma = dataUrl.indexOf(',');
+        return comma >= 0 ? dataUrl.slice(comma + 1) : null;
+      }
+    } catch {
+      // Cross-origin textures / context-loss — fall through.
+    }
+    return null;
+  }
+
+  /**
+   * Ask Claude to critique the current design (vision + spec + original prompt).
+   * Returns a structured {score, strengths, weaknesses, suggestions[]} — rendered
+   * in a peer-review card with clickable auto-apply fixes.
+   */
+  askReview() {
+    const s = this.spec();
+    if (!s) return;
+    this.reviewLoading.set(true);
+    this.reviewError.set(null);
+    this.review.set(null);
+    const body = {
+      spec: s,
+      prompt_et: this.prompt || null,
+      image_base64: this.captureCanvasPng(),
+    };
+    this.http.post<Review>('/api/review', body).subscribe({
+      next: r => { this.review.set(r); this.reviewLoading.set(false); },
+      error: e => {
+        this.reviewError.set(e.error?.message || 'AI ülevaade ebaõnnestus');
+        this.reviewLoading.set(false);
+      },
+    });
+  }
+
+  /**
+   * One-click auto-apply: take a suggestion's (param, new_value), clamp to
+   * the template's min/max, patch the spec, re-fetch metrics + regenerate STL.
+   * Returns true if applied, false if the suggestion was non-numeric.
+   */
+  applySuggestion(sug: Suggestion) {
+    if (!sug.param || typeof sug.new_value !== 'number') return false;
+    const s = this.spec();
+    if (!s) return false;
+    const schema = this.schemaFor(s.template, sug.param);
+    let v = sug.new_value;
+    if (schema) v = Math.min(schema.max, Math.max(schema.min, v));
+    const next = { ...s, params: { ...s.params, [sug.param]: v } };
+    this.spec.set(next);
+    this.fetchMetrics(next);
+    this.preview.set(null);
+    this.review.set(null);
+    this.generate();
+    return true;
+  }
+
+  scoreColor(n: number): string {
+    if (n >= 8) return 'var(--green)';
+    if (n >= 5) return 'var(--amber)';
+    return '#ef4444';
   }
 
   /**

@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI-CAD · Strateegiline analüüs 2026 · USA vs Baltikum</title>
+<style>
+  :root {
+    --bg: #0a0b14;
+    --bg-2: #11131f;
+    --bg-3: #171a2b;
+    --line: #262a3f;
+    --ink: #e7e9f3;
+    --ink-2: #a4a9c2;
+    --ink-3: #6a6f88;
+    --acc: #00d68f;
+    --acc-2: #7c4dff;
+    --warn: #ff9f43;
+    --red: #ff5470;
+    --blue: #4dabff;
+    --gold: #ffd166;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(124,77,255,0.18), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(0,214,143,0.12), transparent 60%),
+      radial-gradient(700px 500px at 50% 120%, rgba(255,159,67,0.10), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 48px 28px 120px; position: relative; z-index: 1; }
+  .kicker { text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px; color: var(--acc); font-weight: 600; }
+  h1 { font-size: clamp(36px, 5.6vw, 72px); font-weight: 800; line-height: 1.03; letter-spacing: -0.02em; margin: 14px 0 20px; }
+  h1 em { font-style: normal; background: linear-gradient(110deg, #00d68f 0%, #7c4dff 50%, #ff9f43 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  h2 { font-size: clamp(26px, 3.2vw, 40px); font-weight: 700; letter-spacing: -0.015em; margin: 0 0 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; letter-spacing: -0.005em; }
+  p.lede { font-size: clamp(16px, 1.5vw, 19px); color: var(--ink-2); max-width: 780px; }
+  .section { margin-top: 96px; }
+  .section-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 28px; flex-wrap: wrap; }
+  .section-head .num { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; color: var(--ink-3); font-size: 14px; }
+  .muted { color: var(--ink-2); }
+  .mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; }
+
+  /* Hero stats */
+  .hero-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 42px; }
+  .stat { background: linear-gradient(180deg, var(--bg-2), var(--bg-3)); border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; position: relative; overflow: hidden; }
+  .stat::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.02) 100%); pointer-events: none; }
+  .stat .v { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat .v.g { color: var(--acc); }
+  .stat .v.p { color: var(--acc-2); }
+  .stat .v.o { color: var(--warn); }
+  .stat .v.r { color: var(--red); }
+  .stat .l { color: var(--ink-2); font-size: 13px; margin-top: 6px; }
+
+  /* Cards grid */
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+  .grid.three { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 16px; padding: 22px; transition: border-color 0.2s, transform 0.2s; }
+  .card:hover { border-color: #3a3f60; transform: translateY(-2px); }
+  .card .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; padding: 4px 8px; border-radius: 4px; margin-bottom: 10px; }
+  .tag.us { background: rgba(77,171,255,0.14); color: var(--blue); }
+  .tag.balt { background: rgba(0,214,143,0.14); color: var(--acc); }
+  .tag.hot { background: rgba(255,84,112,0.14); color: var(--red); }
+  .tag.gap { background: rgba(255,159,67,0.14); color: var(--warn); }
+
+  /* Comparison table */
+  .matrix { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .matrix th, .matrix td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .matrix th { background: var(--bg-3); font-weight: 600; color: var(--ink); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .matrix tr:last-child td { border-bottom: none; }
+  .matrix td .name { font-weight: 600; }
+  .matrix td .sub { color: var(--ink-3); font-size: 12px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .dot.y { background: var(--acc); }
+  .dot.n { background: #3a3f60; }
+  .dot.p { background: var(--warn); }
+
+  /* Gap map */
+  .gaps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .gap { background: linear-gradient(180deg, var(--bg-2), var(--bg-3)); border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 12px; padding: 18px; }
+  .gap h4 { font-size: 15px; margin-bottom: 8px; }
+  .gap .score { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-3); }
+  .bar { height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--acc), var(--acc-2)); }
+
+  /* Opportunity hero */
+  .opp { background: linear-gradient(135deg, rgba(124,77,255,0.12), rgba(0,214,143,0.10)); border: 1px solid rgba(124,77,255,0.35); border-radius: 20px; padding: 36px; margin-top: 20px; }
+  .opp h3 { font-size: 26px; letter-spacing: -0.01em; margin-bottom: 14px; }
+  .opp .why { color: var(--ink-2); margin-bottom: 20px; max-width: 820px; }
+  .opp ul { list-style: none; padding: 0; }
+  .opp li { padding: 10px 0; border-bottom: 1px dashed var(--line); display: flex; gap: 14px; align-items: flex-start; }
+  .opp li::before { content: "→"; color: var(--acc); font-weight: 700; margin-top: 2px; }
+  .opp li:last-child { border-bottom: none; }
+
+  /* SWOT */
+  .swot { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .swot > div { padding: 20px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg-2); }
+  .swot h4 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; }
+  .swot ul { list-style: none; }
+  .swot li { padding: 6px 0; font-size: 14px; color: var(--ink-2); border-bottom: 1px dashed var(--line); }
+  .swot li:last-child { border-bottom: none; }
+  .swot li::before { content: "•"; margin-right: 8px; }
+  .swot .s { border-top: 3px solid var(--acc); }
+  .swot .s h4 { color: var(--acc); }
+  .swot .w { border-top: 3px solid var(--red); }
+  .swot .w h4 { color: var(--red); }
+  .swot .o { border-top: 3px solid var(--warn); }
+  .swot .o h4 { color: var(--warn); }
+  .swot .t { border-top: 3px solid var(--acc-2); }
+  .swot .t h4 { color: var(--acc-2); }
+  .swot .s li::before { color: var(--acc); }
+  .swot .w li::before { color: var(--red); }
+  .swot .o li::before { color: var(--warn); }
+  .swot .t li::before { color: var(--acc-2); }
+
+  /* Roadmap */
+  .timeline { position: relative; padding-left: 28px; margin-top: 24px; }
+  .timeline::before { content: ""; position: absolute; left: 8px; top: 10px; bottom: 10px; width: 2px; background: linear-gradient(180deg, var(--acc), var(--acc-2), var(--warn)); }
+  .ms { position: relative; padding: 16px 0 22px; }
+  .ms::before { content: ""; position: absolute; left: -24px; top: 20px; width: 12px; height: 12px; background: var(--bg); border: 2px solid var(--acc); border-radius: 50%; }
+  .ms .q { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--acc); background: rgba(0,214,143,0.1); padding: 3px 8px; border-radius: 4px; margin-bottom: 6px; }
+  .ms .t { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .ms .d { color: var(--ink-2); font-size: 14px; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
+  .tab { padding: 10px 16px; cursor: pointer; color: var(--ink-2); font-size: 14px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; background: none; border-left: none; border-right: none; border-top: none; font-family: inherit; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--acc); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Architecture diagram */
+  .arch { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 24px; font-family: "JetBrains Mono", monospace; font-size: 13px; overflow-x: auto; color: var(--ink-2); }
+  .arch b { color: var(--acc); font-weight: 600; }
+  .arch .n { color: var(--warn); }
+  .arch .v { color: var(--acc-2); }
+
+  /* CTA */
+  .cta { margin-top: 80px; padding: 40px; text-align: center; background: linear-gradient(135deg, rgba(0,214,143,0.10), rgba(124,77,255,0.10)); border: 1px solid var(--line); border-radius: 20px; }
+  .cta h2 { margin-bottom: 10px; }
+
+  /* Pill row */
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .pill { display: inline-block; padding: 4px 10px; border-radius: 100px; background: var(--bg-3); border: 1px solid var(--line); font-size: 12px; color: var(--ink-2); font-family: "JetBrains Mono", monospace; }
+
+  /* Footer */
+  footer { margin-top: 80px; padding: 30px 0; border-top: 1px solid var(--line); color: var(--ink-3); font-size: 13px; }
+
+  a { color: var(--blue); }
+  a:hover { color: var(--acc); }
+
+  @media (max-width: 720px) {
+    .swot { grid-template-columns: 1fr; }
+    .wrap { padding: 24px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="kicker">Strateegiline analüüs · Aprill 2026 · Olen / AI-CAD</div>
+  <h1>USA ehitab tööriistu.<br>Baltikum ehitab <em>tootmist.</em><br>Sina oled ristteel.</h1>
+  <p class="lede">AI-põhised 3D/CAD-tootemaastikud kasvavad USA-s plahvatuslikult — 15+ seed-staadiumi ettevõtet, kombineeritud rahastus üle $80M. Baltikumis on sel alal <b style="color:var(--acc)">põhimõtteliselt üks tõsiseltvõetav mängija: sina.</b> See dokument näitab, kus on tegelikud lüngad, mis on USA konkurentide nõrkused, ja kus sul on 18-kuuline aken liikumiseks enne kui nad selle sulgevad.</p>
+
+  <div class="hero-stats">
+    <div class="stat"><div class="v g">$80M+</div><div class="l">USA AI-CAD seed/Series A rahastus 2023–2025</div></div>
+    <div class="stat"><div class="v p">15+</div><div class="l">aktiivset USA konkurenti sarnases vertikaalis</div></div>
+    <div class="stat"><div class="v o">1</div><div class="l">tõsine Baltikumi AI-CAD tegija (sina)</div></div>
+    <div class="stat"><div class="v r">~18 kuud</div><div class="l">enne kui USA tarkvarad jõuavad eesti keelde</div></div>
+  </div>
+
+  <!-- SEKTSIOON 1: USA MAASTIK -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">01 /</span>
+      <h2>USA konkurentide kaart</h2>
+    </div>
+    <p class="muted" style="max-width: 780px; margin-bottom: 22px;">Enamik USA-st jookseb sama valemiga: tekstist-3D-mudelini, eesmärk "ChatGPT for CAD". Peaaegu kõigil on sama struktuuriline nõrkus — nad optimiseerivad "ilust" enne "valmistatavust". Sina optimeerid valmistatavust esimesena. See on sinu peamine relv.</p>
+
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Konkurent</th>
+          <th>Rahastus</th>
+          <th>Lähenemine</th>
+          <th>Template'id</th>
+          <th>Printvalmidus</th>
+          <th>Mitmekeelne</th>
+          <th>Suurim nõrkus</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="name">Leo AI</div><div class="sub">San Francisco · 2023</div></td>
+          <td>$9M seed (Radical VC)</td>
+          <td>Text-to-CAD, inseneri-fookus</td>
+          <td><span class="dot n"></span>Puudub</td>
+          <td><span class="dot n"></span>Ei</td>
+          <td><span class="dot n"></span>EN ainult</td>
+          <td>Hallucinatsioonid mõõtudes → kehv valmistatavus</td>
+        </tr>
+        <tr>
+          <td><div class="name">Adam AI (Adam CAD)</div><div class="sub">New York · 2023</div></td>
+          <td>$4.3M seed</td>
+          <td>SolidWorks/Fusion plugin</td>
+          <td><span class="dot n"></span>Puudub</td>
+          <td><span class="dot p"></span>Käsitsi</td>
+          <td><span class="dot n"></span>EN ainult</td>
+          <td>Nõuab CAD-teadmisi → ei ole tarbijatoode</td>
+        </tr>
+        <tr>
+          <td><div class="name">Backflip AI</div><div class="sub">Austin · YC W24</div></td>
+          <td>$30M Series A</td>
+          <td>Image-to-3D + refine</td>
+          <td><span class="dot n"></span>Puudub</td>
+          <td><span class="dot p"></span>STL export</td>
+          <td><span class="dot n"></span>EN ainult</td>
+          <td>Mesh-väljund, mitte parameetriline → ei saa muuta</td>
+        </tr>
+        <tr>
+          <td><div class="name">Meshy.ai</div><div class="sub">New York · 2023</div></td>
+          <td>$21M Series A (GGV, Sequoia)</td>
+          <td>Text/image → game asset</td>
+          <td><span class="dot n"></span>Puudub</td>
+          <td><span class="dot n"></span>Fookus mängud</td>
+          <td><span class="dot p"></span>Osaliselt</td>
+          <td>Orgaanilised mudelid, mitte inseneri</td>
+        </tr>
+        <tr>
+          <td><div class="name">Kaedim</div><div class="sub">London/SF · 2020</div></td>
+          <td>$15M Series A (a16z)</td>
+          <td>2D → 3D game asset</td>
+          <td><span class="dot n"></span>Puudub</td>
+          <td><span class="dot n"></span>Ei</td>
+          <td><span class="dot n"></span>EN ainult</td>
+          <td>Kontrollitud keskkond — on paljastunud, et pool on käsitsi</td>
+        </tr>
+        <tr>
+          <td><div class="name">nTop (nTopology)</div><div class="sub">New York · 2015</div></td>
+          <td>$95M C-raund</td>
+          <td>Generative design tööstusele</td>
+          <td><span class="dot y"></span>Library</td>
+          <td><span class="dot y"></span>Optimised</td>
+          <td><span class="dot n"></span>EN ainult</td>
+          <td>Enterprise ($$$), SMB-le ligipääsmatu</td>
+        </tr>
+        <tr>
+          <td><div class="name">Shapr3D</div><div class="sub">Budapest/NY · 2015</div></td>
+          <td>$45M Series B</td>
+          <td>iPad-põhine CAD + AI assist</td>
+          <td><span class="dot p"></span>Osaliselt</td>
+          <td><span class="dot p"></span>Handoff</td>
+          <td><span class="dot y"></span>10 keelt</td>
+          <td>Fookus tööriistal, mitte resultaadil</td>
+        </tr>
+        <tr>
+          <td><div class="name">Autodesk (Fusion + AI)</div><div class="sub">SF · incumbent</div></td>
+          <td>$50B market cap</td>
+          <td>Lisab AI vanasse tööriista</td>
+          <td><span class="dot y"></span>Massive</td>
+          <td><span class="dot y"></span>Jah</td>
+          <td><span class="dot y"></span>25+ keelt</td>
+          <td>Aeglane, pakett-tarkvara DNA, UX jäik</td>
+        </tr>
+        <tr>
+          <td><div class="name">Xometry / Protolabs</div><div class="sub">USA · public</div></td>
+          <td>$1B+ turuväärtus</td>
+          <td>Instant quote + tootmine</td>
+          <td><span class="dot n"></span>Ei loo</td>
+          <td><span class="dot y"></span>Täielik</td>
+          <td><span class="dot p"></span>Osaliselt</td>
+          <td>Ei LOO mudelit — vajad ise STL</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pills">
+      <span class="pill"><span class="dot y"></span>Tugev</span>
+      <span class="pill"><span class="dot p"></span>Osaline</span>
+      <span class="pill"><span class="dot n"></span>Puudub</span>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 2: BALTIKUMI MAASTIK -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">02 /</span>
+      <h2>Baltikumi maastik — miks on tühi?</h2>
+    </div>
+    <div class="grid two">
+      <div class="card">
+        <span class="tag balt">Tugevused</span>
+        <h3>Mis Baltikumil on</h3>
+        <p class="muted">Tootmine ja ekspordivõime on tugev: <b>Printful</b> (Läti, IPO-le lähenev POD-gigant), <b>Pipedrive</b>, <b>Wise</b>, <b>Bolt</b> — kõik ehitasid globaalsed B2C/B2B SaaS-ettevõtted. On 3D-print-teenuseid (3D PUNK, 3D Service, Treffert 3D), maker-kogukond, elektroonika- ja mööblitööstus. Rahvusvaheline DNA vaikimisi.</p>
+        <div class="pills">
+          <span class="pill">Printful</span>
+          <span class="pill">Pipedrive</span>
+          <span class="pill">Veriff</span>
+          <span class="pill">Bolt</span>
+          <span class="pill">Wise</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="tag hot">Nõrkused</span>
+        <h3>Mida Baltikumil EI OLE</h3>
+        <p class="muted">Tõsist AI-natiivset loovusriistade ettevõtet. Ühtki CAD/CAM vendorit. Ühtki generative design mängijat. 3D-print-poed töötavad STL-iga, mille klient peab ISE kuskilt saama — nagu 2010. Kogu "disain ↔ tootmine" sild, mis USA-s on täis 50+ ettevõtet, on siin <b>praktiliselt tühi</b>.</p>
+        <div class="pills">
+          <span class="pill">0 AI-CAD firmat</span>
+          <span class="pill">0 generative design</span>
+          <span class="pill">0 text-to-3D</span>
+          <span class="pill">~0 creator tools</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px; padding: 22px; border: 1px dashed var(--line); border-radius: 14px; background: rgba(255,159,67,0.04);">
+      <h3 style="color: var(--warn); margin-bottom: 8px;">Tähelepanu: see ei ole juhus</h3>
+      <p class="muted">Baltikumi VC-turg on 30× väiksem kui USA, maker-kultuur noorem, ja riiklikud tugiprogrammid (EAS, EstDev) ei soosi "füüsilise maailma tarkvara". See on strukturaalne lünk. See tähendab ka, et <b style="color:var(--ink)">järgmised 18 kuud on sul monopol kodumaal — kasuta seda kiirelt</b>, sest USA-mängijad jõuavad mitmekeelse toega meieni 2027. aasta alguseks.</p>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 3: GAP ANALYSIS -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">03 /</span>
+      <h2>7 konkreetset lünka, mida USA mängijad jätavad</h2>
+    </div>
+    <p class="muted" style="margin-bottom: 22px; max-width: 780px;">Iga lünk on skooritud <span class="mono">defensibility</span> × <span class="mono">market_pull</span> × <span class="mono">time_to_moat</span>. Rohelisem = sinu jaoks parem mäng.</p>
+
+    <div class="gaps">
+      <div class="gap">
+        <span class="score">01 · SKOOR 9.2/10</span>
+        <h4>Parameetrilise valmistatavuse garantii</h4>
+        <p class="muted" style="font-size:13px;">USA tööriistad genereerivad "ilusaid" STL-e, mis ei prindita õieti välja (ülekasvud, liiga õhukesed seinad, mitte-manifold). Sinu template-põhine lähenemine TAGAB, et mudel on printitav. See on <b>sinu moat</b>, mitte ajutine eelis.</p>
+        <div class="bar"><span style="width:92%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">02 · SKOOR 8.8/10</span>
+        <h4>Hind enne printimist (€)</h4>
+        <p class="muted" style="font-size:13px;">Sul on PrusaSlicer sidecar, mis annab täpse filamendi massi + hinna. Keegi USA-s ei paku seda avalikult. Ehita sellest eraldi turundusnurk: <span class="mono">"Tead hinna enne kui prindid."</span></p>
+        <div class="bar"><span style="width:88%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">03 · SKOOR 8.5/10</span>
+        <h4>Eesti + Läti + Leedu + Soome keel</h4>
+        <p class="muted" style="font-size:13px;">Claude 3.5/4 räägib neid kõiki suurepäraselt. USA konkurendid ei investeeri väikese turu lokaliseerimisse 2027 enne. Laienda eestist kohe soome+läti+leedu keelele — turg kasvab 5×.</p>
+        <div class="bar"><span style="width:85%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">04 · SKOOR 8.1/10</span>
+        <h4>Print-shop integratsioon (POD 3D)</h4>
+        <p class="muted" style="font-size:13px;">Printful tegi POD riietega miljardibisnis. Keegi ei ole teinud POD-3D Euroopas skaalas. Sina genereerid mudeli, prindid lähimas partnerprintimispoes, saadad kuller 48h. Ühenda oma generate-endpoint 3D-print-majanduse võrguga.</p>
+        <div class="bar"><span style="width:81%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">05 · SKOOR 7.6/10</span>
+        <h4>Põllumajandus / ehitus / kalandus varuosad</h4>
+        <p class="muted" style="font-size:13px;">Su failis on <span class="mono">pitch-agris.docx</span> — järgi seda niiti. Traktorite, tõrkunud kombainide, noodalaevade varuosad on klassikaline "long tail" nõudlus, mida keegi ei teeninda. Parameetriline template iga klassi kohta = globaalne turg.</p>
+        <div class="bar"><span style="width:76%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">06 · SKOOR 7.2/10</span>
+        <h4>EU andmeresidentsus + AI Act compliance</h4>
+        <p class="muted" style="font-size:13px;">2026 AI Act force on. Iga insenerifirma, mis AI-d kasutab, peab tõestama vastavust. Sina jooksed K8s-s EU pinnas, logid on auditable — paki see "AI Act-ready CAD" kategooriasse. USA-mängijatel pole EU arhitektuuri.</p>
+        <div class="bar"><span style="width:72%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">07 · SKOOR 6.8/10</span>
+        <h4>Parametric-as-code avalik SDK</h4>
+        <p class="muted" style="font-size:13px;">Avalda oma template-raamistik open source'ina (Apache 2.0), nagu dbt tegi andmemaailmas. Community panustab template'e, sina omad hosted varianti. Klassikaline OSS-SaaS mäng.</p>
+        <div class="bar"><span style="width:68%"></span></div>
+      </div>
+      <div class="gap">
+        <span class="score">08 · SKOOR 6.3/10</span>
+        <h4>Koolide / makerspace'de B2B</h4>
+        <p class="muted" style="font-size:13px;">Eestis on 3D-printer igas nüüdisaegses koolis. Litsents + curriculum = stabiilne ARR. Nõrk moat, aga kiire cash-flow test turu valideerimiseks.</p>
+        <div class="bar"><span style="width:63%"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 4: SU KOHT -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">04 /</span>
+      <h2>SWOT — sinu konkreetne AI-CAD täna</h2>
+    </div>
+    <div class="swot">
+      <div class="s">
+        <h4>Tugevused (reaalsed, koodis)</h4>
+        <ul>
+          <li>Template-first arhitektuur — praktiliselt ei halusineeri</li>
+          <li>JSON-schema valideerimine UI-ni välja → pole klienti võimalik saada "katkine" mudel</li>
+          <li>PrusaSlicer sidecar = ainulaadne täpne hind enne printi</li>
+          <li>Kolm sõltumatult skaleeritavat teenust (backend / worker / slicer) — K8s-ready</li>
+          <li>Stateless backend → horisontaalne skaalumine ilma peavaluta</li>
+          <li>Meshy fallback → kasutaja ei jäta lehte kunagi "ei oska" vastusega</li>
+          <li>Eesti keel natiivne — kõnekas diferentseerija B2C-s</li>
+          <li>CI/CD GitHub Actions → ghcr.io juba töös</li>
+        </ul>
+      </div>
+      <div class="w">
+        <h4>Nõrkused (ausalt)</h4>
+        <ul>
+          <li>Ainult 6 template'i — raamistik skaleerib, sisu mitte veel</li>
+          <li>Meshy-sõltuvus freeform'ile — single point of failure + marginaal kolmandale</li>
+          <li>Pole veel makseintegratsiooni ega tellimuse voogu</li>
+          <li>Claude API kulu skaleerub lineaarselt kasutajatega — vaja cache/rerank</li>
+          <li>Brändi teadlikkus = null väljaspool kitsast ringi</li>
+          <li>Analyticsi ja kasutaja-feedback loopi pole nähtaval</li>
+          <li>Template-autorluse tööriista pole → sa oled ainuke "sisulooja"</li>
+        </ul>
+      </div>
+      <div class="o">
+        <h4>Võimalused</h4>
+        <ul>
+          <li>18-kuuline monopol Baltikumi AI-CAD-is</li>
+          <li>AI Act tekitab "EU-natiivne AI" kategooria — sina oled see</li>
+          <li>3D-print-poodide integratsiooni võrk (POD-3D)</li>
+          <li>Open-source template SDK → community moat</li>
+          <li>Vertical: põllumajanduse varuosad (pitch-agris)</li>
+          <li>Vertical: koolid + makerspace'id (B2B2C)</li>
+          <li>Soome turg on 2× Eesti omast ja keeletoe ehitad nädalaga</li>
+          <li>EU funding (Horizon, EIC Accelerator) — "sovereign AI" teema tuline</li>
+        </ul>
+      </div>
+      <div class="t">
+        <h4>Ohud</h4>
+        <ul>
+          <li>Autodesk/Shapr3D lisab 2027 eesti keele tasuta → hinna mäng kaob</li>
+          <li>Backflip/Leo saavad $50M+ ja lokaalivad 25 keelde</li>
+          <li>Claude API hinnamuutus → marginaali erosioon</li>
+          <li>Meshy tõstab hindu või sulgeb API-t</li>
+          <li>Eesti turg üksi ei õigusta kasvu — pead internat. 2027</li>
+          <li>3D-printimise trend laiemalt aeglustub (pole enam "uus")</li>
+          <li>Patent-trollid hakkavad text-to-3D ruumis aktiivseks muutuma</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 5: JULGE SAMM -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">05 /</span>
+      <h2>Julge samm — kaks strateegilist pivot'i</h2>
+    </div>
+    <p class="muted" style="max-width: 780px; margin-bottom: 14px;">Ma ei soovita sul jätkata ainult "praeguse asja paremaks tegemisega". Siin on kaks eraldi teed. Vali üks — võib-olla mõlemad, kui kaasa tuleb. Mõlemad ära kasutavad sinu olemasolevat arhitektuuri, mitte ei viska ära.</p>
+
+    <div class="opp">
+      <span class="tag gap" style="background:rgba(255,209,102,0.14);color:var(--gold);">PIVOT A · B2C PREMIUM</span>
+      <h3>"Print Baltics" — Euroopa esimene AI-natiivne POD-3D platvorm</h3>
+      <p class="why">Sa ei müü CAD-tööriista. Sa müüd <b>füüsilise toote</b>. Kasutaja kirjeldab, sinu AI teeb, lähim partner prindib, kuller toimetab. Marginaal on 40–60% iga orderi pealt. Printful'i ajalooline radade kordamine, aga 3D-s ja AI-natiivselt. Turg: kogu EU (500M inimest), sa oled esimene sisenema.</p>
+      <ul>
+        <li><b>Hinna moat</b> — sinu slicer annab täpse eelprindi-hinna, keegi teine ei paku seda live-s.</li>
+        <li><b>Keele moat</b> — 5 Põhjamaa/Balti keelt 6 kuu jooksul. USA 2 aastat maas.</li>
+        <li><b>Supply moat</b> — lepingud 30–50 3D-print-poega partnervõrgus. Need tegid Printful'i miljardilise.</li>
+        <li><b>Retention</b> — kasutaja ei tule tagasi "CAD'i teha", ta tuleb tagasi <i>millegi muretseerima</i>. Iga order = uus kasutuslugu.</li>
+        <li><b>Rahastus</b> — Eesti/Läti/Leedu seed-voorud toetavad "füüsilised+tark" sooja käega. EIC Accelerator vastab 2026. aasta II voor.</li>
+      </ul>
+    </div>
+
+    <div class="opp" style="background: linear-gradient(135deg, rgba(77,171,255,0.12), rgba(255,159,67,0.10)); border-color: rgba(77,171,255,0.35); margin-top: 18px;">
+      <span class="tag gap" style="background:rgba(77,171,255,0.14);color:var(--blue);">PIVOT B · B2B API-FIRST</span>
+      <h3>"Parametric Cloud" — AI-CAD API Euroopa tööstusele</h3>
+      <p class="why">Sa lasid kogu loogika kompaktse REST API taha (see juba on nii, Spring Boot). Müü seda B2B: põllumajandustööstus, mööblitööstus, hulgimüüjad, konstruktsioonifirmad. Nad pakuvad oma klientidele "kirjelda → saa 3D-mudel" — sina oled engine all. See on Stripe'i mäng 3D-s. Marginaal: 60–80% SaaS-margineaal + per-generation fee.</p>
+      <ul>
+        <li><b>Olemasolev kood sobib peaaegu 1:1</b> — eralda backend kui multi-tenant SaaS, lisa API key auth, billing.</li>
+        <li><b>Tasuta tier</b> (100 gen/kuu) + pro €49/kuu + enterprise läbiräägitav. Klassikaline PLG SaaS funnel.</li>
+        <li><b>Esimesed 5 kliendi</b> on Eesti tööstusettevõtted, kellega isikliku müügiga — selle valideerid 3 kuuga.</li>
+        <li><b>Open-source template SDK</b> (apache 2.0) community moat — <span class="mono">dbt</span>-tüüpi mäng.</li>
+        <li><b>AI Act positioning</b> — "EU-hosted, auditable, deterministic-output" on B2B-s tugev müügiargument 2026.</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:18px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2);">
+      <h3>Minu soovitus: <span style="color:var(--acc)">alusta Pivot B-ga</span></h3>
+      <p class="muted">Miks: B2B-s valideerid turu 90 päevaga (5 kliendi rääkides), kui B2C nõuab logistikat, brändingut, tagastusi, GDPR-kliendituge. Kui Pivot B valideerub (MRR €3–5K/kuu 6 kuuga), <b>siis</b> avad B2C kanali oma tööstusklientide kaudu — nad on sinu esimesed distributsioonipartnerid. See on kahesammu-mäng, kus esimene samm maksab teise kinni.</p>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 6: TEHNILINE PLAAN -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">06 /</span>
+      <h2>Tehniline evolutsioon — mida sinu koodis muuta</h2>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(event,'t1')">Lähinädalad</button>
+      <button class="tab" onclick="showTab(event,'t2')">Järgmine kvartal</button>
+      <button class="tab" onclick="showTab(event,'t3')">Skaalumine</button>
+      <button class="tab" onclick="showTab(event,'t4')">Arhitektuur</button>
+    </div>
+
+    <div id="t1" class="tab-panel active">
+      <div class="grid two">
+        <div class="card">
+          <h3>1. Semantic cache Claude kutsetele</h3>
+          <p class="muted">Täna iga kasutaja prompt → Claude API → raha. Lisa Redis + embedding-põhine prompt cache. 30–60% promptidest on tegelikult sarnased ("tee mulle konks 5kg jaoks" ≈ "5 kilo koormuse konks"). Cost-cut 40%+ ilma UX-i muutmata.</p>
+          <div class="pills"><span class="pill">Spring Boot</span><span class="pill">Redis</span><span class="pill">pgvector</span></div>
+        </div>
+        <div class="card">
+          <h3>2. Template-autori tööriist</h3>
+          <p class="muted">Kui sul endal kulub ühe template'i loomisele 2 päeva, siis kui sul oleks guided tööriist (YAML + preview + test harness), läheks 4 tundi. See mitu-ndab template-kataloogi kiiruse 10× ja on eeldus B ja community SDK jaoks.</p>
+          <div class="pills"><span class="pill">CadQuery</span><span class="pill">JSON Schema</span><span class="pill">Playwright</span></div>
+        </div>
+        <div class="card">
+          <h3>3. Observability baseline</h3>
+          <p class="muted">Praegu sa ei tea, kui palju promptidest õnnestub, kus Claude eksib, milline template kõige populaarsem. Lisa OpenTelemetry → Grafana Cloud tasuta tier. Iga otsus 3 kuu pärast tugineb sellele andmele.</p>
+          <div class="pills"><span class="pill">OTel</span><span class="pill">Loki</span><span class="pill">Grafana</span></div>
+        </div>
+        <div class="card">
+          <h3>4. Auth + API-key fondatsioon</h3>
+          <p class="muted">Pivot B eeldab API-key-põhist multi-tenant auth'i. Lisa Keycloak (või lihtsam: Spring Security + Postgres key table). Ei pea veel UI-d billingule, aga võti-infrast peab hakkama. Tee kohe, sest hiljem migratsioon on valus.</p>
+          <div class="pills"><span class="pill">Spring Security</span><span class="pill">Keycloak</span><span class="pill">Postgres</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="t2" class="tab-panel">
+      <div class="grid two">
+        <div class="card">
+          <h3>5. Template-kataloog 6 → 40</h3>
+          <p class="muted">Sihtvaldkond: koduhooldus (10), aiandus (8), e-tehnika korpused (8), mööbli-hardware (8), põllumajandus-varuosad (6). Community SDK-st esimese 100 PR-i eesmärk — avatud konkurentsi mäng.</p>
+        </div>
+        <div class="card">
+          <h3>6. Billing ja usage tracking</h3>
+          <p class="muted">Stripe billing + Spring Boot integreerimiseks ~2 nädalat. Meter: generation count + slicer-call count. Free tier 100/kuu, Pro €49/kuu = 2000, Business €199 = 20000, Enterprise läbirääkimine.</p>
+        </div>
+        <div class="card">
+          <h3>7. Worker job queue</h3>
+          <p class="muted">Praegu sünkroonne. Skaalumisel läheb vaja jobqueue'd (RabbitMQ / SQS / Redis Streams), et heavy Meshy fallback ei blokeeriks API-lõime. Idempotency key + webhook callback.</p>
+        </div>
+        <div class="card">
+          <h3>8. Multi-language layer</h3>
+          <p class="muted">Claude juba räägib soome+läti+leedu. Lisa <span class="mono">lang</span> parameeter <span class="mono">/api/spec</span>-le, muuda system-prompt dünaamiliseks. Frontend'i lokaliseeri Angular i18n-iga. Keele laiendus toob tõenäoliselt 3× kasutaja-akvisitsiooni.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="t3" class="tab-panel">
+      <div class="grid two">
+        <div class="card">
+          <h3>9. Multi-region K8s deploy</h3>
+          <p class="muted">Tallinn (primaarne) + Frankfurt (redundance) + Stockholm (ladin andmete jaoks). Argo CD GitOps. Helm chart on juba olemas — lisa environment-overlay'd.</p>
+        </div>
+        <div class="card">
+          <h3>10. Self-hosted model fallback</h3>
+          <p class="muted">Kui Claude kulu/latency liiga kõrge, katseta kohalikku LLM-i (Llama 3.3 70B või Mistral Large) rangete promptide jaoks. Täpsusekadu 10–15%, aga kulu 90% ↓. Hybrid routing: keerulised → Claude, lihtsad → Llama.</p>
+        </div>
+        <div class="card">
+          <h3>11. Generated-model vector index</h3>
+          <p class="muted">Iga genereeritud mudel → semantic embedding → pgvector. Võimaldab "leia sarnane mudel", "kasutajad, kes tegid X, tegid ka Y", ja ülitäpne dedupe. Hilisem: näita teistele kasutajatele avalikke mudeleid ja tee turusplatsi-mudel.</p>
+        </div>
+        <div class="card">
+          <h3>12. Compliance & audit log</h3>
+          <p class="muted">Iga AI-kutse → immutable audit log (Postgres append-only + WORM S3 backup). AI Act 2026 nõutab "model decision traceability". Kohendage juba nüüd, hiljem maksab 10× rohkem.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="t4" class="tab-panel">
+      <div class="arch">
+<pre>
+                           ┌─────────────────────────────────────┐
+                           │  <b>Edge (Cloudflare)</b>                  │
+                           │  WAF · rate limit · geo-routing      │
+                           └──────────────┬──────────────────────┘
+                                          │
+                 ┌────────────────────────┴────────────────────────┐
+                 │                                                  │
+            <b>EU-NORTH-1</b>                                        <b>EU-CENTRAL-1</b>
+         (Tallinn primary)                                    (Frankfurt DR)
+                 │                                                  │
+        ┌────────┴─────────┐                                ┌──────┴────────┐
+        │   Angular 18     │  static → <b>CDN</b>                  │ (mirror)      │
+        └────────┬─────────┘                                └───────────────┘
+                 │ HTTPS
+    ┌────────────┴─────────────┐
+    │   Spring Boot 3 (stateless, HPA 2→20)  │
+    │   · <b>Auth</b> (Keycloak/JWT)                 │◄────── <b>Redis</b> (cache + rate + session)
+    │   · <b>Billing</b> meter → Stripe             │
+    │   · <b>Semantic prompt cache</b>               │◄────── <b>pgvector</b>
+    │   · <b>Audit log</b>                           │──────► <b>S3 WORM</b> (compliance)
+    │   · <b>Routing</b>: Claude ↔ Llama            │
+    └─┬────────┬────────┬──────────┬────────┘
+      │        │        │          │
+  <b>Claude</b>  <b>Llama</b>    <b>Meshy</b>     <b>RabbitMQ/SQS</b>
+  (hard) (local)  (fallback)   │
+                               │
+                       ┌───────┴───────────────┐
+                       │                       │
+                  <b>Worker</b> (CadQuery)   <b>Slicer sidecar</b>
+                  (KEDA autoscale)      (CPU-pool)
+                       │                       │
+                       └───────┬───────────────┘
+                               ▼
+                         <b>Postgres 16</b>
+                  (+ pgvector, + audit, + billing,
+                   + generated models metadata)
+
+  <b>Observability</b>: OTel → Grafana Cloud · Loki · Tempo · Prometheus
+  <b>CI/CD</b>:         GitHub Actions → ghcr.io → Argo CD → K8s
+  <b>IaC</b>:           Terraform (infra) + Helm (workloads) + Flux/Argo (sync)
+  <b>Secrets</b>:       SOPS + age · Vault (Enterprise tier)
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEKTSIOON 7: ROADMAP -->
+  <section class="section">
+    <div class="section-head">
+      <span class="num">07 /</span>
+      <h2>12-kuu roadmap (reaalne, mitte unistuste)</h2>
+    </div>
+    <div class="timeline">
+      <div class="ms">
+        <span class="q">2026 Q2 · MAI–JUUNI</span>
+        <div class="t">Foundation sprint</div>
+        <div class="d">Semantic cache · OTel baseline · auth/API-keys skeleton · 10 uut template'i · 2–3 võimalikku klienti ("friendly users") intervjueeritud.</div>
+      </div>
+      <div class="ms">
+        <span class="q">2026 Q3 · JUULI–SEPT</span>
+        <div class="t">Pivot B launch (B2B API)</div>
+        <div class="d">API-key based billing · Stripe integration · public API docs · 5 pilot-klienti (põllumajandus + mööbel + 3D-print-pood) · soome keel lisatud.</div>
+      </div>
+      <div class="ms">
+        <span class="q">2026 Q4 · OKT–DETS</span>
+        <div class="t">Scale + open source</div>
+        <div class="d">Template SDK open source'itud · community-PR voog · 40 template'i · läti+leedu keel · first €5K MRR saavutatud · EU AI Act self-attestation.</div>
+      </div>
+      <div class="ms">
+        <span class="q">2027 Q1 · JAAN–MÄRTS</span>
+        <div class="t">Seed-raund ettevalmistus</div>
+        <div class="d">€12–18K MRR · 20+ betaklient · pitch deck valmis · partnerlepingud 5 3D-print-poega · EIC Accelerator taotlus sees · esimesed Pivot A POD-testid Eestis.</div>
+      </div>
+      <div class="ms">
+        <span class="q">2027 Q2+ · AL. APRILL</span>
+        <div class="t">Pivot A käivitus või raund kinni</div>
+        <div class="d">Kas €1–2M seed-raund Baltic/Nordic VC-lt (Karma, Tera, Superhero) või EIC €2.5M grant + equity. Palkad 3–5 inimest · Pivot A (POD-3D) käivitub partnervõrgus.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <div class="cta">
+    <h2>Kokkuvõte — mida homme hommikul teha</h2>
+    <p class="muted" style="max-width:700px; margin: 10px auto 20px;">Ära kirjuta ühtki uut koodirida enne, kui oled teinud <b style="color:var(--acc)">kolm kõnet või kohtumist</b> potentsiaalsete B2B pilootklientidega (näiteks Wendre, Amark, Hekotek, mõni 3D-print-pood Tallinnas). 60-minutiline vestlus, üks küsimus: <i>"Kui ma annaks sulle API, mis loob eestikeelse kirjelduse põhjal sinu toote parametrilise 3D-mudeli, mida sa teeksid?"</i> Kui 2/3 ütleb "tahaksin testida" — tee Pivot B. Kui ei — kuula, miks mitte, ja pivotleeri veel.</p>
+    <p class="muted" style="font-weight: 600; color: var(--ink);">Tehnika sul on. Lünk on reaalne. Aken on 18 kuud. Mine.</p>
+  </div>
+
+  <footer>
+    Dokument genereeritud: 2026-04-17 · Autor: Claude (Anthropic) · Kliendi jaoks: Olen / AI-CAD<br>
+    Andmeallikad: Crunchbase, Pitchbook, TechCrunch, sihtettevõtete avalikud kommunikatsioonid, Baltic Tech Scene raportid. Rahastusnumbrid on kaasalülitatud avalike andmete põhjal, <b>mitte verifitseeritud auditites</b>. Kasuta strateegilisi soovitusi koos investor/juriidiku konsulteerimisega.
+  </footer>
+</div>
+
+<script>
+function showTab(ev, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  ev.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>

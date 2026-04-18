@@ -189,6 +189,50 @@ public class DesignController {
     }
 
     /**
+     * AI Design Review — Claude LOOKS at the generated preview (via vision)
+     * together with the user's original Estonian prompt and the resolved spec,
+     * then returns a structured JSON critique:
+     *   { score, verdict_et, strengths[], weaknesses[], suggestions[] }
+     *
+     * Each suggestion may carry { param, new_value } so the frontend can
+     * offer one-click "apply this fix" buttons that tweak the slider and
+     * regenerate. This is the bit no other CAD tool ships today — a
+     * self-critiquing generative pipeline.
+     *
+     * Request body:
+     *   {
+     *     "spec": { template, params, summary_et },
+     *     "prompt_et": "kasutaja originaal eestikeelne soov" (optional),
+     *     "image_base64": "<PNG canvas, no data:image/... prefix>" (optional but strongly recommended)
+     *   }
+     */
+    public record ReviewRequest(JsonNode spec, String prompt_et, String image_base64) {}
+
+    @PostMapping("/review")
+    public ResponseEntity<?> review(@RequestBody ReviewRequest req) {
+        if (req == null || req.spec() == null || !req.spec().hasNonNull("template")) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "spec_required",
+                    "message", "Review vajab 'spec' väljal vähemalt template'it ja param'eid."));
+        }
+        try {
+            JsonNode review = claude.reviewDesign(req.prompt_et(), req.spec(), req.image_base64());
+            return ResponseEntity.ok(review);
+        } catch (IllegalStateException e) {
+            // ANTHROPIC_API_KEY not configured — return friendly message so the UI can suppress the button.
+            log.warn("Review disabled: {}", e.getMessage());
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "review_disabled",
+                    "message", "AI ülevaade pole hetkel saadaval (Claude API võti puudu)."));
+        } catch (Exception e) {
+            log.error("Review failed", e);
+            return ResponseEntity.status(502).body(Map.of(
+                    "error", "review_failed",
+                    "message", e.getMessage()));
+        }
+    }
+
+    /**
      * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai.
      * Returns JSON { "model_url": "..." } that the frontend loads as GLB.
      */

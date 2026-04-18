@@ -93,6 +93,45 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Preview' }
+  /api/review:
+    post:
+      summary: AI Design Review — Claude vision critique of the current design
+      description: |
+        Sends the user's original Estonian prompt, the resolved spec and a
+        base64 PNG of the three.js preview to Claude. Claude replies (via a
+        forced tool call) with a structured review: overall score, verdict,
+        strengths, concerns and actionable suggestions. Suggestions that
+        carry {param, new_value} can be auto-applied by the frontend.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [spec]
+              properties:
+                spec: { $ref: '#/components/schemas/Spec' }
+                prompt_et:
+                  type: string
+                  description: The user's original Estonian request. Helps Claude judge intent-fit.
+                  example: "riiuliklamber 32mm torule, 5kg koormus"
+                image_base64:
+                  type: string
+                  description: |
+                    Base64 PNG snapshot of the three.js viewer (no data: prefix).
+                    Optional — Claude can review from spec alone, but vision makes it much better.
+      responses:
+        '200':
+          description: structured review
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '400':
+          description: spec missing
+        '502':
+          description: Claude call failed
+        '503':
+          description: ANTHROPIC_API_KEY not configured
   /api/meshy:
     post:
       summary: Free-form mesh fallback via Meshy.ai
@@ -175,3 +214,32 @@ components:
             y: { type: number }
             z: { type: number }
         overhang_risk:       { type: boolean }
+    Suggestion:
+      type: object
+      required: [label_et, rationale_et]
+      properties:
+        label_et:     { type: string, example: "Suurenda seinapaksust 5mm peale" }
+        rationale_et: { type: string, example: "Praegune 3mm võib 5kg all väänduma hakata." }
+        param:
+          type: string
+          description: spec.params key to tweak (optional — non-numeric suggestions omit it)
+          example: wall_thickness
+        new_value:
+          type: number
+          description: New value for the param; UI clamps to template min/max.
+          example: 5
+    Review:
+      type: object
+      required: [score, verdict_et, strengths, weaknesses, suggestions]
+      properties:
+        score:      { type: integer, minimum: 1, maximum: 10, example: 7 }
+        verdict_et: { type: string, example: "Kindel ja prinditav, aga ülakinnituse kõrgus võiks olla 2mm kõrgem." }
+        strengths:
+          type: array
+          items: { type: string }
+        weaknesses:
+          type: array
+          items: { type: string }
+        suggestions:
+          type: array
+          items: { $ref: '#/components/schemas/Suggestion' }

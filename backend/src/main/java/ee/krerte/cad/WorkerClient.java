@@ -50,4 +50,55 @@ public class WorkerClient {
                 .bodyToMono(JsonNode.class)
                 .block();
     }
+
+    /** STEP-i eksport — insener-tasandi B-Rep fail. Täiendab STL väljundi. */
+    public byte[] generateStep(JsonNode spec) {
+        return webClient.post()
+                .uri(workerUrl + "/generate_step")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(spec)
+                .retrieve()
+                .bodyToMono(byte[].class)
+                .block();
+    }
+
+    // --- Darwin CAD --------------------------------------------------------
+
+    /** Esimese põlvkonna populatsioon — 6–8 varianti SVG-eelvaatega. */
+    public JsonNode evolveSeed(JsonNode body) {
+        return webClient.post()
+                .uri(workerUrl + "/evolve/seed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
+
+    /** Järgmine põlvkond — vanemate ristamine ja mutatsioon. */
+    public JsonNode evolveCross(JsonNode body) {
+        return webClient.post()
+                .uri(workerUrl + "/evolve/cross")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
+
+    // --- Freeform script-gen -----------------------------------------------
+
+    /**
+     * Saadab LLM-genereeritud CadQuery Pythoni koodi sandbox-worker'ile.
+     * Worker tagastab JSON-i {ok, error, files:{stl,step}, elapsed_ms}.
+     */
+    public JsonNode freeformGenerate(JsonNode body) {
+        return webClient.post()
+                .uri(workerUrl + "/freeform/generate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
 }

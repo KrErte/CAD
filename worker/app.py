@@ -18,7 +18,13 @@ import io
 import tempfile
 import os
 
-app = FastAPI(title="AI-CAD Worker", version="0.1.0")
+# Darwin CAD + freeform script-gen moodulid — need saavad ligipääsu TEMPLATES
+# dict-ile allpool määratluse kaudu (register_routes kutsutakse pärast failinna
+# lõppu).
+from evolve import register_routes as _register_evolve
+from freeform import register_routes as _register_freeform
+
+app = FastAPI(title="AI-CAD Worker", version="0.2.0")
 
 
 class GenRequest(BaseModel):
@@ -819,3 +825,45 @@ def generate(req: GenRequest):
         media_type="application/sla",
         headers={"Content-Disposition": f'attachment; filename="{req.template}.stl"'},
     )
+
+
+@app.post("/generate_step")
+def generate_step(req: GenRequest):
+    """
+    STEP eksport — sama mis /generate, aga väljund on ISO 10303-21 STEP-fail
+    (mitte STL). STEP on parameetriline B-Rep vormingus fail, mida inseneri-
+    tasandi CAD-tarkvara (Fusion 360, SolidWorks, Onshape, FreeCAD) saab avada
+    ja EDASI muuta. STL on pelgalt kolmnurkade hulk — ei saa muuta.
+
+    See endpoint lisab sinu toote insener-kasutajaskonnale väärtust, mida STL-i
+    väljund ei paku. Lisatud 2026-04 strateegia-audit raporti soovituse järgi.
+    """
+    tpl = TEMPLATES.get(req.template)
+    if not tpl:
+        raise HTTPException(404, f"Unknown template: {req.template}")
+    try:
+        model = tpl["fn"](**req.params)
+    except TypeError as e:
+        raise HTTPException(400, f"Bad params: {e}")
+
+    with tempfile.NamedTemporaryFile(suffix=".step", delete=False) as f:
+        path = f.name
+    try:
+        cq.exporters.export(model, path)   # laiendist tuletab vormi
+        with open(path, "rb") as fh:
+            data = fh.read()
+    finally:
+        os.unlink(path)
+
+    return Response(
+        content=data,
+        media_type="application/step",
+        headers={"Content-Disposition": f'attachment; filename="{req.template}.step"'},
+    )
+
+
+# --- Darwin CAD ja Freeform script-gen -------------------------------------
+# Need paigaldame pärast TEMPLATES sõnastiku ja /generate määratlust, et
+# moodulid saaksid ligi.
+_register_evolve(app, TEMPLATES)
+_register_freeform(app)

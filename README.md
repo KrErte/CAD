@@ -28,6 +28,29 @@ kaudu täpsed numbrid (prindiaeg, filamendi mass, hind €) — sidecar PrusaSli
 CLI kaudu. Kui slicer pole saadaval, langetakse tagasi heuristilisele
 hinnangule (volume × PLA tihedus).
 
+**AI Design Review** (`POST /api/review`): peale STL-i genereerimist saab
+küsida Claude-vision-põhist ülevaadet. Backend saadab mudelile kolm asja —
+kasutaja originaalse eestikeelse soovi, resolveeritud spec'i ja three.js
+eelvaate PNG-pildi — ja mudel vastab struktureeritud tööriista-kutsega:
+
+```json
+{
+  "score": 7,
+  "verdict_et": "Kindel ja prinditav, aga ülakinnituse kõrgus võiks olla 2mm kõrgem.",
+  "strengths": ["Seinapaksus sobib 5kg koormusele", "..."],
+  "weaknesses": ["Ankurdusaugu tolerants on tihe"],
+  "suggestions": [
+    { "label_et": "Suurenda seinapaksust 5mm peale",
+      "rationale_et": "praegune 3mm võib 5kg all väänduma hakata",
+      "param": "wall_thickness", "new_value": 5 }
+  ]
+}
+```
+
+Frontendis on iga numbriline soovitus klikitav — "Rakenda" nupp patchib
+spec'i, clampib template skeemi min/max piiresse ja genereerib STL-i uuesti.
+Self-critiquing generative CAD.
+
 ## Stack
 
 - **Backend**: Spring Boot 3 / Java 21 — REST API + Claude/Meshy/Slicer proxy

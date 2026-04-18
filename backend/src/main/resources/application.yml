@@ -62,8 +62,16 @@ app:
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+    # Legacy — jääb alles tagasiühilduvuseks (hobi → maker alias koodis)
     price-hobi: ${STRIPE_PRICE_HOBI:}
-    price-pro: ${STRIPE_PRICE_PRO:}
+    price-pro:  ${STRIPE_PRICE_PRO:}
+    # Uus 4-tier struktuur (2026) — kuu + aasta eraldi Price ID-d
+    price-maker-monthly: ${STRIPE_PRICE_MAKER_MONTHLY:}
+    price-maker-yearly:  ${STRIPE_PRICE_MAKER_YEARLY:}
+    price-pro-monthly:   ${STRIPE_PRICE_PRO_MONTHLY:}
+    price-pro-yearly:    ${STRIPE_PRICE_PRO_YEARLY:}
+    price-team-monthly:  ${STRIPE_PRICE_TEAM_MONTHLY:}
+    price-team-yearly:   ${STRIPE_PRICE_TEAM_YEARLY:}
   mail:
     from: ${MAIL_FROM:noreply@tehisaicad.ee}
     enabled: ${MAIL_ENABLED:false}

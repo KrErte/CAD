@@ -1,0 +1,25 @@
+{
+  "name": "TehisAI CAD",
+  "short_name": "TehisAI",
+  "description": "Eesti keeles 3D-disain AI-ga — STL + STEP + Darwin CAD evolutsioon",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0b12",
+  "theme_color": "#6366f1",
+  "lang": "et",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "developer", "design"]
+}

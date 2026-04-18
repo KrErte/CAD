@@ -2,24 +2,46 @@
 <html lang="et">
 <head>
   <meta charset="utf-8">
-  <title>TehisAI CAD — Eesti keeles 3D-disain 30 sekundiga</title>
-  <meta name="description" content="Kirjelda eesti keeles mida vajad, saad 30 sekundiga 3D-prinditava STL-faili. Riiuliklambrid, kaablihoidjad, adaptrid, karbid — parameetriline CadQuery, mitte AI-mesh.">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="index, follow">
+  <title>TehisAI CAD — Eesti keeles 3D-disain, AI evolveerib 6 varianti</title>
+  <meta name="description" content="Kirjelda eesti keeles, saad 30s STL + STEP + Darwin CAD 6 varianti hinnetega. 1000× kiirem kui CAD-insener, täpsem kui Thingiverse. Maker 12.99 €/kuu.">
+  <meta name="keywords" content="text-to-cad, AI 3D-disain, eesti keeles CAD, STL genereerimine, CadQuery, 3D-printimine, STEP eksport, evolutsiooniline disain, Darwin CAD, parameetriline CAD">
+  <meta name="author" content="TehisAI CAD OÜ">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="application-name" content="TehisAI CAD">
   <link rel="canonical" href="https://tehisaicad.ee/">
+  <link rel="alternate" hreflang="et" href="https://tehisaicad.ee/">
+  <link rel="alternate" hreflang="x-default" href="https://tehisaicad.ee/">
 
   <!-- Open Graph -->
-  <meta property="og:title" content="TehisAI CAD — Eesti keeles 3D-disain 30 sekundiga">
-  <meta property="og:description" content="Sõnadest 3D-prinditavaks detailiks 30 sekundiga. Parameetriline, täpne, sinu mõõtudega.">
+  <meta property="og:title" content="TehisAI CAD — eesti keeles 3D-disain + evolutsiooniline AI">
+  <meta property="og:description" content="Üks lause → 6 varianti → AI hinded → STL+STEP eksport. Darwin CAD on maailma esimene evolutsiooniline text-to-CAD.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://tehisaicad.ee/">
   <meta property="og:locale" content="et_EE">
   <meta property="og:site_name" content="TehisAI CAD">
+  <meta property="og:image" content="https://tehisaicad.ee/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="TehisAI CAD — 6 3D-mudelit kõrvuti koos AI-hinnetega">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="TehisAI CAD — Eesti keeles 3D-disain">
-  <meta name="twitter:description" content="Kirjelda eesti keeles, saad 30s printimisvalmis STL-faili.">
+  <meta name="twitter:site" content="@tehisaicad">
+  <meta name="twitter:title" content="TehisAI CAD — Darwin CAD: AI evolveerib 3D-disaini">
+  <meta name="twitter:description" content="Kirjelda eesti keeles, AI toob 6 varianti hinnetega, valid lemmiku, evolveerid edasi. STL+STEP valmis.">
+  <meta name="twitter:image" content="https://tehisaicad.ee/og-image.png">
+
+  <!-- Preconnect CDN-ide vastu — kiirendab esmakordset laadimist -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link rel="preconnect" href="https://plausible.io">
+  <link rel="dns-prefetch" href="https://browser.sentry-cdn.com">
+
+  <!-- PWA & Apple icons -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
 
   <!-- JSON-LD Structured Data -->
   <script type="application/ld+json">
@@ -37,21 +59,34 @@
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "EUR",
-        "description": "Tasuta: 3 STL-i kuus"
+        "description": "Free: 5 STL-i kuus, 5 baas-malli"
       },
       {
         "@type": "Offer",
-        "price": "4.99",
+        "price": "12.99",
         "priceCurrency": "EUR",
-        "description": "Hobi: piiramatult STL-e"
+        "description": "Maker: 100 STL-i kuus, kõik 23 malli"
       },
       {
         "@type": "Offer",
-        "price": "14.99",
+        "price": "29.99",
         "priceCurrency": "EUR",
-        "description": "Pro: STEP-eksport, API, kommertslitsents"
+        "description": "Pro: piiramatu STL+STEP, Darwin CAD, freeform sandbox, API, kommertslitsents"
+      },
+      {
+        "@type": "Offer",
+        "price": "79",
+        "priceCurrency": "EUR",
+        "description": "Team: 79 €/koht/kuu, alates 3 kohast, SSO, jagatud ajalugu"
       }
     ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "47",
+      "bestRating": "5"
+    },
+    "featureList": "Eesti keele AI, 23 CadQuery malli, STL + STEP eksport, Darwin CAD evolutsiooniline disain, Freeform Python sandbox, PrusaSlicer täpne hinnaprognoos, reaalajas parameetrite kohandamine",
     "creator": {
       "@type": "Organization",
       "name": "TehisAI CAD",
@@ -79,7 +114,15 @@
         "name": "Kui palju TehisAI CAD maksab?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Tasuta paketiga saad 3 STL-faili kuus. Hobi pakett (4.99 €/kuu) annab piiramatult genereerimisi. Pro pakett (14.99 €/kuu) lisab STEP-ekspordi, API ja kommertslitsentsi."
+          "text": "Free pakett (0 €) annab 5 STL-faili kuus. Maker (12.99 €/kuu) — 100 STL-i + kõik 23 malli. Pro (29.99 €/kuu) — piiramatu STL+STEP, Darwin CAD evolutsiooniline disain, Freeform sandbox, API, kommertslitsents. Team (79 €/koht/kuu) — tiimidele koos SSO ja jagatud ajalooga."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Mis on Darwin CAD?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Darwin CAD on maailma esimene evolutsiooniline text-to-CAD — ühest promptist saad 6 erinevat varianti, AI paneb neile hinded, valid lemmikud ja evolveerid järgmise põlvkonna. Ainult Pro ja Team plaanidel."
         }
       },
       {
