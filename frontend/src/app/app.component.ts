@@ -665,7 +665,7 @@ interface TemplateSchema {
               <option [ngValue]="8">8 varianti</option>
             </select>
             <button class="btn-cta darwin-go" (click)="darwinSeed()"
-                    [disabled]="darwinLoading() || !darwinPrompt()">
+                    [disabled]="darwinLoading() || !darwinPrompt">
               {{ darwinLoading() ? 'Evolveerib...' : 'Alusta evolutsiooni' }}
             </button>
           </div>
@@ -770,7 +770,7 @@ interface TemplateSchema {
               <span class="expert-header-title">freeform.py</span>
               <div class="expert-header-actions">
                 <button class="btn-secondary" (click)="ffLoadTemplate()">Laadi näidis</button>
-                <button class="btn-cta" (click)="ffRun()" [disabled]="ffLoading() || !ffCode()">
+                <button class="btn-cta" (click)="ffRun()" [disabled]="ffLoading() || !ffCode">
                   {{ ffLoading() ? 'Jookseb...' : 'Run ▶' }}
                 </button>
               </div>
@@ -1426,7 +1426,7 @@ export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
   billingCycle = signal<'month' | 'year'>('month');
 
   isCurrentPlan(tier: 'MAKER' | 'PRO' | 'TEAM'): boolean {
-    const p = this.auth.me()?.plan;
+    const p = this.auth.me()?.plan as string | undefined;
     return p === tier || (tier === 'MAKER' && p === 'HOBI'); // HOBI legacy alias
   }
 
