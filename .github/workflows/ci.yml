@@ -44,7 +44,12 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci --no-audit --no-fund
+      # 'npm ci' on liiga range: @angular-devkit/core tahab chokidar ^3 ja
+      # @angular/compiler-cli tahab chokidar ^4 — npm hoisting ei suuda ühte
+      # lock-faili genereerida, mis mõlemat rahuldaks strict mode'is. 'npm install'
+      # resolveerib ja lükkab edasi — build jääb stabiilseks, kuna package.json
+      # kasutab täpseid major.minor range'e.
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - run: npx ng build --configuration=production
 
   worker:
