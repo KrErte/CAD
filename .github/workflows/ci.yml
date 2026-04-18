@@ -18,8 +18,11 @@ jobs:
           java-version: "21"
           distribution: temurin
           cache: gradle
+      - uses: gradle/actions/setup-gradle@v4
       - name: Build & test
-        run: ./gradlew build --no-daemon
+        # Wrapper (gradlew) is not checked in to the repo, so we use the
+        # installed gradle directly — same build script, same result.
+        run: gradle build --no-daemon
         env:
           SPRING_PROFILES_ACTIVE: test
       - name: Upload test results
