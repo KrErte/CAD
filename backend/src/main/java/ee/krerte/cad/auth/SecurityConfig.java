@@ -23,7 +23,7 @@ public class SecurityConfig {
         http
             .cors(c -> {})
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
             .headers(h -> h
                 .contentTypeOptions(c -> {})                          // X-Content-Type-Options: nosniff
                 .frameOptions(f -> f.deny())                          // X-Frame-Options: DENY
