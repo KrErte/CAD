@@ -110,7 +110,7 @@ interface TemplateSchema {
             <option value="lv">&#127473;&#127483; LV</option>
             <option value="lt">&#127473;&#127481; LT</option>
           </select>
-          <span class="header-plan" [class.plan-pro]="m.plan === 'PRO'">{{ m.plan }}</span>
+          <span class="header-plan" [class.plan-pro]="m.plan === 'PRO'" [class.plan-business]="m.plan === 'BUSINESS'">{{ m.plan }}</span>
           <span class="header-quota" *ngIf="m.limit > 0">{{ m.used }}/{{ m.limit }}</span>
           <span class="header-quota" *ngIf="m.limit < 0">&#8734;</span>
           <button (click)="auth.logout()" class="btn-logout">Logi välja</button>
@@ -423,85 +423,44 @@ interface TemplateSchema {
       <div class="container">
         <div class="section-header">
           <div class="badge">HINNAD</div>
-          <h2 class="section-title">Hinnapoliitika insenerile, mitte mänguasjale.</h2>
+          <h2 class="section-title">Lihtne hinnakiri, mis kasvab sinuga kaasa.</h2>
           <p class="section-subtitle">
-            Zoo.dev küsib $20, Backflip $20, Shapr3D $25, Fusion 360 $70.
-            Meie Maker plaan on <strong>poole odavam</strong> — aga ainsana tehnik tõlgib eesti keelt
-            ja ainsana evolveerib disaini.
+            Alusta tasuta. Uuenda, kui vajad rohkem mudeleid või API ligipääsu.
           </p>
         </div>
 
-        <!-- Kuu/aasta toggle -->
-        <div style="display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem">
-          <button class="pricing-toggle" [class.active]="billingCycle() === 'month'"
-                  (click)="billingCycle.set('month')">Kuu</button>
-          <button class="pricing-toggle" [class.active]="billingCycle() === 'year'"
-                  (click)="billingCycle.set('year')">
-            Aasta <span style="color:var(--green);font-weight:700;margin-left:.4rem">−17%</span>
-          </button>
-        </div>
-
-        <div class="pricing-grid pricing-grid-4">
+        <div class="pricing-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:960px;margin:0 auto">
           <!-- FREE -->
           <div class="pricing-card card-glass">
             <div class="pricing-tier">Free</div>
             <div class="pricing-price">0 €<span class="pricing-period">/kuu</span></div>
             <div class="pricing-tagline">Proovi ilma kaardita</div>
             <ul class="pricing-features">
-              <li>5 STL-i kuus</li>
-              <li>5 baas-malli</li>
+              <li><strong>3 mudelit</strong> kuus</li>
+              <li>Kõik mallid</li>
               <li>Eestikeelne AI</li>
-              <li>Vesimärgiga eelvaade</li>
-              <li style="color:var(--text-muted)">Ei STEP · Ei Darwin · Ei kommerts</li>
+              <li>Metrika (kaal, aeg, mõõdud)</li>
+              <li style="color:var(--text-muted)">Ei API · Ei prioriteet</li>
             </ul>
             <button *ngIf="!auth.me()" class="pricing-btn" style="background:var(--bg-card)"
                     (click)="auth.loginWithGoogle()">Alusta tasuta</button>
             <div *ngIf="auth.me()?.plan === 'FREE'" class="pricing-current">Praegune plaan</div>
           </div>
 
-          <!-- MAKER (asendab Hobi-t) -->
-          <div class="pricing-card card-glass">
-            <div class="pricing-tier">Maker</div>
-            <div class="pricing-price">
-              {{ billingCycle() === 'year' ? '10.75' : '12.99' }} €<span class="pricing-period">/kuu</span>
-            </div>
-            <div class="pricing-save">
-              {{ billingCycle() === 'year' ? '129 €/a — säästad 2 kuud' : 'või 129 €/a (−17%)' }}
-            </div>
-            <div class="pricing-tagline">3D-printijatele, koolilastele, DIY</div>
-            <ul class="pricing-features">
-              <li><strong>100 STL-i kuus</strong></li>
-              <li>Kõik 23 malli</li>
-              <li>Ajalugu + re-download</li>
-              <li>Eelvaade ilma vesimärgita</li>
-              <li>E-mail tugi (48h)</li>
-              <li>Metrika (kaal, aeg, mõõdud)</li>
-            </ul>
-            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('maker')"
-                    [disabled]="isCurrentPlan('MAKER')">
-              {{ isCurrentPlan('MAKER') ? 'Aktiivne' : 'Alusta Maker' }}
-            </button>
-          </div>
-
           <!-- PRO (populaarne) -->
           <div class="pricing-card card-glass pricing-popular">
             <div class="pricing-badge-top">POPULAARSEIM</div>
             <div class="pricing-tier">Pro</div>
-            <div class="pricing-price">
-              {{ billingCycle() === 'year' ? '24.90' : '29.99' }} €<span class="pricing-period">/kuu</span>
-            </div>
-            <div class="pricing-save">
-              {{ billingCycle() === 'year' ? '299 €/a — säästad 2 kuud' : 'või 299 €/a (−17%)' }}
-            </div>
-            <div class="pricing-tagline">Inseneridele, tootearendajatele, idufirmadele</div>
+            <div class="pricing-price">14.99 €<span class="pricing-period">/kuu</span></div>
+            <div class="pricing-tagline">Inseneridele ja 3D-printijatele</div>
             <ul class="pricing-features">
-              <li><strong>Piiramatult</strong> STL + STEP</li>
-              <li><strong>STEP-eksport</strong> (insenerifail)</li>
-              <li><strong>Darwin CAD</strong> — 20 sessiooni/kuu</li>
+              <li><strong>50 mudelit</strong> kuus</li>
+              <li>Kõik mallid + Darwin CAD</li>
+              <li>STEP-eksport</li>
               <li>Freeform Python-gen (sandbox)</li>
-              <li>API 500 calls/kuu</li>
-              <li><strong>Kommertslitsents</strong></li>
-              <li>Prioriteetne järjekord (&lt;10s)</li>
+              <li>Ajalugu + re-download</li>
+              <li>Prioriteetne järjekord</li>
+              <li>E-mail tugi (24h)</li>
             </ul>
             <button class="pricing-btn btn-cta" (click)="upgrade('pro')"
                     [disabled]="isCurrentPlan('PRO')">
@@ -509,43 +468,33 @@ interface TemplateSchema {
             </button>
           </div>
 
-          <!-- TEAM -->
+          <!-- BUSINESS -->
           <div class="pricing-card card-glass">
-            <div class="pricing-tier">Team</div>
-            <div class="pricing-price">
-              {{ billingCycle() === 'year' ? '65' : '79' }} €<span class="pricing-period">/koht/kuu</span>
-            </div>
-            <div class="pricing-save">Alates 3 kohast</div>
-            <div class="pricing-tagline">Tootmis-tiimidele, agentuuridele</div>
+            <div class="pricing-tier">Business</div>
+            <div class="pricing-price">49.99 €<span class="pricing-period">/kuu</span></div>
+            <div class="pricing-tagline">Tiimidele ja API-integratsioonidele</div>
             <ul class="pricing-features">
+              <li><strong>200 mudelit</strong> kuus</li>
               <li>Kõik Pro omadused</li>
-              <li><strong>Darwin CAD piiramatult</strong></li>
-              <li>API 2 000 calls/kuu (jagatud)</li>
-              <li>Jagatud ajalugu + rollid</li>
-              <li>SSO (Google Workspace)</li>
-              <li>24h tugi + Slack-kanal</li>
-              <li>Usage analytics dashboard</li>
+              <li><strong>API ligipääs</strong></li>
+              <li>Kommertslitsents</li>
+              <li>Prioriteetne tugi (4h)</li>
+              <li>Usage analytics</li>
             </ul>
-            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('team')"
-                    [disabled]="isCurrentPlan('TEAM')">
-              {{ isCurrentPlan('TEAM') ? 'Aktiivne' : 'Räägi müügiga' }}
+            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('business')"
+                    [disabled]="isCurrentPlan('BUSINESS')">
+              {{ isCurrentPlan('BUSINESS') ? 'Aktiivne' : 'Uuenda Business' }}
             </button>
           </div>
         </div>
 
-        <!-- Enterprise strip -->
-        <div class="enterprise-strip card-glass" style="margin-top:2rem;padding:1.5rem 2rem;
-             display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:700;font-size:1.1rem">Enterprise — alates 499 €/kuu</div>
-            <div style="color:var(--text-muted);font-size:.9rem;margin-top:.25rem">
-              On-prem / VPC · SLA 99.9% · Audit log · SSO/SAML · Custom fine-tune · Dedikeeritud CSM
-            </div>
-          </div>
-          <a href="mailto:sales@tehisaicad.ee?subject=Enterprise%20hinnang"
-             class="pricing-btn" style="padding:.7rem 1.5rem;text-decoration:none">
-            Telli demo
-          </a>
+        <!-- Subscription management for logged-in users -->
+        <div *ngIf="auth.me() && auth.me()!.plan !== 'FREE'"
+             style="text-align:center;margin-top:1.5rem">
+          <button class="pricing-btn" style="background:var(--bg-card);padding:.6rem 1.2rem;font-size:.9rem"
+                  (click)="openBillingPortal()">
+            Halda tellimust
+          </button>
         </div>
 
         <!-- Garantii + trust -->
@@ -1308,6 +1257,7 @@ interface TemplateSchema {
       background: rgba(99,102,241,0.15); color: var(--accent-2);
     }
     .plan-pro { background: rgba(52,211,153,0.15); color: var(--green); }
+    .plan-business { background: rgba(139,92,246,0.15); color: #a78bfa; }
     .header-quota { color: var(--text-muted); font-size: .8rem; font-weight: 500; }
 
     /* ── Hero ───────────────────────────────────────────── */
@@ -1730,9 +1680,10 @@ export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
   adminStats = signal<any>(null);
   adminUsers = signal<any[]>([]);
   isAdmin = signal(false);
-  // Pricing: kuu/aasta lüliti
+  // Pricing
   billingCycle = signal<'month' | 'year'>('month');
 
+<<<<<<< HEAD
   // ─────────────────────────────────────────────────────────────────────
   // i18n — multi-language support (ET/EN/LV/LT)
   // ─────────────────────────────────────────────────────────────────────
@@ -2055,7 +2006,7 @@ export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
     });
   }
 
-  isCurrentPlan(tier: 'MAKER' | 'PRO' | 'TEAM'): boolean {
+  isCurrentPlan(tier: 'MAKER' | 'PRO' | 'TEAM' | 'BUSINESS'): boolean {
     const p = this.auth.me()?.plan as string | undefined;
     return p === tier || (tier === 'MAKER' && p === 'HOBI'); // HOBI legacy alias
   }
@@ -2457,12 +2408,18 @@ result = (
     document.getElementById('app')?.scrollIntoView({ behavior: 'smooth' });
   }
 
-  upgrade(tier: 'maker' | 'pro' | 'team' | 'hobi') {
+  upgrade(tier: 'pro' | 'business') {
     if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
-    const cycle = this.billingCycle();
-    this.http.post<{ url: string }>('/api/billing/checkout', { tier, cycle }).subscribe({
+    this.http.post<{ url: string }>('/api/stripe/checkout', { tier }).subscribe({
       next: r => { window.location.href = r.url; },
       error: e => this.error.set(e.error?.message || 'Stripe pole veel seadistatud — tule tagasi peagi!'),
+    });
+  }
+
+  openBillingPortal() {
+    this.http.post<{ url: string }>('/api/stripe/portal', {}).subscribe({
+      next: r => { window.location.href = r.url; },
+      error: e => this.error.set(e.error?.message || 'Tellimuse haldamine pole saadaval.'),
     });
   }
 

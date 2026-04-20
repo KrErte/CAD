@@ -1,0 +1,9 @@
+# SECURITY-FIX: välista tundlikud failid ja ehitusartefaktid Docker image'ist
+.git
+.env
+.env.*
+*.md
+build/
+.gradle/
+.idea/
+*.iml

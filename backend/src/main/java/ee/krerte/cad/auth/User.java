@@ -30,7 +30,7 @@ public class User {
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
-    public enum Plan { FREE, PRO }
+    public enum Plan { FREE, PRO, BUSINESS }
 
     public Long getId() { return id; }
     public String getEmail() { return email; }

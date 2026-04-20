@@ -56,16 +56,19 @@ app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
   quota:
     free-monthly: ${FREE_MONTHLY_QUOTA:3}
+    pro-monthly: ${PRO_MONTHLY_QUOTA:50}
+    business-monthly: ${BUSINESS_MONTHLY_QUOTA:200}
   ratelimit:
     spec-per-hour: ${RATELIMIT_SPEC:20}
     generate-per-hour: ${RATELIMIT_GENERATE:10}
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-    # Legacy — jääb alles tagasiühilduvuseks (hobi → maker alias koodis)
+    # Uus 3-tier struktuur: Free (0€), Pro (14.99€/kuu), Business (49.99€/kuu)
+    price-pro:      ${STRIPE_PRICE_PRO:price_xxx}
+    price-business: ${STRIPE_PRICE_BUSINESS:price_xxx}
+    # Legacy — jääb alles tagasiühilduvuseks
     price-hobi: ${STRIPE_PRICE_HOBI:}
-    price-pro:  ${STRIPE_PRICE_PRO:}
-    # Uus 4-tier struktuur (2026) — kuu + aasta eraldi Price ID-d
     price-maker-monthly: ${STRIPE_PRICE_MAKER_MONTHLY:}
     price-maker-yearly:  ${STRIPE_PRICE_MAKER_YEARLY:}
     price-pro-monthly:   ${STRIPE_PRICE_PRO_MONTHLY:}

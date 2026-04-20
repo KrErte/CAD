@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
 public class SecurityConfig {
@@ -23,6 +24,16 @@ public class SecurityConfig {
             .cors(c -> {})
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .headers(h -> h
+                .contentTypeOptions(c -> {})                          // X-Content-Type-Options: nosniff
+                .frameOptions(f -> f.deny())                          // X-Frame-Options: DENY
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .maxAgeInSeconds(31536000))                       // Strict-Transport-Security
+                .referrerPolicy(r -> r.policy(
+                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .permissionsPolicy(p -> p.policy(
+                    "geolocation=(), camera=(), microphone=()")))     // Permissions-Policy
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/api/stripe/webhook",
                                  "/api/templates", "/api/health",
@@ -34,6 +45,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/generate/**", "/api/meshy",
                                  "/api/metrics", "/api/preview", "/api/review",
                                  "/api/billing/**",
+                                 "/api/stripe/checkout", "/api/stripe/subscription",
+                                 "/api/stripe/portal",
                                  "/api/designs/**", "/api/admin/**",
                                  "/api/gallery/**",
                                  "/api/orders/**",

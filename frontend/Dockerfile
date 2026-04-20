@@ -10,4 +10,9 @@ RUN npx ng build --configuration=production
 FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist/browser /usr/share/nginx/html
+
+# SECURITY-FIX: nginx:alpine jookseb juba nginx kasutajana, aga failide
+# õigused peavad olema korrektsed
+RUN chown -R nginx:nginx /usr/share/nginx/html
+
 EXPOSE 4200

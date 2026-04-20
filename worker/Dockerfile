@@ -15,6 +15,12 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY app.py test_app.py evolve.py freeform.py printflow.py ./
+
+# SECURITY-FIX: non-root kasutaja — vähendab konteineri kompromiteerimise mõju
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser
+USER appuser
+
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=10 \
   CMD curl -fs http://localhost:8000/health || exit 1

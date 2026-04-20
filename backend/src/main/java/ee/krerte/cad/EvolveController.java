@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
 
 /**
@@ -55,10 +57,11 @@ public class EvolveController {
      * <p>Kasutaja kogeb: "Ma kirjutasin 1 lause, sain 6 erinevat disaini koos
      * põhjendusega, miks üks parem kui teine." See on uus produkti-kogemus.
      */
-    public record SeedRequest(String prompt_et, Integer n) {}
+    // BUG-FIX: sisendvalidatsioon — prompt pikkus piiratud 500 märgile
+    public record SeedRequest(@Size(max = 500, message = "Prompt max 500 tähemärki") String prompt_et, Integer n) {}
 
     @PostMapping("/seed")
-    public ResponseEntity<?> seed(@RequestBody SeedRequest req) {
+    public ResponseEntity<?> seed(@Valid @RequestBody SeedRequest req) {
         if (req == null || req.prompt_et() == null || req.prompt_et().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "prompt_required",

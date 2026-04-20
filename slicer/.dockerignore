@@ -1,0 +1,8 @@
+# SECURITY-FIX: välista tundlikud failid ja ehitusartefaktid Docker image'ist
+.git
+.env
+.env.*
+*.md
+__pycache__/
+.pytest_cache/
+*.pyc

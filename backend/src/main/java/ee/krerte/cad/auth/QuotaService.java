@@ -14,22 +14,36 @@ public class QuotaService {
     private final UsageRepository usages;
     private final EmailService emailService;
     private final int freeMonthly;
+    private final int proMonthly;
+    private final int businessMonthly;
 
     public QuotaService(UserRepository users, UsageRepository usages, EmailService emailService,
-                        @Value("${app.quota.free-monthly:3}") int freeMonthly) {
+                        @Value("${app.quota.free-monthly:3}") int freeMonthly,
+                        @Value("${app.quota.pro-monthly:50}") int proMonthly,
+                        @Value("${app.quota.business-monthly:200}") int businessMonthly) {
         this.users = users;
         this.usages = usages;
         this.emailService = emailService;
         this.freeMonthly = freeMonthly;
+        this.proMonthly = proMonthly;
+        this.businessMonthly = businessMonthly;
     }
 
     public record Status(User.Plan plan, int used, int limit, boolean allowed) {}
+
+    public int limitForPlan(User.Plan plan) {
+        return switch (plan) {
+            case BUSINESS -> businessMonthly;
+            case PRO -> proMonthly;
+            default -> freeMonthly;
+        };
+    }
 
     public Status status(Long userId) {
         User u = users.findById(userId).orElseThrow();
         String ym = YearMonth.now().toString();
         int used = usages.findByUserIdAndYearMonth(userId, ym).map(Usage::getStlCount).orElse(0);
-        int limit = u.getPlan() == User.Plan.PRO ? Integer.MAX_VALUE : freeMonthly;
+        int limit = limitForPlan(u.getPlan());
         return new Status(u.getPlan(), used, limit, used < limit);
     }
 
@@ -45,13 +59,14 @@ public class QuotaService {
         usage.increment();
         usages.save(usage);
 
-        // Send quota warning emails for FREE users
+        // Send quota warning emails when approaching limit
         User u = users.findById(userId).orElse(null);
-        if (u != null && u.getPlan() == User.Plan.FREE) {
+        if (u != null) {
             int used = usage.getStlCount();
-            if (used == freeMonthly - 1) {
-                emailService.sendQuotaWarning(u.getEmail(), u.getName(), used, freeMonthly);
-            } else if (used == freeMonthly) {
+            int limit = limitForPlan(u.getPlan());
+            if (used == limit - 1) {
+                emailService.sendQuotaWarning(u.getEmail(), u.getName(), used, limit);
+            } else if (used == limit) {
                 emailService.sendQuotaExhausted(u.getEmail(), u.getName());
             }
         }

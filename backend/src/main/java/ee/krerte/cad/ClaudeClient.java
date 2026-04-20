@@ -39,6 +39,9 @@ public class ClaudeClient {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("ANTHROPIC_API_KEY not configured");
         }
+        // BUG-FIX: sanitize sisend enne Claude API-sse saatmist — eemalda
+        // kontrollsümboolid (v.a. reavahetused) ja piira pikkust.
+        userPrompt = sanitize(userPrompt);
 
         String system = """
             You are a CAD parameter extractor for an Estonian 3D-printing service.
@@ -81,7 +84,19 @@ public class ClaudeClient {
             throw new RuntimeException("Empty response from Claude: " + resp);
         }
 
-        String text = resp.get("content").get(0).get("text").asText().trim();
+        // BUG-FIX: null-check iga nested field'i juures — Claude API võib tagastada
+        // ootamatu struktuuri (nt rate-limit, overloaded, muutunud API versioon).
+        // Varem: resp.get("content").get(0).get("text") → NPE kui ükskõik milline
+        // neist on null.
+        JsonNode contentArr = resp.get("content");
+        if (contentArr == null || !contentArr.isArray() || contentArr.isEmpty()) {
+            throw new RuntimeException("Claude response missing 'content' array: " + resp);
+        }
+        JsonNode firstBlock = contentArr.get(0);
+        if (firstBlock == null || !firstBlock.has("text")) {
+            throw new RuntimeException("Claude response first content block missing 'text': " + firstBlock);
+        }
+        String text = firstBlock.get("text").asText("").trim();
         // strip accidental ```json fences
         if (text.startsWith("```")) {
             text = text.replaceAll("(?s)```(?:json)?\\s*", "").replaceAll("```\\s*$", "");
@@ -397,6 +412,21 @@ public class ClaudeClient {
             }
         }
         throw new RuntimeException("Claude did not call submit_ranking: " + resp);
+    }
+
+    /**
+     * BUG-FIX: sanitize kasutaja sisendit enne API-sse saatmist.
+     * Eemaldab kontrollsümbolid (v.a. newline/tab) ja piirab pikkust 500 märgile.
+     */
+    private static String sanitize(String input) {
+        if (input == null) return "";
+        // Eemalda kontrollsümboolid v.a. \n ja \t
+        String cleaned = input.replaceAll("[\\p{Cc}&&[^\n\t]]", "");
+        // Piira pikkust (defense-in-depth, lisaks kontrolleri @Size validatsioonile)
+        if (cleaned.length() > 500) {
+            cleaned = cleaned.substring(0, 500);
+        }
+        return cleaned.trim();
     }
 
     /**

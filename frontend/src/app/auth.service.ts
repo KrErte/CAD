@@ -5,7 +5,7 @@ export interface Me {
   id: number;
   email: string;
   name: string;
-  plan: 'FREE' | 'PRO';
+  plan: 'FREE' | 'PRO' | 'BUSINESS';
   used: number;
   limit: number; // -1 = unlimited
 }

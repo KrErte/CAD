@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * Fallback path: when no parametric template fits, we ask Meshy.ai to mesh-generate a
@@ -29,6 +32,12 @@ public class MeshyClient {
     private final WebClient webClient;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // BUG-FIX: eraldi threadpool Meshy pollingu jaoks, et Tomcat servlet-threadid ei blokeeruks.
+    // Varem oli Thread.sleep() otse request-threadil → koormusel ~60 samaaegset päringut
+    // ammendaks kogu Tomcat pooli ja server ripuks.
+    private final Executor meshyExecutor = Executors.newFixedThreadPool(4,
+            r -> { Thread t = new Thread(r, "meshy-poll"); t.setDaemon(true); return t; });
+
     @Value("${app.meshy.api-key:}") private String apiKey;
 
     public MeshyClient(WebClient webClient) {
@@ -39,10 +48,31 @@ public class MeshyClient {
         return apiKey != null && !apiKey.isBlank();
     }
 
-    /** Kicks off a text-to-3D job, polls until ready, returns the model URL. */
-    public String textTo3D(String prompt) throws InterruptedException {
-        if (!enabled()) throw new IllegalStateException("MESHY_API_KEY not configured");
+    /**
+     * Kicks off a text-to-3D job, polls until ready, returns the model URL.
+     *
+     * BUG-FIX: polling toimub nüüd eraldi ExecutorService'is (meshyExecutor),
+     * mitte Tomcat servlet-threadil. See vabastab servlet-threadi kohe ja
+     * caller saab CompletableFuture kaudu tulemuse kätte.
+     */
+    public CompletableFuture<String> textTo3DAsync(String prompt) {
+        if (!enabled()) {
+            return CompletableFuture.failedFuture(
+                    new IllegalStateException("MESHY_API_KEY not configured"));
+        }
 
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return textTo3DBlocking(prompt);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Meshy polling interrupted", e);
+            }
+        }, meshyExecutor);
+    }
+
+    /** Sünkroonne variant — kutsutakse ainult meshyExecutor threadist, MITTE Tomcat threadist. */
+    private String textTo3DBlocking(String prompt) throws InterruptedException {
         ObjectNode body = mapper.createObjectNode();
         body.put("mode", "preview");
         body.put("prompt", prompt);
@@ -56,6 +86,11 @@ public class MeshyClient {
                 .retrieve()
                 .bodyToMono(JsonNode.class)
                 .block();
+
+        // BUG-FIX: null-check enne nested field ligipääsu — API võib tagastada ootamatu vastuse
+        if (createResp == null || !createResp.has("result")) {
+            throw new RuntimeException("Meshy create response missing 'result': " + createResp);
+        }
         String id = createResp.get("result").asText();
         log.info("Meshy job created: {}", id);
 
@@ -67,7 +102,7 @@ public class MeshyClient {
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .block();
-            String s = status.path("status").asText();
+            String s = (status != null) ? status.path("status").asText() : "UNKNOWN";
             log.debug("Meshy {} status: {}", id, s);
             if ("SUCCEEDED".equals(s)) {
                 // model_urls.glb / .obj / .fbx — STL is not native, frontend converts via three.js

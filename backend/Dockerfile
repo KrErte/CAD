@@ -7,5 +7,11 @@ RUN gradle bootJar --no-daemon
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /src/build/libs/*.jar app.jar
+
+# SECURITY-FIX: non-root kasutaja — vähendab konteineri kompromiteerimise mõju
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser
+USER appuser
+
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","/app/app.jar"]

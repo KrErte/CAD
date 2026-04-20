@@ -70,7 +70,7 @@ public class FreeformController {
         // User.Plan on enum (FREE, PRO). .name() annab String'i.
         // Kui tulevikus lisanduvad TEAM/ENTERPRISE, laieneb kontroll automaatselt.
         String plan = u.getPlan() == null ? "FREE" : u.getPlan().name();
-        if (!plan.equals("PRO") && !plan.equals("TEAM") && !plan.equals("ENTERPRISE")) {
+        if (!plan.equals("PRO") && !plan.equals("BUSINESS") && !plan.equals("TEAM") && !plan.equals("ENTERPRISE")) {
             return ResponseEntity.status(403).body(Map.of(
                     "ok", false,
                     "error", "Freeform sandbox on saadaval ainult Pro ja Team plaanidel. Uuenda plaani, et jätkata.",

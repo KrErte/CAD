@@ -2,7 +2,9 @@ package ee.krerte.cad;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -10,6 +12,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import ee.krerte.cad.auth.QuotaService;
+import ee.krerte.cad.auth.RateLimitService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.Map;
 
 @RestController
@@ -22,13 +27,19 @@ public class DesignController {
     private final WorkerClient worker;
     private final MeshyClient meshy;
     private final SlicerClient slicer;
+    private final RateLimitService rateLimiter;
+    private final QuotaService quotaService;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy, SlicerClient slicer) {
+    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy,
+                            SlicerClient slicer, RateLimitService rateLimiter,
+                            QuotaService quotaService) {
         this.claude = claude;
         this.worker = worker;
         this.meshy = meshy;
         this.slicer = slicer;
+        this.rateLimiter = rateLimiter;
+        this.quotaService = quotaService;
     }
 
     /** Just expose the worker catalog (what we can design today). */
@@ -37,11 +48,23 @@ public class DesignController {
         return worker.templates();
     }
 
-    public record DesignRequest(@NotBlank String prompt) {}
+    // BUG-FIX: lisatud @Size piirang — ilma selleta saaks kasutaja saata
+    // megabaidise prompti otse Claude API-sse (token-kulu + potentsiaalne DoS).
+    public record DesignRequest(
+            @NotBlank @Size(max = 500, message = "Prompt max 500 tähemärki") String prompt) {}
 
     /** First phase: turn the Estonian text into a structured spec (no STL yet). */
+    // BUG-FIX: @Valid lisatud — ilma selleta @NotBlank ja @Size annotatsioonid ei rakendu.
     @PostMapping("/spec")
-    public ResponseEntity<?> spec(@RequestBody DesignRequest req) throws Exception {
+    public ResponseEntity<?> spec(@Valid @RequestBody DesignRequest req) throws Exception {
+        // BUG-FIX: rate limiting — varem puudus, kasutaja sai piiramatult Claude API päringuid teha
+        long userId = currentUserId();
+        if (!rateLimiter.allow(userId, "spec")) {
+            return ResponseEntity.status(429).body(Map.of(
+                    "error", "rate_limited",
+                    "message", "Liiga palju päringuid. Proovi minuti pärast uuesti.",
+                    "remaining", rateLimiter.remaining(userId, "spec")));
+        }
         JsonNode catalog = worker.templates();
         JsonNode spec = claude.specFromPrompt(req.prompt(), catalog);
         if (spec.has("error")) {
@@ -69,7 +92,26 @@ public class DesignController {
 
     /** Second phase: generate STL from a known spec (user may have tweaked params). */
     @PostMapping(value = "/generate", produces = "application/sla")
-    public ResponseEntity<byte[]> generate(@RequestBody JsonNode spec) {
+    public ResponseEntity<?> generate(@RequestBody JsonNode spec) {
+        // BUG-FIX: rate limiting generate endpointil — varem puudus
+        long userId = currentUserId();
+        if (!rateLimiter.allow(userId, "generate")) {
+            return ResponseEntity.status(429).body(Map.of(
+                    "error", "rate_limited",
+                    "message", "Liiga palju genereerimisi. Proovi minuti pärast uuesti.",
+                    "remaining", rateLimiter.remaining(userId, "generate")));
+        }
+        // Subscription quota check — verify monthly model limit
+        QuotaService.Status quota = quotaService.status(userId);
+        if (!quota.allowed()) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "quota_exceeded",
+                    "message", "Kuu limiit täis (" + quota.used() + "/" + quota.limit()
+                               + "). Uuenda plaani, et jätkata.",
+                    "used", quota.used(),
+                    "limit", quota.limit(),
+                    "plan", quota.plan().name()));
+        }
         byte[] stl = worker.generate(spec);
         String name = spec.path("template").asText("model") + ".stl";
         return ResponseEntity.ok()
@@ -188,6 +230,15 @@ public class DesignController {
         return Math.round(v * 100.0) / 100.0;
     }
 
+    /** Abimeetod rate limitingu jaoks — tagastab kasutaja ID või 0 anonüümsele. */
+    private long currentUserId() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof Long id) return id;
+        } catch (Exception ignored) {}
+        return 0L; // anonüümne kasutaja — limiteeritakse samuti
+    }
+
     /**
      * AI Design Review — Claude LOOKS at the generated preview (via vision)
      * together with the user's original Estonian prompt and the resolved spec,
@@ -247,19 +298,25 @@ public class DesignController {
      * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai.
      * Returns JSON { "model_url": "..." } that the frontend loads as GLB.
      */
+    /**
+     * BUG-FIX: Meshy endpoint tagastab nüüd CompletableFuture<ResponseEntity>,
+     * et Tomcat servlet-thread vabaneks kohe. Polling toimub eraldi threadpoolist.
+     * Varem blokeeris Thread.sleep(5000) × 60 iteratsiooni otse servlet-threadil.
+     */
     @PostMapping("/meshy")
-    public ResponseEntity<?> meshy(@RequestBody DesignRequest req) {
+    public java.util.concurrent.CompletableFuture<ResponseEntity<?>> meshy(@Valid @RequestBody DesignRequest req) {
         if (!meshy.enabled()) {
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "meshy_disabled",
-                    "message", "Meshy API key pole konfigureeritud"));
+            return java.util.concurrent.CompletableFuture.completedFuture(
+                    ResponseEntity.status(503).body(Map.of(
+                            "error", "meshy_disabled",
+                            "message", "Meshy API key pole konfigureeritud")));
         }
-        try {
-            String url = meshy.textTo3D(req.prompt());
-            return ResponseEntity.ok(Map.of("model_url", url, "format", "glb"));
-        } catch (Exception e) {
-            log.error("Meshy generation failed", e);
-            return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", e.getMessage()));
-        }
+        return meshy.textTo3DAsync(req.prompt())
+                .thenApply(url -> ResponseEntity.ok((Object) Map.of("model_url", url, "format", "glb")))
+                .exceptionally(e -> {
+                    log.error("Meshy generation failed", e);
+                    String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+                    return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", msg));
+                });
     }
 }

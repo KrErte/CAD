@@ -39,4 +39,10 @@ EXPOSE 8100
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
   CMD curl -fs http://localhost:8100/health || exit 1
 
+# SECURITY-FIX: non-root kasutaja — vähendab konteineri kompromiteerimise mõju
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --ingroup appgroup appuser && \
+    chown -R appuser:appgroup /app
+USER appuser
+
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8100"]

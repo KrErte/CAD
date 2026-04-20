@@ -32,7 +32,7 @@ public class MeController {
                 "name", u.getName() == null ? "" : u.getName(),
                 "plan", u.getPlan().name(),
                 "used", s.used(),
-                "limit", s.limit() == Integer.MAX_VALUE ? -1 : s.limit()
+                "limit", s.limit()
         ));
     }
 }

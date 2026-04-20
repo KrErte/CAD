@@ -15,16 +15,13 @@ import java.time.Instant;
 import java.util.HexFormat;
 
 /**
- * Stripe webhook receiver. Scaffold — set app.stripe.webhook-secret to your whsec_ value.
- * Handles the three events needed to keep plan status in sync:
- *   - checkout.session.completed  → mark user PRO + save subscription id
- *   - invoice.paid                → extend planActiveUntil
- *   - customer.subscription.deleted → downgrade to FREE
- *
- * In frontend you create a Checkout Session with client_reference_id = user.id.
+ * LEGACY Stripe webhook receiver — superseded by StripeController + StripeService.
+ * Kept as fallback but disabled (@Deprecated + commented out @RestController).
+ * Remove after verifying StripeService handles all events correctly in production.
  */
-@RestController
-@RequestMapping("/api/stripe")
+@Deprecated
+// @RestController — DISABLED: StripeController now handles /api/stripe/webhook
+// @RequestMapping("/api/stripe")
 public class StripeWebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(StripeWebhookController.class);
