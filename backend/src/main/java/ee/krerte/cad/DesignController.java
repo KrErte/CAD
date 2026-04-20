@@ -316,7 +316,7 @@ public class DesignController {
                 .exceptionally(e -> {
                     log.error("Meshy generation failed", e);
                     String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-                    return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", msg));
+                    return ResponseEntity.status(500).body((Object) Map.of("error", "meshy_failed", "message", msg));
                 });
     }
 }
