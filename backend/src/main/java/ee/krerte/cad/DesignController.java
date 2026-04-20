@@ -232,6 +232,17 @@ public class DesignController {
         }
     }
 
+    /** STEP export — professional B-Rep format for SolidWorks/Fusion/FreeCAD. */
+    @PostMapping(value = "/generate/step", produces = "application/step")
+    public ResponseEntity<byte[]> generateStep(@RequestBody JsonNode spec) {
+        byte[] step = worker.generateStep(spec);
+        String name = spec.path("template").asText("model") + ".step";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/step"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + name + "\"")
+                .body(step);
+    }
+
     /**
      * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai.
      * Returns JSON { "model_url": "..." } that the frontend loads as GLB.

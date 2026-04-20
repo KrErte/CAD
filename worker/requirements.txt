@@ -7,3 +7,6 @@ nptyping==2.0.1
 cadquery==2.4.0
 pytest==8.3.3
 httpx==0.27.2
+# PrintFlow: DFM analüüs + 2D nesting
+trimesh==4.4.9
+rectpack==0.2.2

@@ -26,11 +26,18 @@ public class SecurityConfig {
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/api/stripe/webhook",
                                  "/api/templates", "/api/health",
-                                 "/oauth2/**", "/login/**").permitAll()
-                .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/meshy",
+                                 "/api/gallery",
+                                 "/api/gallery/*/stl",
+                                 "/api/orders/quote",
+                                 "/oauth2/**", "/login/**",
+                                 "/ws/**").permitAll()
+                .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/generate/**", "/api/meshy",
                                  "/api/metrics", "/api/preview", "/api/review",
                                  "/api/billing/**",
-                                 "/api/designs/**", "/api/admin/**").authenticated()
+                                 "/api/designs/**", "/api/admin/**",
+                                 "/api/gallery/**",
+                                 "/api/orders/**",
+                                 "/api/evolve/**", "/api/freeform/**").authenticated()
                 .anyRequest().permitAll())
             .oauth2Login(o -> o
                 .userInfoEndpoint(u -> u.userService(oauthUserService))

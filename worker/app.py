@@ -23,6 +23,7 @@ import os
 # lõppu).
 from evolve import register_routes as _register_evolve
 from freeform import register_routes as _register_freeform
+from printflow import register_routes as _register_printflow
 
 app = FastAPI(title="AI-CAD Worker", version="0.2.0")
 
@@ -867,3 +868,4 @@ def generate_step(req: GenRequest):
 # moodulid saaksid ligi.
 _register_evolve(app, TEMPLATES)
 _register_freeform(app)
+_register_printflow(app)

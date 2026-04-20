@@ -7,6 +7,13 @@ kasutaja laeb alla ja saadab valitud 3D-print-teenusele.
 [![CI](https://github.com/KrErte/CAD/actions/workflows/ci.yml/badge.svg)](https://github.com/KrErte/CAD/actions/workflows/ci.yml)
 [![Release](https://github.com/KrErte/CAD/actions/workflows/release.yml/badge.svg)](https://github.com/KrErte/CAD/actions/workflows/release.yml)
 
+> **🏭 UUS: [PrintFlow MES](./docs/PRINTFLOW.md)** — AI-CAD on nüüd kaks tööriista
+> ühes. Olemasoleva *home* disaini poole on nüüd ka **`/#/factory`** —
+> täielik MES (Manufacturing Execution System) 3D-printimise teenusebüroodele:
+> Instant Quote Engine, DFM analüüs, printerifarm real-time SSE stream'iga,
+> tööjärjekord, materjali-inventar, RFQ postkast, webhook integratsioonid.
+> [Loe lisa →](./docs/PRINTFLOW.md)
+
 ## Mis on praegu olemas
 
 **6 parameetrilist template'it** (kõigil JSON-skeemiga min/max validatsioon):

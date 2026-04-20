@@ -72,7 +72,7 @@ interface TemplateSchema {
 }
 
 @Component({
-  selector: 'app-root',
+  selector: 'app-home',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
@@ -84,18 +84,32 @@ interface TemplateSchema {
           <span class="logo-text">TehisAI<span style="color:var(--accent-2)">CAD</span></span>
         </a>
         <nav class="header-nav" *ngIf="!auth.me()">
-          <a href="#how">Kuidas?</a>
+          <a href="#how">{{ t('nav_how') }}</a>
           <a href="#darwin" style="color:var(--accent-2);font-weight:600">Darwin CAD</a>
-          <a href="#examples">Näited</a>
-          <a href="#pricing">Hinnad</a>
-          <a href="#faq">KKK</a>
+          <a href="#gallery">{{ t('nav_gallery') }}</a>
+          <a href="#examples">{{ t('nav_examples') }}</a>
+          <a href="#pricing">{{ t('nav_pricing') }}</a>
+          <select class="lang-select" [ngModel]="lang()" (ngModelChange)="setLang($event)">
+            <option value="et">&#127466;&#127466; ET</option>
+            <option value="en">&#127468;&#127463; EN</option>
+            <option value="lv">&#127473;&#127483; LV</option>
+            <option value="lt">&#127473;&#127481; LT</option>
+          </select>
           <button (click)="auth.loginWithGoogle()" class="btn-login">
-            Logi sisse
+            {{ t('login') }}
           </button>
         </nav>
         <nav class="header-nav" *ngIf="auth.me() as m">
-          <a href="#mydesigns" (click)="loadMyDesigns()">Minu disainid</a>
+          <a href="#mydesigns" (click)="loadMyDesigns()">{{ t('my_designs') }}</a>
+          <a href="#gallery">{{ t('nav_gallery') }}</a>
+          <a href="#orders" (click)="loadMyOrders()">{{ t('my_orders') }}</a>
           <a href="#admin" (click)="loadAdmin()" *ngIf="isAdmin()" style="color:var(--amber)">Admin</a>
+          <select class="lang-select" [ngModel]="lang()" (ngModelChange)="setLang($event)">
+            <option value="et">&#127466;&#127466; ET</option>
+            <option value="en">&#127468;&#127463; EN</option>
+            <option value="lv">&#127473;&#127483; LV</option>
+            <option value="lt">&#127473;&#127481; LT</option>
+          </select>
           <span class="header-plan" [class.plan-pro]="m.plan === 'PRO'">{{ m.plan }}</span>
           <span class="header-quota" *ngIf="m.limit > 0">{{ m.used }}/{{ m.limit }}</span>
           <span class="header-quota" *ngIf="m.limit < 0">&#8734;</span>
@@ -837,14 +851,36 @@ interface TemplateSchema {
           <!-- Left: Input + params -->
           <div class="workspace-left">
             <div class="card-glass">
-              <label style="margin-top:0">Kirjeldus eesti keeles</label>
-              <textarea rows="3" [(ngModel)]="prompt"
-                placeholder="Näiteks: vajan riiuliklambrit 32mm veetorule, peab kandma 5kg koormust"></textarea>
+              <label style="margin-top:0">{{ t('input_label') }}</label>
+              <div class="input-with-voice">
+                <textarea rows="3" [(ngModel)]="prompt"
+                  [placeholder]="t('input_placeholder')"></textarea>
+                <button class="voice-btn" (click)="toggleVoice()"
+                        [class.voice-active]="voiceActive()"
+                        [title]="voiceActive() ? t('voice_stop') : t('voice_start')">
+                  <span *ngIf="!voiceActive()">&#127908;</span>
+                  <span *ngIf="voiceActive()" class="voice-pulse">&#128308;</span>
+                </button>
+              </div>
+              <div class="collab-row" *ngIf="auth.me()">
+                <button class="btn-collab" (click)="createCollabRoom()" *ngIf="!collabRoomId()">
+                  &#128101; {{ t('collab_start') }}
+                </button>
+                <div *ngIf="collabRoomId()" class="collab-info">
+                  &#128101; {{ t('collab_room') }}: <code>{{ collabRoomId() }}</code>
+                  <span class="collab-users">{{ collabUsers() }} {{ t('collab_online') }}</span>
+                </div>
+                <input *ngIf="!collabRoomId()" class="collab-join-input" type="text" [(ngModel)]="collabJoinId"
+                       [placeholder]="t('collab_join_placeholder')" (keyup.enter)="joinCollabRoom()">
+                <button *ngIf="!collabRoomId() && collabJoinId" class="btn-collab" (click)="joinCollabRoom()">
+                  {{ t('collab_join') }}
+                </button>
+              </div>
               <button *ngIf="auth.me()" style="margin-top:1rem;width:100%" (click)="analyze()" [disabled]="loading()">
-                {{ loading() ? 'AI analüüsib...' : 'Analüüsi' }}
+                {{ loading() ? t('analyzing') : t('analyze') }}
               </button>
               <button *ngIf="!auth.me()" style="margin-top:1rem;width:100%" (click)="auth.loginWithGoogle()">
-                Logi sisse, et genereerida
+                {{ t('login_to_generate') }}
               </button>
             </div>
 
@@ -915,19 +951,100 @@ interface TemplateSchema {
               </div>
             </div>
 
-            <!-- Download -->
+            <!-- Download + Export -->
             <div class="card-glass download-card" *ngIf="stlUrl()">
-              <a [href]="stlUrl()" download="model.stl" class="download-link">
-                &#11015; Lae STL alla
-              </a>
-              <button class="review-btn"
-                      (click)="askReview()"
-                      [disabled]="reviewLoading()"
-                      *ngIf="!review()">
-                <span *ngIf="!reviewLoading()">&#129302; Küsi AI ülevaadet</span>
-                <span *ngIf="reviewLoading()">&#9203; Claude vaatab detaili üle...</span>
-              </button>
+              <div class="download-row">
+                <a [href]="stlUrl()" download="model.stl" class="download-link">
+                  &#11015; STL
+                </a>
+                <button class="download-link download-step" (click)="downloadStep()" [disabled]="stepLoading()">
+                  {{ stepLoading() ? '...' : '&#11015; STEP' }}
+                </button>
+              </div>
+              <div class="action-row">
+                <button class="review-btn"
+                        (click)="askReview()"
+                        [disabled]="reviewLoading()"
+                        *ngIf="!review()">
+                  <span *ngIf="!reviewLoading()">&#129302; {{ t('ask_review') }}</span>
+                  <span *ngIf="reviewLoading()">&#9203; {{ t('reviewing') }}</span>
+                </button>
+                <button class="order-btn" (click)="showOrderModal.set(true); fetchQuote()">
+                  &#128230; {{ t('order_print') }}
+                </button>
+                <button class="share-btn" (click)="showShareModal.set(true)">
+                  &#127760; {{ t('share_gallery') }}
+                </button>
+              </div>
               <div *ngIf="reviewError()" class="review-error">{{ reviewError() }}</div>
+            </div>
+
+            <!-- Order modal -->
+            <div class="card-glass" *ngIf="showOrderModal()">
+              <h4>&#128230; {{ t('order_title') }}</h4>
+              <div class="order-form">
+                <label>{{ t('material') }}</label>
+                <select [(ngModel)]="orderMaterial">
+                  <option value="PLA">PLA</option>
+                  <option value="PETG">PETG</option>
+                </select>
+                <label>{{ t('color') }}</label>
+                <select [(ngModel)]="orderColor">
+                  <option value="must">Must</option>
+                  <option value="valge">Valge</option>
+                  <option value="hall">Hall</option>
+                  <option value="punane">Punane</option>
+                  <option value="sinine">Sinine</option>
+                </select>
+                <label>{{ t('quantity') }}</label>
+                <input type="number" [(ngModel)]="orderQty" min="1" max="100">
+                <label>{{ t('shipping_name') }}</label>
+                <input type="text" [(ngModel)]="orderName">
+                <label>{{ t('shipping_address') }}</label>
+                <input type="text" [(ngModel)]="orderAddress">
+                <label>{{ t('city') }}</label>
+                <input type="text" [(ngModel)]="orderCity">
+                <label>{{ t('zip') }}</label>
+                <input type="text" [(ngModel)]="orderZip">
+                <label>{{ t('country') }}</label>
+                <select [(ngModel)]="orderCountry">
+                  <option value="EE">Eesti</option>
+                  <option value="LV">Latvija</option>
+                  <option value="LT">Lietuva</option>
+                  <option value="FI">Suomi</option>
+                  <option value="SE">Sverige</option>
+                  <option value="DE">Deutschland</option>
+                </select>
+              </div>
+              <div *ngIf="orderQuote()" class="order-quote">
+                <strong>{{ t('total') }}: {{ orderQuote()?.total_eur | number:'1.2-2' }} EUR</strong>
+                <div style="font-size:.8rem;color:var(--text-muted)">
+                  {{ t('shipping') }}: {{ orderQuote()?.shipping_eur }} EUR ·
+                  {{ t('delivery') }}: {{ orderQuote()?.estimated_days }} {{ t('days') }}
+                </div>
+              </div>
+              <div style="display:flex;gap:.5rem;margin-top:1rem">
+                <button class="btn-cta" (click)="placeOrder()" [disabled]="orderLoading()">
+                  {{ orderLoading() ? '...' : t('place_order') }}
+                </button>
+                <button class="btn-secondary" (click)="showOrderModal.set(false)">{{ t('cancel') }}</button>
+              </div>
+              <div *ngIf="orderSuccess()" style="color:var(--green);margin-top:.5rem">{{ orderSuccess() }}</div>
+            </div>
+
+            <!-- Share to gallery modal -->
+            <div class="card-glass" *ngIf="showShareModal()">
+              <h4>&#127760; {{ t('share_title') }}</h4>
+              <label>{{ t('design_title') }}</label>
+              <input type="text" [(ngModel)]="shareTitle" [placeholder]="t('share_title_placeholder')">
+              <label>{{ t('description') }}</label>
+              <textarea rows="2" [(ngModel)]="shareDesc"></textarea>
+              <label>{{ t('tags') }}</label>
+              <input type="text" [(ngModel)]="shareTags" placeholder="riiuliklamber, toru, DIY">
+              <div style="display:flex;gap:.5rem;margin-top:1rem">
+                <button class="btn-cta" (click)="shareToGallery()">{{ t('share') }}</button>
+                <button class="btn-secondary" (click)="showShareModal.set(false)">{{ t('cancel') }}</button>
+              </div>
             </div>
 
             <!-- AI Design Review card -->
@@ -1039,14 +1156,88 @@ interface TemplateSchema {
             <div style="color:var(--text-muted);font-size:.8rem;margin-top:.3rem">
               <code>{{ d.template }}</code> &middot; {{ humanDate(d.created_at) }} &middot; {{ (d.size_bytes/1024) | number:'1.0-0' }} KB
             </div>
-            <div style="display:flex;gap:.5rem;margin-top:.8rem">
+            <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap">
               <a [href]="designStlUrl(d.id)" download class="design-download">&#11015; STL</a>
+              <button (click)="loadVersions(d.id)" class="design-download">&#128338; Versioonid</button>
               <button (click)="deleteDesign(d.id)" class="design-delete">&#128465;</button>
+            </div>
+            <div *ngIf="versionsForDesign() === d.id && designVersions().length" class="versions-list">
+              <div *ngFor="let v of designVersions()" class="version-item">
+                <span>v{{ v.version }} · {{ humanDate(v.created_at) }} · {{ (v.size_bytes/1024) | number:'1.0-0' }} KB</span>
+                <button class="btn-collab" (click)="rollbackVersion(d.id, v.version)">&#8634; Taasta</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
+
+    <!-- ═══════ GALLERY ═══════ -->
+    <section id="gallery" class="section">
+      <div class="container">
+        <div class="section-header">
+          <div class="badge">{{ t('gallery_badge') }}</div>
+          <h2 class="section-title">{{ t('gallery_title') }}</h2>
+          <p class="section-subtitle">{{ t('gallery_subtitle') }}</p>
+        </div>
+        <div class="gallery-controls">
+          <input type="text" class="gallery-search" [(ngModel)]="gallerySearch"
+                 [placeholder]="t('gallery_search')" (keyup.enter)="loadGallery()">
+          <div class="gallery-sort">
+            <button [class.active]="gallerySort() === 'new'" (click)="gallerySort.set('new'); loadGallery()">{{ t('newest') }}</button>
+            <button [class.active]="gallerySort() === 'popular'" (click)="gallerySort.set('popular'); loadGallery()">{{ t('popular') }}</button>
+          </div>
+        </div>
+        <div class="gallery-grid">
+          <div *ngFor="let g of galleryItems()" class="gallery-card card-glass">
+            <div class="gallery-card-header">
+              <strong>{{ g.title }}</strong>
+              <span class="gallery-author">{{ g.author }}</span>
+            </div>
+            <div *ngIf="g.description" class="gallery-desc">{{ g.description }}</div>
+            <div class="gallery-meta">
+              <span class="gallery-template"><code>{{ g.template }}</code></span>
+              <span *ngIf="g.tags" class="gallery-tags">{{ g.tags }}</span>
+            </div>
+            <div class="gallery-actions">
+              <button class="gallery-like" [class.liked]="g.liked_by_me" (click)="toggleGalleryLike(g)">
+                {{ g.liked_by_me ? '&#10084;' : '&#9825;' }} {{ g.likes }}
+              </button>
+              <button class="gallery-fork" (click)="forkGalleryDesign(g)">
+                &#128260; Fork ({{ g.forks }})
+              </button>
+              <a class="gallery-dl" [href]="'/api/gallery/' + g.id + '/stl'" download>
+                &#11015; STL
+              </a>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="!galleryItems().length" style="text-align:center;color:var(--text-muted);padding:3rem">
+          {{ t('gallery_empty') }}
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ═══════ MY ORDERS ═══════ -->
+    <section id="orders" *ngIf="auth.me() && myOrders().length" class="section">
+      <div class="container">
+        <h2 class="section-title">{{ t('my_orders') }}</h2>
+        <div class="designs-grid">
+          <div *ngFor="let o of myOrders()" class="card-glass design-card">
+            <strong>#{{ o.id }}</strong>
+            <div style="color:var(--text-muted);font-size:.8rem;margin-top:.3rem">
+              {{ o.material }} · {{ o.color }} · {{ o.quantity }}x · {{ o.price_eur }} EUR
+            </div>
+            <div class="order-status" [class]="'order-status-' + o.status">{{ o.status }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted)">{{ humanDate(o.created_at) }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
 
     <!-- ═══════ FOOTER ═══════ -->
     <footer class="footer">
@@ -1374,6 +1565,123 @@ interface TemplateSchema {
       color: #fca5a5; padding: .4rem .6rem; font-size: .85rem;
     }
 
+    /* ── Language selector ─────────────────────────────── */
+    .lang-select {
+      background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);
+      padding: .25rem .4rem; border-radius: 6px; font-size: .8rem; cursor: pointer;
+    }
+
+    /* ── Voice button ──────────────────────────────────── */
+    .input-with-voice { position: relative; }
+    .input-with-voice textarea { width: 100%; padding-right: 3rem; }
+    .voice-btn {
+      position: absolute; right: .5rem; top: .5rem;
+      background: var(--bg-card); border: 1px solid var(--border);
+      padding: .4rem .6rem; border-radius: 8px; font-size: 1.2rem; cursor: pointer;
+      transition: all .15s ease;
+    }
+    .voice-btn:hover { border-color: var(--accent); }
+    .voice-active { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+    .voice-pulse { animation: pulse 0.8s ease-in-out infinite; }
+
+    /* ── Collaboration ─────────────────────────────────── */
+    .collab-row {
+      display: flex; gap: .5rem; margin-top: .5rem; align-items: center; flex-wrap: wrap;
+    }
+    .btn-collab {
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+      color: var(--accent-2); padding: .3rem .7rem; font-size: .8rem; border-radius: 6px; cursor: pointer;
+    }
+    .btn-collab:hover { border-color: var(--accent); }
+    .collab-info {
+      font-size: .8rem; color: var(--text-secondary); display: flex; align-items: center; gap: .4rem;
+    }
+    .collab-users { color: var(--green); font-weight: 600; }
+    .collab-join-input {
+      flex: 1; min-width: 100px; padding: .3rem .5rem; font-size: .8rem;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-primary);
+    }
+
+    /* ── Download row ──────────────────────────────────── */
+    .download-row { display: flex; gap: .8rem; justify-content: center; align-items: center; }
+    .download-step {
+      background: transparent; border: none; cursor: pointer;
+      color: var(--accent-2); font-weight: 700; font-size: 1.1rem; text-decoration: none;
+    }
+    .download-step:hover { color: #c4b5fd; }
+    .action-row { display: flex; gap: .5rem; margin-top: .8rem; flex-wrap: wrap; }
+    .action-row button { flex: 1; min-width: 120px; }
+    .order-btn {
+      padding: .6rem 1rem; border-radius: var(--radius-md);
+      background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3);
+      color: var(--green); font-weight: 600; font-size: .85rem; cursor: pointer;
+    }
+    .order-btn:hover { border-color: var(--green); }
+    .share-btn {
+      padding: .6rem 1rem; border-radius: var(--radius-md);
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+      color: var(--accent-2); font-weight: 600; font-size: .85rem; cursor: pointer;
+    }
+    .share-btn:hover { border-color: var(--accent); }
+
+    /* ── Order form ────────────────────────────────────── */
+    .order-form { display: grid; grid-template-columns: auto 1fr; gap: .4rem .8rem; align-items: center; }
+    .order-form label { font-size: .85rem; color: var(--text-secondary); }
+    .order-form input, .order-form select {
+      padding: .35rem .5rem; background: var(--bg-deep); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text-primary); font-size: .85rem;
+    }
+    .order-quote {
+      margin-top: .8rem; padding: .8rem; border-radius: 8px;
+      background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.2);
+    }
+    .order-status { display: inline-block; padding: .15rem .5rem; border-radius: 999px; font-size: .75rem; font-weight: 700; margin-top: .4rem; }
+    .order-status-pending { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .order-status-confirmed { background: rgba(52,211,153,0.15); color: var(--green); }
+    .order-status-shipped { background: rgba(99,102,241,0.15); color: var(--accent-2); }
+
+    /* ── Gallery ───────────────────────────────────────── */
+    .gallery-controls {
+      display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;
+    }
+    .gallery-search {
+      flex: 1; min-width: 200px; padding: .6rem 1rem;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text-primary); font-size: .9rem;
+    }
+    .gallery-sort { display: flex; gap: .3rem; }
+    .gallery-sort button {
+      padding: .4rem .8rem; border-radius: 6px; font-size: .8rem; font-weight: 600;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer;
+    }
+    .gallery-sort button.active { color: var(--accent-2); border-color: var(--accent); }
+    .gallery-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;
+    }
+    .gallery-card { padding: 1.2rem; }
+    .gallery-card-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .gallery-author { font-size: .8rem; color: var(--text-muted); }
+    .gallery-desc { color: var(--text-secondary); font-size: .85rem; margin: .4rem 0; }
+    .gallery-meta { display: flex; gap: .5rem; flex-wrap: wrap; margin: .4rem 0; }
+    .gallery-template { font-size: .8rem; }
+    .gallery-tags { font-size: .75rem; color: var(--text-muted); }
+    .gallery-actions { display: flex; gap: .5rem; margin-top: .6rem; }
+    .gallery-like, .gallery-fork, .gallery-dl {
+      padding: .3rem .6rem; border-radius: 6px; font-size: .8rem; cursor: pointer;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+      text-decoration: none;
+    }
+    .gallery-like:hover, .gallery-fork:hover { border-color: var(--accent); }
+    .gallery-like.liked { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+
+    /* ── Version history ──────────────────────────────── */
+    .versions-list { margin-top: .6rem; border-top: 1px solid var(--border); padding-top: .4rem; }
+    .version-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .3rem 0; font-size: .8rem; color: var(--text-secondary);
+    }
+
     /* ── Footer ─────────────────────────────────────────── */
     .footer {
       margin-top: 3rem; padding: 4rem 0 2rem;
@@ -1424,6 +1732,328 @@ export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
   isAdmin = signal(false);
   // Pricing: kuu/aasta lüliti
   billingCycle = signal<'month' | 'year'>('month');
+
+  // ─────────────────────────────────────────────────────────────────────
+  // i18n — multi-language support (ET/EN/LV/LT)
+  // ─────────────────────────────────────────────────────────────────────
+  lang = signal<string>(localStorage.getItem('lang') || 'et');
+
+  private readonly TRANSLATIONS: Record<string, Record<string, string>> = {
+    et: {
+      nav_how: 'Kuidas?', nav_gallery: 'Galerii', nav_examples: 'Näited', nav_pricing: 'Hinnad',
+      login: 'Logi sisse', my_designs: 'Minu disainid', my_orders: 'Tellimused',
+      input_label: 'Kirjeldus eesti keeles', input_placeholder: 'Näiteks: vajan riiuliklambrit 32mm veetorule, peab kandma 5kg koormust',
+      voice_start: 'Räägi', voice_stop: 'Lõpeta', analyzing: 'AI analüüsib...', analyze: 'Analüüsi',
+      login_to_generate: 'Logi sisse, et genereerida',
+      ask_review: 'Küsi AI ülevaadet', reviewing: 'Claude vaatab üle...',
+      order_print: 'Telli trükk', share_gallery: 'Jaga galeriis',
+      order_title: 'Telli 3D-print', material: 'Materjal', color: 'Värv', quantity: 'Kogus',
+      shipping_name: 'Nimi', shipping_address: 'Aadress', city: 'Linn', zip: 'Postiindeks', country: 'Riik',
+      total: 'Kokku', shipping: 'Saatmine', delivery: 'Tarne', days: 'päeva',
+      place_order: 'Telli', cancel: 'Tühista',
+      share_title: 'Jaga galeriis', design_title: 'Pealkiri', description: 'Kirjeldus',
+      tags: 'Sildid', share_title_placeholder: 'Nt: Riiuliklamber 32mm torule', share: 'Jaga',
+      gallery_badge: 'KOGUKOND', gallery_title: 'Disainigalerii', gallery_subtitle: 'Avasta ja forki teiste disaine.',
+      gallery_search: 'Otsi disaine...', newest: 'Uusimad', popular: 'Populaarsed', gallery_empty: 'Galerii on veel tühi. Ole esimene jagaja!',
+      collab_start: 'Koostöö', collab_room: 'Ruum', collab_online: 'online', collab_join_placeholder: 'Ruumi kood', collab_join: 'Liitu',
+    },
+    en: {
+      nav_how: 'How?', nav_gallery: 'Gallery', nav_examples: 'Examples', nav_pricing: 'Pricing',
+      login: 'Log in', my_designs: 'My designs', my_orders: 'Orders',
+      input_label: 'Description in your language', input_placeholder: 'E.g.: I need a shelf bracket for 32mm water pipe, must hold 5kg',
+      voice_start: 'Speak', voice_stop: 'Stop', analyzing: 'AI analyzing...', analyze: 'Analyze',
+      login_to_generate: 'Log in to generate',
+      ask_review: 'Ask AI review', reviewing: 'Claude reviewing...',
+      order_print: 'Order print', share_gallery: 'Share to gallery',
+      order_title: 'Order 3D print', material: 'Material', color: 'Color', quantity: 'Quantity',
+      shipping_name: 'Name', shipping_address: 'Address', city: 'City', zip: 'ZIP', country: 'Country',
+      total: 'Total', shipping: 'Shipping', delivery: 'Delivery', days: 'days',
+      place_order: 'Place order', cancel: 'Cancel',
+      share_title: 'Share to gallery', design_title: 'Title', description: 'Description',
+      tags: 'Tags', share_title_placeholder: 'E.g.: Shelf bracket for 32mm pipe', share: 'Share',
+      gallery_badge: 'COMMUNITY', gallery_title: 'Design Gallery', gallery_subtitle: 'Discover and fork community designs.',
+      gallery_search: 'Search designs...', newest: 'Newest', popular: 'Popular', gallery_empty: 'Gallery is empty. Be the first to share!',
+      collab_start: 'Collaborate', collab_room: 'Room', collab_online: 'online', collab_join_placeholder: 'Room code', collab_join: 'Join',
+    },
+    lv: {
+      nav_how: 'Kā?', nav_gallery: 'Galerija', nav_examples: 'Piemēri', nav_pricing: 'Cenas',
+      login: 'Pieslēgties', my_designs: 'Mani dizaini', my_orders: 'Pasūtījumi',
+      input_label: 'Apraksts latviešu valodā', input_placeholder: 'Piem.: man vajag plaukta kronšteinu 32mm ūdens caurulei, jāiztur 5kg',
+      voice_start: 'Runāt', voice_stop: 'Apstāties', analyzing: 'AI analizē...', analyze: 'Analizēt',
+      login_to_generate: 'Pieslēdzieties, lai ģenerētu',
+      ask_review: 'AI pārskats', reviewing: 'Claude pārskata...',
+      order_print: 'Pasūtīt druku', share_gallery: 'Dalīties galerijā',
+      order_title: 'Pasūtīt 3D druku', material: 'Materiāls', color: 'Krāsa', quantity: 'Daudzums',
+      shipping_name: 'Vārds', shipping_address: 'Adrese', city: 'Pilsēta', zip: 'Pasta indekss', country: 'Valsts',
+      total: 'Kopā', shipping: 'Piegāde', delivery: 'Piegāde', days: 'dienas',
+      place_order: 'Pasūtīt', cancel: 'Atcelt',
+      share_title: 'Dalīties galerijā', design_title: 'Virsraksts', description: 'Apraksts',
+      tags: 'Birkas', share_title_placeholder: 'Piem.: Plaukta kronšteins 32mm caurulei', share: 'Dalīties',
+      gallery_badge: 'KOPIENA', gallery_title: 'Dizainu galerija', gallery_subtitle: 'Atklājiet un forkojiet kopienas dizainus.',
+      gallery_search: 'Meklēt dizainus...', newest: 'Jaunākie', popular: 'Populārākie', gallery_empty: 'Galerija ir tukša. Esiet pirmais!',
+      collab_start: 'Sadarboties', collab_room: 'Istaba', collab_online: 'tiešsaistē', collab_join_placeholder: 'Istabas kods', collab_join: 'Pievienoties',
+    },
+    lt: {
+      nav_how: 'Kaip?', nav_gallery: 'Galerija', nav_examples: 'Pavyzdžiai', nav_pricing: 'Kainos',
+      login: 'Prisijungti', my_designs: 'Mano dizainai', my_orders: 'Užsakymai',
+      input_label: 'Aprašymas lietuvių kalba', input_placeholder: 'Pvz.: reikia lentynos laikiklio 32mm vamzdžiui, turi atlaikyti 5kg',
+      voice_start: 'Kalbėti', voice_stop: 'Sustoti', analyzing: 'AI analizuoja...', analyze: 'Analizuoti',
+      login_to_generate: 'Prisijunkite, kad sugeneruotumėte',
+      ask_review: 'AI apžvalga', reviewing: 'Claude peržiūri...',
+      order_print: 'Užsakyti spaudą', share_gallery: 'Dalintis galerijoje',
+      order_title: 'Užsakyti 3D spaudą', material: 'Medžiaga', color: 'Spalva', quantity: 'Kiekis',
+      shipping_name: 'Vardas', shipping_address: 'Adresas', city: 'Miestas', zip: 'Pašto kodas', country: 'Šalis',
+      total: 'Viso', shipping: 'Pristatymas', delivery: 'Pristatymas', days: 'dienos',
+      place_order: 'Užsakyti', cancel: 'Atšaukti',
+      share_title: 'Dalintis galerijoje', design_title: 'Pavadinimas', description: 'Aprašymas',
+      tags: 'Žymos', share_title_placeholder: 'Pvz.: Lentynos laikiklis 32mm vamzdžiui', share: 'Dalintis',
+      gallery_badge: 'BENDRUOMENĖ', gallery_title: 'Dizainų galerija', gallery_subtitle: 'Atraskite ir forkinkite bendruomenės dizainus.',
+      gallery_search: 'Ieškoti dizainų...', newest: 'Naujausi', popular: 'Populiariausi', gallery_empty: 'Galerija tuščia. Būkite pirmas!',
+      collab_start: 'Bendradarbiauti', collab_room: 'Kambarys', collab_online: 'prisijungę', collab_join_placeholder: 'Kambario kodas', collab_join: 'Prisijungti',
+    },
+  };
+
+  t(key: string): string {
+    return this.TRANSLATIONS[this.lang()]?.[key] || this.TRANSLATIONS['et'][key] || key;
+  }
+
+  setLang(l: string) {
+    this.lang.set(l);
+    localStorage.setItem('lang', l);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Voice-to-CAD — Web Speech API
+  // ─────────────────────────────────────────────────────────────────────
+  voiceActive = signal(false);
+  private recognition: any = null;
+
+  toggleVoice() {
+    if (this.voiceActive()) {
+      this.recognition?.stop();
+      this.voiceActive.set(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.error.set('Speech recognition not supported in this browser.');
+      return;
+    }
+    this.recognition = new SpeechRecognition();
+    this.recognition.lang = this.lang() === 'et' ? 'et-EE' : this.lang() === 'lv' ? 'lv-LV' : this.lang() === 'lt' ? 'lt-LT' : 'en-US';
+    this.recognition.interimResults = true;
+    this.recognition.continuous = true;
+    this.recognition.onresult = (e: any) => {
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
+      }
+      this.prompt = transcript;
+    };
+    this.recognition.onerror = () => this.voiceActive.set(false);
+    this.recognition.onend = () => this.voiceActive.set(false);
+    this.recognition.start();
+    this.voiceActive.set(true);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // STEP Export
+  // ─────────────────────────────────────────────────────────────────────
+  stepLoading = signal(false);
+
+  downloadStep() {
+    const s = this.spec();
+    if (!s) return;
+    this.stepLoading.set(true);
+    this.http.post('/api/generate/step', s, { responseType: 'arraybuffer' }).subscribe({
+      next: buf => {
+        this.stepLoading.set(false);
+        const blob = new Blob([buf], { type: 'application/step' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = (s.template || 'model') + '.step'; a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => { this.stepLoading.set(false); this.error.set('STEP export failed'); },
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Gallery
+  // ─────────────────────────────────────────────────────────────────────
+  galleryItems = signal<any[]>([]);
+  gallerySort = signal<'new' | 'popular'>('new');
+  gallerySearch = '';
+
+  loadGallery() {
+    const params = `?sort=${this.gallerySort()}&q=${encodeURIComponent(this.gallerySearch)}`;
+    this.http.get<any[]>('/api/gallery' + params).subscribe({
+      next: items => this.galleryItems.set(items),
+      error: () => this.galleryItems.set([]),
+    });
+  }
+
+  toggleGalleryLike(g: any) {
+    if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
+    this.http.post<any>(`/api/gallery/${g.id}/like`, {}).subscribe({
+      next: r => {
+        g.liked_by_me = r.liked;
+        g.likes = r.likes;
+        this.galleryItems.set([...this.galleryItems()]);
+      },
+    });
+  }
+
+  forkGalleryDesign(g: any) {
+    if (!this.auth.me()) { this.auth.loginWithGoogle(); return; }
+    this.http.post<any>(`/api/gallery/${g.id}/fork`, {}).subscribe({
+      next: r => {
+        this.error.set(null);
+        this.loadMyDesigns();
+        alert(r.message || 'Forked!');
+      },
+    });
+  }
+
+  // Share to gallery
+  showShareModal = signal(false);
+  shareTitle = '';
+  shareDesc = '';
+  shareTags = '';
+
+  shareToGallery() {
+    const designs = this.myDesigns();
+    if (!designs.length) return;
+    const latestDesign = designs[0];
+    this.http.post<any>('/api/gallery/share', {
+      designId: latestDesign.id,
+      title: this.shareTitle || latestDesign.summary_et || latestDesign.template,
+      description: this.shareDesc,
+      tags: this.shareTags,
+    }).subscribe({
+      next: () => {
+        this.showShareModal.set(false);
+        this.loadGallery();
+      },
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Print Orders
+  // ─────────────────────────────────────────────────────────────────────
+  showOrderModal = signal(false);
+  orderMaterial = 'PLA';
+  orderColor = 'must';
+  orderQty = 1;
+  orderName = '';
+  orderAddress = '';
+  orderCity = '';
+  orderZip = '';
+  orderCountry = 'EE';
+  orderQuote = signal<any>(null);
+  orderLoading = signal(false);
+  orderSuccess = signal<string | null>(null);
+  myOrdersList = signal<any[]>([]);
+
+  myOrders = this.myOrdersList;
+
+  loadMyOrders() {
+    if (!this.auth.me()) return;
+    this.http.get<any[]>('/api/orders').subscribe(os => this.myOrdersList.set(os));
+  }
+
+  fetchQuote() {
+    const m = this.metrics();
+    if (!m) return;
+    this.http.post<any>('/api/orders/quote', {
+      weightG: m.weight_g_pla,
+      printTimeMin: m.print_time_min_estimate,
+      material: this.orderMaterial,
+      infillPct: 20,
+      quantity: this.orderQty,
+      country: this.orderCountry,
+    }).subscribe(q => this.orderQuote.set(q));
+  }
+
+  placeOrder() {
+    const designs = this.myDesigns();
+    if (!designs.length) { this.error.set('Generate a design first'); return; }
+    this.orderLoading.set(true);
+    this.http.post<any>('/api/orders', {
+      designId: designs[0].id,
+      material: this.orderMaterial,
+      infillPct: 20,
+      quantity: this.orderQty,
+      color: this.orderColor,
+      shippingName: this.orderName,
+      shippingAddress: this.orderAddress,
+      shippingCity: this.orderCity,
+      shippingZip: this.orderZip,
+      shippingCountry: this.orderCountry,
+    }).subscribe({
+      next: r => {
+        this.orderLoading.set(false);
+        this.orderSuccess.set(r.message);
+        this.showOrderModal.set(false);
+        this.loadMyOrders();
+      },
+      error: e => {
+        this.orderLoading.set(false);
+        this.error.set(e.error?.message || 'Order failed');
+      },
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Real-time Collaboration (WebSocket/STOMP placeholder)
+  // ─────────────────────────────────────────────────────────────────────
+  collabRoomId = signal<string | null>(null);
+  collabUsers = signal(0);
+  collabJoinId = '';
+
+  createCollabRoom() {
+    const roomId = Math.random().toString(36).substring(2, 10);
+    this.collabRoomId.set(roomId);
+    this.collabUsers.set(1);
+    // In production, connect to WebSocket at /ws/collab
+    // For now, room ID is shareable for others to join
+  }
+
+  joinCollabRoom() {
+    if (!this.collabJoinId) return;
+    this.collabRoomId.set(this.collabJoinId);
+    this.collabUsers.set(2); // simplified
+    this.collabJoinId = '';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Version History
+  // ─────────────────────────────────────────────────────────────────────
+  designVersions = signal<any[]>([]);
+  versionsForDesign = signal<number | null>(null);
+
+  loadVersions(designId: number) {
+    if (this.versionsForDesign() === designId) {
+      this.versionsForDesign.set(null);
+      this.designVersions.set([]);
+      return;
+    }
+    this.http.get<any[]>(`/api/designs/${designId}/versions`).subscribe({
+      next: vs => { this.designVersions.set(vs); this.versionsForDesign.set(designId); },
+      error: () => this.designVersions.set([]),
+    });
+  }
+
+  rollbackVersion(designId: number, version: number) {
+    if (!confirm(`Taastada versioon ${version}?`)) return;
+    this.http.post<any>(`/api/designs/${designId}/versions/${version}/rollback`, {}).subscribe({
+      next: r => {
+        alert(r.message || 'Taastatud!');
+        this.loadMyDesigns();
+        this.loadVersions(designId);
+      },
+    });
+  }
 
   isCurrentPlan(tier: 'MAKER' | 'PRO' | 'TEAM'): boolean {
     const p = this.auth.me()?.plan as string | undefined;
@@ -1703,6 +2333,7 @@ result = (
 
   ngOnInit() {
     this.heroStart();
+    this.loadGallery();
   }
 
   ngOnDestroy() {
