@@ -312,11 +312,11 @@ public class DesignController {
                             "message", "Meshy API key pole konfigureeritud")));
         }
         return meshy.textTo3DAsync(req.prompt())
-                .thenApply(url -> ResponseEntity.ok((Object) Map.of("model_url", url, "format", "glb")))
+                .<ResponseEntity<?>>thenApply(url -> ResponseEntity.ok(Map.of("model_url", url, "format", "glb")))
                 .exceptionally(e -> {
                     log.error("Meshy generation failed", e);
                     String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-                    return ResponseEntity.status(500).body((Object) Map.of("error", "meshy_failed", "message", msg));
+                    return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", msg));
                 });
     }
 }
