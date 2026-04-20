@@ -37,6 +37,7 @@ run("systemctl status caddy --no-pager -l")
 # .env updates
 run("cd /root/CAD && grep -q JWT_SECRET .env 2>/dev/null || echo \"JWT_SECRET=$(openssl rand -base64 48 | tr -d '\\n')\" >> .env")
 run("cd /root/CAD && grep -q FRONTEND_URL .env 2>/dev/null || echo 'FRONTEND_URL=https://tehisaicad.ee' >> .env")
+run("cd /root/CAD && grep -q OAUTH_REDIRECT_URI .env 2>/dev/null || echo 'OAUTH_REDIRECT_URI=https://tehisaicad.ee/login/oauth2/code/google' >> .env")
 
 # Redeploy
 run("cd /root/CAD && docker compose up -d --build", timeout=600)

@@ -45,7 +45,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-please-change-me-please-32bytes!!}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-}
+      OAUTH_REDIRECT_URI: ${OAUTH_REDIRECT_URI:-{baseUrl}/login/oauth2/code/{registrationId}}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

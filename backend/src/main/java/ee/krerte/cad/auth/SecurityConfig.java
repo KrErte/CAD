@@ -34,6 +34,12 @@ public class SecurityConfig {
                     ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .permissionsPolicy(p -> p.policy(
                     "geolocation=(), camera=(), microphone=()")))     // Permissions-Policy
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint((req, res, ex) -> {
+                    res.setStatus(401);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\":\"Unauthorized\"}");
+                }))
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/api/stripe/webhook",
                                  "/api/templates", "/api/health",
