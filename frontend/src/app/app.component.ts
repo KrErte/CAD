@@ -1683,7 +1683,6 @@ export class AppComponent implements AfterViewInit, OnInit, OnDestroy {
   // Pricing
   billingCycle = signal<'month' | 'year'>('month');
 
-<<<<<<< HEAD
   // ─────────────────────────────────────────────────────────────────────
   // i18n — multi-language support (ET/EN/LV/LT)
   // ─────────────────────────────────────────────────────────────────────
