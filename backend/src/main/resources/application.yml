@@ -77,6 +77,19 @@ app:
     enabled: ${MAIL_ENABLED:false}
   admin:
     emails: ${ADMIN_EMAILS:m6rnaja@gmail.com}
+  pricing:
+    koda:
+      api-key: ${PRICING_KODA_KEY:}
+      base-url: ${PRICING_KODA_URL:https://api.3dkoda.ee}
+    printidud:
+      api-key: ${PRICING_PRINTIDUD_KEY:}
+      base-url: ${PRICING_PRINTIDUD_URL:https://api.3dprinditud.ee}
+    shapeways:
+      api-key: ${PRICING_SHAPEWAYS_KEY:}
+      base-url: ${PRICING_SHAPEWAYS_URL:https://api.shapeways.com}
+    treatstock:
+      api-key: ${PRICING_TREATSTOCK_KEY:}
+      base-url: ${PRICING_TREATSTOCK_URL:https://api.treatstock.com}
 
 sentry:
   dsn: ${SENTRY_DSN:}

@@ -14,9 +14,21 @@ kasutaja laeb alla ja saadab valitud 3D-print-teenusele.
 > tööjärjekord, materjali-inventar, RFQ postkast, webhook integratsioonid.
 > [Loe lisa →](./docs/PRINTFLOW.md)
 
+> **🧠 UUS: [AI Superpowers Studio](./docs/AI-SUPERPOWERS.md)** — neljakihiline
+> AI-süsteem `/ai-studio` route all:
+> - **4-agent disaininõukogu** — struktuur-insener, protsessi-ekspert, maksumuse-
+>   optimeerija, esteetika-kriitik vastavad paralleelselt + Synthesizer toob
+>   konfliktid esile.
+> - **Generative design loop** SSE stream'iga — "itereeri täiuseni" (score ≥ 8.5).
+> - **Reeglipõhine DFM-audit** — 5 reegli-perekonda, < 100ms vastus ilma LLM-ita.
+> - **RAG-lite template-soovitaja** — pg_trgm similarity `prompt_history` korpuse
+>   peal, õpib eduka template-valiku ajaloost.
+>
+> [Loe lisa →](./docs/AI-SUPERPOWERS.md)
+
 ## Mis on praegu olemas
 
-**6 parameetrilist template'it** (kõigil JSON-skeemiga min/max validatsioon):
+**7 parameetrilist template'it** (kõigil JSON-skeemiga min/max validatsioon):
 
 | Template | Mille jaoks |
 |---|---|
@@ -26,9 +38,27 @@ kasutaja laeb alla ja saadab valitud 3D-print-teenusele.
 | `adapter` | Toruline läbimõõdu-adapter |
 | `cable_clamp` | Mitme kaabli seinahoidik |
 | `tag` | Lapik silt augukesega |
+| `pot_planter` | Kooniline lillepott drenaaziaukudega |
+
+> *Märkus:* reaalne template'ite arv (incl. `vesa_adapter`, `enclosure`, `wall_mount`,
+> `tool_holder`, `spur_gear`, `living_hinge`, `snap_fit_clip`, `phone_stand`,
+> `corner_bracket`, `raspberry_pi_case`, `spool_holder_clip`, `threaded_insert_boss`,
+> `cable_grommet`, `label_plate`, `printer_bed_clip`, `din_rail_clip`, `u_channel_clip`,
+> `pot_planter`, ...) on suurem — täielik loend `GET /api/templates`.
 
 **Fallback**: kui ükski template ei sobi, kasutame [Meshy.ai](https://meshy.ai)
 text-to-3D API-t (vabavormiline mesh, GLB).
+
+**Partnerite hinnavõrdlus** (`POST /api/pricing/compare`): pärast STL-i
+genereerimist saab kasutaja vajutada "Võrdle hindu" ja näha KORRAGA hindu
+neljalt 3D-print-teenuselt — 3DKoda, 3DPrinditud, Shapeways, Treatstock.
+Iga partneri API-kutse käib paralleelselt reactive `Flux.merge`-iga (5s
+timeout providerile + 10s global), OFFLINE-status ühe provideri juures ei
+blokeeri teisi. Kui API-võtit pole seadistatud, näidatakse heuristilist
+hinnangut (€/cm³ × materjali-kordaja), märgistatud kui "~hinnang".
+
+Vastus annab ka `cheapestProviderId` ja `fastestProviderId` tuletised
+frontend-i kuvamiseks (rohelise rea + `Odavaim`/`Kiireim` badge'iga).
 
 **Slicer preview**: peale STL-i genereerimist pakub rakendus `POST /api/preview`
 kaudu täpsed numbrid (prindiaeg, filamendi mass, hind €) — sidecar PrusaSlicer

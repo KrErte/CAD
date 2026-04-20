@@ -39,3 +39,10 @@ ingress:
 secrets:
   anthropicApiKey: ""
   meshyApiKey: ""
+  # Partnerite 3D-print hinnavõrdlus — tühjad = fallback heuristilisele
+  # hinnangule. Reaalsed API-võtmed saadavad päriselt päringu partneri API-sse.
+  pricing:
+    kodaApiKey: ""
+    printidudApiKey: ""
+    shapewaysApiKey: ""
+    treatstockApiKey: ""

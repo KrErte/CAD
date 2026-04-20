@@ -83,6 +83,14 @@ export const EXAMPLES: Example[] = [
     emoji: '🏷️',
     useCase: 'Võtmed, kaablid, riiulitel olevad karbid',
   },
+  {
+    title: 'Lillepott 100mm taimele',
+    prompt: 'lillepott ülalt 100mm, alt 80mm, kõrgus 120mm, 4 drenaaziauku põhjas',
+    template: 'pot_planter',
+    params: { top_diameter: 100, bottom_diameter: 80, height: 120, wall: 2.5, drain_holes: 4, drain_diameter: 6 },
+    emoji: '🪴',
+    useCase: 'Aknalaua taimed, sukulendid, rõdu-istutused',
+  },
 ];
 
 /** Filter: ainult hero-kaarti featured näited */

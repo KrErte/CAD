@@ -2,9 +2,11 @@ package ee.krerte.cad;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ee.krerte.cad.ai.TemplateRagService;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,10 @@ public class DesignController {
     private final MeshyClient meshy;
     private final SlicerClient slicer;
     private final ObjectMapper mapper = new ObjectMapper();
+
+    /** Optional — kui repo pole deploy'tud (nt vanema DB skeemi peal), RAG on disableeritud. */
+    @Autowired(required = false)
+    private TemplateRagService rag;
 
     public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy, SlicerClient slicer) {
         this.claude = claude;
@@ -43,12 +49,37 @@ public class DesignController {
     @PostMapping("/spec")
     public ResponseEntity<?> spec(@RequestBody DesignRequest req) throws Exception {
         JsonNode catalog = worker.templates();
-        JsonNode spec = claude.specFromPrompt(req.prompt(), catalog);
+
+        // RAG-hint: küsime eelnevatelt kasutajatelt "kes seda fraasi kasutas?"
+        // ja anname top-3 template-soovitused Claude'ile ette. See kiirendab
+        // konvergeerumist ja teeb odavamate mudelite vastuseks niisama heaks
+        // kui kallimate. Kui RAG ei ole saadaval, langeme sujuvalt tagasi.
+        String hintsJson = "";
+        if (rag != null) {
+            try {
+                JsonNode hints = rag.suggestTemplates(req.prompt());
+                if (hints.path("hints").isArray() && hints.path("hints").size() > 0) {
+                    hintsJson = "\n\nAjaloost (eelmised kasutajad samade fraasidega valisid):\n"
+                            + hints.toPrettyString()
+                            + "\nSee on HINT, mitte KÄSK. Kui su hinnang on parem, võta endine.";
+                }
+            } catch (Exception e) {
+                log.warn("RAG hints ebaõnnestus, jätkame ilma: {}", e.getMessage());
+            }
+        }
+
+        JsonNode spec = claude.specFromPrompt(req.prompt() + hintsJson, catalog);
         if (spec.has("error")) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", spec.get("error").asText(),
                     "message", spec.path("summary_et").asText("Ei leidnud sobivat template'it")));
         }
+
+        // Salvesta resolveeritud mapping RAG korpusesse tuleviku-soovituste jaoks
+        if (rag != null && spec.hasNonNull("template")) {
+            rag.record(null, req.prompt(), spec.path("template").asText(), spec.path("params"));
+        }
+
         return ResponseEntity.ok(spec);
     }
 

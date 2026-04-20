@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AuthService } from './auth.service';
 import { EXAMPLES, FEATURED_EXAMPLES, Example } from './examples';
+import { PricingCompareComponent } from './pricing/pricing-compare.component';
 import * as THREE from 'three';
 // @ts-ignore — STLLoader ships without types in @types/three
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
@@ -74,7 +75,7 @@ interface TemplateSchema {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PricingCompareComponent],
   template: `
     <!-- ═══════ HEADER ═══════ -->
     <header class="header">
@@ -950,6 +951,13 @@ interface TemplateSchema {
                 &#9888;&#65039; Võib vajada tugistruktuuri (supports)
               </div>
             </div>
+
+            <!-- Partnerite hinnavõrdlus — ilmub peale STL-i genereerimist -->
+            <app-pricing-compare *ngIf="metrics() as m"
+              [volumeCm3]="m.volume_cm3"
+              [weightG]="preview()?.filament_g ?? m.weight_g_pla"
+              [bbox]="m.bbox_mm">
+            </app-pricing-compare>
 
             <!-- Download + Export -->
             <div class="card-glass download-card" *ngIf="stlUrl()">

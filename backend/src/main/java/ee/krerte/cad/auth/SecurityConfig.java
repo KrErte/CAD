@@ -29,6 +29,7 @@ public class SecurityConfig {
                                  "/api/gallery",
                                  "/api/gallery/*/stl",
                                  "/api/orders/quote",
+                                 "/api/pricing/**",
                                  "/oauth2/**", "/login/**",
                                  "/ws/**").permitAll()
                 .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/generate/**", "/api/meshy",

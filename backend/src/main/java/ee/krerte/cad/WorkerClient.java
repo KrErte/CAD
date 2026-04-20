@@ -101,4 +101,22 @@ public class WorkerClient {
                 .bodyToMono(JsonNode.class)
                 .block();
     }
+
+    // --- DFM Analyzer ------------------------------------------------------
+
+    /**
+     * Reeglipõhine DFM-audit: thin walls, overhang'id, bridge'id, min-feature,
+     * footprint. Vastab &lt; 100ms ja on deterministlik — mõeldud jooksutamaks
+     * ENNE Claude-kutset, et LLM saaks töötada faktiliste avastuste pealt
+     * mitte nendega, mida ta peab ise arvama.
+     */
+    public JsonNode dfmAnalyze(JsonNode spec) {
+        return webClient.post()
+                .uri(workerUrl + "/dfm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(spec)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+    }
 }

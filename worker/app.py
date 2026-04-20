@@ -24,6 +24,7 @@ import os
 from evolve import register_routes as _register_evolve
 from freeform import register_routes as _register_freeform
 from printflow import register_routes as _register_printflow
+from dfm import register_routes as _register_dfm
 
 app = FastAPI(title="AI-CAD Worker", version="0.2.0")
 
@@ -747,6 +748,85 @@ def raspberry_pi_case(wall=2, vent_slots=6, standoff_height=4):
     return body
 
 
+@register(
+    "pot_planter",
+    {
+        "description": "Kooniline lillepott drenaaziaukudega (top/bottom diameter, drain_holes)",
+        "params": {
+            "top_diameter":    {"type": "number", "unit": "mm", "min": 40, "max": 300, "default": 100},
+            "bottom_diameter": {"type": "number", "unit": "mm", "min": 30, "max": 280, "default": 80},
+            "height":          {"type": "number", "unit": "mm", "min": 30, "max": 300, "default": 120},
+            "wall":            {"type": "number", "unit": "mm", "min": 1.5, "max": 5, "default": 2.5},
+            "drain_holes":     {"type": "number", "unit": "tk", "min": 0, "max": 8, "default": 4},
+            "drain_diameter":  {"type": "number", "unit": "mm", "min": 3, "max": 15, "default": 6},
+        },
+    },
+)
+def pot_planter(top_diameter=100, bottom_diameter=80, height=120, wall=2.5,
+                drain_holes=4, drain_diameter=6):
+    """
+    Kooniline lillepott (frustum) õõnsa sisemuse ja põhjas paiknevate
+    drenaaziaukudega. Kasutab `loft`-i sujuva koonuse saavutamiseks ning
+    cut'ib põhja keskele + ümber keskme ringikujulise pattern'iga augud.
+
+    Ohutuspiirangud:
+    - bottom_diameter peab olema vähemalt 2*wall väiksem kui top_diameter,
+      et sein kuskil ei kuluks null-paksuseks (clamp'ime seest sees).
+    - drain_holes==0 lubatud (veetaim/akvaariumi-kasutus).
+    """
+    t = max(1.5, float(wall))
+    d_top = float(top_diameter)
+    d_bot = float(bottom_diameter)
+    h = float(height)
+
+    # Väline koonus (frustum) loft'iga alt-üles
+    outer = (
+        cq.Workplane("XY").circle(d_bot / 2).workplane(offset=h).circle(d_top / 2)
+        .loft(combine=True)
+    )
+
+    # Sisemine koonus — samad proportsioonid aga seina paksus võrra väiksem.
+    # Sisemuse põhi on `t` võrra kõrgemal (põhja paksus) ja ulatub kuni
+    # ülaservast veidi alla (servatäis et loft ei plahvataks).
+    inner_bot_r = max(1.0, d_bot / 2 - t)
+    inner_top_r = max(1.0, d_top / 2 - t)
+    inner = (
+        cq.Workplane("XY").workplane(offset=t).circle(inner_bot_r)
+        .workplane(offset=h - t - 0.01).circle(inner_top_r)
+        .loft(combine=True)
+    )
+    body = outer.cut(inner)
+
+    # Drenaaziaugud põhjas — üks keskel + (N-1) ümber keskme ringis.
+    n = int(drain_holes)
+    if n > 0:
+        hole_r = float(drain_diameter) / 2
+        # Keskmine auk
+        center_cut = (
+            cq.Workplane("XY").circle(hole_r).extrude(t + 1)
+            .translate((0, 0, -0.5))
+        )
+        body = body.cut(center_cut)
+        # Ülejäänud ringis — raadius kuni 40% põhja raadiusest
+        if n > 1:
+            import math
+            ring_r = max(hole_r * 2 + 2, 0.4 * (d_bot / 2 - t))
+            # Kui ring_r liiga suur põhja jaoks, clamp
+            ring_r = min(ring_r, d_bot / 2 - t - hole_r - 1)
+            if ring_r > 0:
+                for i in range(n - 1):
+                    angle = 2 * math.pi * i / (n - 1)
+                    x = ring_r * math.cos(angle)
+                    y = ring_r * math.sin(angle)
+                    cut = (
+                        cq.Workplane("XY").circle(hole_r).extrude(t + 1)
+                        .translate((x, y, -0.5))
+                    )
+                    body = body.cut(cut)
+
+    return body
+
+
 # --- Routes ------------------------------------------------------------------
 
 
@@ -869,3 +949,4 @@ def generate_step(req: GenRequest):
 _register_evolve(app, TEMPLATES)
 _register_freeform(app)
 _register_printflow(app)
+_register_dfm(app, TEMPLATES)

@@ -26,6 +26,15 @@ spec:
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: ANTHROPIC_API_KEY } }
             - name: MESHY_API_KEY
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: MESHY_API_KEY } }
+            # --- Pricing partners (kõik optional, tühjad = heuristika-fallback) ---
+            - name: PRICING_KODA_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_KODA_KEY, optional: true } }
+            - name: PRICING_PRINTIDUD_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_PRINTIDUD_KEY, optional: true } }
+            - name: PRICING_SHAPEWAYS_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_SHAPEWAYS_KEY, optional: true } }
+            - name: PRICING_TREATSTOCK_KEY
+              valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_TREATSTOCK_KEY, optional: true } }
           resources: {{ toYaml .Values.backend.resources | nindent 12 }}
 ---
 apiVersion: v1
