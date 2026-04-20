@@ -21,8 +21,7 @@ public class QuoteLine {
     @Column(name = "file_name")
     private String fileName;
 
-    @Column(name = "stl_bytes")
-    @Lob
+    @Column(name = "stl_bytes", columnDefinition = "bytea")
     private byte[] stlBytes;
 
     @Column(nullable = false)
