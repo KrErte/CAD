@@ -1,0 +1,55 @@
+# Ühine Python toolingu config — kasutatakse worker + slicer teenustes.
+# Ruff asendab: flake8, isort, pyupgrade, pyflakes, black, bandit osaliselt.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes (unused imports, undef names)
+    "I",     # isort (import order)
+    "B",     # bugbear (mutable default, etc.)
+    "UP",    # pyupgrade (f-strings, pathlib)
+    "SIM",   # simplify
+    "S",     # bandit security (hardcoded passwords, shell injection)
+    "C4",    # comprehensions
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "S101",  # assert used — testides OK
+    "E501",  # line length handled by formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S"]        # testid tohivad kasutada assert'i
+"**/*_test.py" = ["S"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["worker", "slicer"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests", "."]
+python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: integration tests requiring docker",
+]
