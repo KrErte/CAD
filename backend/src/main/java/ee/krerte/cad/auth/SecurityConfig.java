@@ -37,18 +37,18 @@ public class SecurityConfig {
             .cors(c -> c.configurationSource(corsConfig()))
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            .headers(h -> h
-                .httpStrictTransportSecurity(hsts -> hsts
+            .headers(h -> {
+                h.httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(31_536_000))
-                .frameOptions(f -> f.deny())
-                .contentTypeOptions(c -> {})
-                .referrerPolicy(r -> r.policy(
-                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                .permissionsPolicy(p -> p.policy(
-                    "camera=(), microphone=(), geolocation=(), payment=(self)"))
-                .contentSecurityPolicy(csp -> csp.policyDirectives(buildCsp()))
-            )
+                    .maxAgeInSeconds(31_536_000));
+                h.frameOptions(f -> f.deny());
+                h.contentTypeOptions(c -> {});
+                h.referrerPolicy(r -> r.policy(
+                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+                h.permissionsPolicy(p -> p.policy(
+                    "camera=(), microphone=(), geolocation=(), payment=(self)"));
+                h.contentSecurityPolicy(csp -> csp.policyDirectives(buildCsp()));
+            })
             .exceptionHandling(e -> e
                 .authenticationEntryPoint((req, res, ex) -> {
                     res.setStatus(401);
