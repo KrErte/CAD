@@ -152,9 +152,11 @@ spotless {
 spotbugs {
     toolVersion = '4.8.6'
     ignoreFailures = true   // esialgu warn-only, hiljem fail-on-error
-    effort.set(com.github.spotbugs.snom.Effort.MAX)
-    reportLevel.set(com.github.spotbugs.snom.Confidence.MEDIUM)
     excludeFilter = file('spotbugs-exclude.xml')
+}
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    effort = com.github.spotbugs.snom.Effort.valueOf('MAX')
+    reportLevel = com.github.spotbugs.snom.Confidence.valueOf('MEDIUM')
 }
 
 // Kõik checkid ühe task'iga
