@@ -36,7 +36,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'com.stripe:stripe-java:26.1.0'
+    implementation 'com.stripe:stripe-java:32.0.0'
 
     // ── Observability ────────────────────────────────────────────────
     // Actuator — health, info, metrics, prometheus endpoint'id
