@@ -12,5 +12,10 @@ pytest-cache-files-*/
 *.stl
 /tmp/
 .idea/
-.vscode/
+.vscode/*
+# Team-shared VS Code settings — need committisime, et kõigil sama setup
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
 *.iml
