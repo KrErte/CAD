@@ -1,0 +1,17 @@
+{{- if .Values.observability.grafanaDashboard.enabled }}
+# ConfigMap Grafana dashboardi jaoks — sidecar (grafana/helm-charts) koristab
+# selle automaatselt üle label'i grafana_dashboard=1.
+# Eeldab, et kube-prometheus-stack (või grafana standalone) on paigaldatud.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-cad-dashboards
+  labels:
+    grafana_dashboard: "1"
+    {{- with .Values.observability.grafanaDashboard.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  ai-cad-overview.json: |-
+    {{- .Files.Get "dashboards/ai-cad-overview.json" | nindent 4 }}
+{{- end }}

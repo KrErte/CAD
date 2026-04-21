@@ -1,0 +1,48 @@
+# Prometheus scrape config — lokaalne dev-stack.
+# Prod-is kasutame kube-prometheus-stack (Helm) + ServiceMonitor CR-e.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: ai-cad-local
+    env: dev
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []   # lokaalselt alertmanager off
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: ai-cad-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["backend:8080"]
+        labels:
+          service: backend
+
+  - job_name: ai-cad-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["worker:8000"]
+        labels:
+          service: worker
+
+  - job_name: ai-cad-slicer
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["slicer:8100"]
+        labels:
+          service: slicer
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: postgres

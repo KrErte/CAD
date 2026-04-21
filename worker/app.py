@@ -24,8 +24,13 @@ import os
 from evolve import register_routes as _register_evolve
 from freeform import register_routes as _register_freeform
 from printflow import register_routes as _register_printflow
+from dfm import register_routes as _register_dfm
+
+# Observability — /metrics endpoint + OTel tracing (no-op kui env pole seatud)
+from observability import setup_observability
 
 app = FastAPI(title="AI-CAD Worker", version="0.2.0")
+setup_observability(app, service_name="ai-cad-worker")
 
 
 class GenRequest(BaseModel):
@@ -869,3 +874,4 @@ def generate_step(req: GenRequest):
 _register_evolve(app, TEMPLATES)
 _register_freeform(app)
 _register_printflow(app)
+_register_dfm(app, TEMPLATES)
