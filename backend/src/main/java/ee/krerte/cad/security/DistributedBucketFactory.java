@@ -47,7 +47,7 @@ public class DistributedBucketFactory {
         // TTL 1h past window — Redis mälukasutus piiratud
         return LettuceBasedProxyManager.builderFor(conn)
             .withExpirationStrategy(
-                io.github.bucket4j.redis.lettuce.cas.ExpirationAfterWriteStrategy
+                io.github.bucket4j.distributed.ExpirationAfterWriteStrategy
                     .basedOnTimeForRefillingBucketUpToMax(Duration.ofMinutes(10)))
             .build();
     }

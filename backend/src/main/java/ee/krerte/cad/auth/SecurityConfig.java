@@ -12,7 +12,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -48,8 +47,6 @@ public class SecurityConfig {
                     ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .permissionsPolicy(p -> p.policy(
                     "camera=(), microphone=(), geolocation=(), payment=(self)"))
-                .xssProtection(x -> x.headerValue(
-                    XXssProtectionHeaderWriter.HeaderValue.DISABLED))
                 .contentSecurityPolicy(csp -> csp.policyDirectives(buildCsp()))
             )
             .exceptionHandling(e -> e

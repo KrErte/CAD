@@ -44,6 +44,17 @@ public class JwtService {
                 .compact();
     }
 
+    /** Lightweight token refresh — without User entity. */
+    public String generate(long userId) {
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + ttlMs))
+                .signWith(key)
+                .compact();
+    }
+
     public Claims parse(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
     }
