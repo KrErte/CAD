@@ -5,7 +5,14 @@ on:
     branches: [main]
   pull_request:
 
+# GitHub Security tab'i SARIF upload'imiseks on vaja write-õigust
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
 jobs:
+  # ────────────────── Backend ──────────────────
   backend:
     runs-on: ubuntu-latest
     defaults:
@@ -19,19 +26,48 @@ jobs:
           distribution: temurin
           cache: gradle
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build & test
+
+      - name: Build & test (Jacoco coverage included)
         # Wrapper (gradlew) is not checked in to the repo, so we use the
         # installed gradle directly — same build script, same result.
-        run: gradle build --no-daemon
+        run: gradle build jacocoTestReport --no-daemon
         env:
           SPRING_PROFILES_ACTIVE: test
+
+      - name: Upload coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: backend/build/reports/jacoco/test/jacocoTestReport.xml
+          flags: backend
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-results
-          path: backend/build/reports/tests/
+          path: |
+            backend/build/reports/tests/
+            backend/build/reports/jacoco/
 
+      # ── OWASP dependency-check — CVE scan sõltuvustele ─────────────
+      - name: OWASP dependency-check
+        run: gradle dependencyCheckAnalyze --no-daemon
+        continue-on-error: true   # ei fail'i CI'd — raport läheb Security tab'i
+        env:
+          # NVD API key kiirendab scan'i ~10x (5 min vs 50 min)
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+
+      - name: Upload OWASP SARIF to Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: backend/build/reports/dependency-check-report.sarif
+          category: owasp-dep-check
+
+  # ────────────────── Frontend ──────────────────
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -50,8 +86,29 @@ jobs:
       # resolveerib ja lükkab edasi — build jääb stabiilseks, kuna package.json
       # kasutab täpseid major.minor range'e.
       - run: npm install --no-audit --no-fund --legacy-peer-deps
-      - run: npx ng build --configuration=production
 
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Unit tests (Karma headless)
+        run: npx ng test --watch=false --browsers=ChromeHeadless --code-coverage
+
+      - name: Upload frontend coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Build (prod)
+        run: npx ng build --configuration=production
+
+      - name: npm audit (advisory — not blocking)
+        run: npm audit --audit-level=high --omit=dev || true
+
+  # ────────────────── Worker (FastAPI) ──────────────────
   worker:
     runs-on: ubuntu-latest
     defaults:
@@ -63,11 +120,22 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-      - name: Install & smoke test
+      - name: Install deps
         run: |
-          pip install fastapi pydantic httpx uvicorn
-          python -c "from importlib.util import find_spec; print('FastAPI OK')"
+          pip install -r requirements.txt
+          pip install pytest pytest-cov httpx
+      - name: Run tests with coverage
+        run: pytest -v --cov=. --cov-report=xml --cov-report=term
+      - name: Upload worker coverage
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: worker/coverage.xml
+          flags: worker
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
+  # ────────────────── Slicer (FastAPI sidecar) ──────────────────
   slicer:
     runs-on: ubuntu-latest
     defaults:
@@ -82,13 +150,55 @@ jobs:
       # PrusaSlicer is NOT needed for unit tests — the happy-path test
       # monkey-patches the subprocess call and feeds a fixture gcode.
       - name: Install test deps
-        run: pip install -r requirements.txt pytest httpx
-      - name: Run tests
-        run: pytest -v
+        run: pip install -r requirements.txt pytest pytest-cov httpx
+      - name: Run tests with coverage
+        run: pytest -v --cov=. --cov-report=xml --cov-report=term
+      - name: Upload slicer coverage
+        if: always()
+        uses: codecov/codecov-action@v4
+        with:
+          files: slicer/coverage.xml
+          flags: slicer
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # ────────────────── Trivy filesystem scan ──────────────────
+  # Skannib source tree'd (mitte container'it) — kood + sõltuvuste manifest'id
+  trivy-fs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+      - name: Upload Trivy SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+  # ────────────────── Dependency review (PR only) ──────────────────
+  # Blokib PR'i, kui uued sõltuvused on known-vulnerable (CVE-d)
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
 
   # ────────────────── Deploy (only on main push) ──────────────────
   deploy:
-    needs: [backend, frontend, worker, slicer]
+    needs: [backend, frontend, worker, slicer, trivy-fs]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production
@@ -103,9 +213,9 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            set -e
+            set -euo pipefail
             cd /opt/CAD
             git pull origin main
             docker compose up -d --build
             docker image prune -f
-            echo "✅ Deployed $(git rev-parse --short HEAD) at $(date)"
+            echo "Deployed $(git rev-parse --short HEAD) at $(date -u +%FT%TZ)"

@@ -1,0 +1,30 @@
+# CODEOWNERS — kes peab iga muudatuse üle vaatama.
+# GitHub rakendab neid reegleid automaatselt PR review requestide jaoks.
+# Kõige-spetsiifilisem match võidab.
+
+# Default: kõik muudatused → repo omanik
+*                                   @olen-krerte
+
+# Backend core
+/backend/                           @olen-krerte
+/backend/src/main/java/**/security/ @olen-krerte
+
+# Frontend
+/frontend/                          @olen-krerte
+
+# Worker / Slicer
+/worker/                            @olen-krerte
+/slicer/                            @olen-krerte
+
+# Infra (kõige tundlikum — kubernetes, deploy, CI)
+/helm/                              @olen-krerte
+/.github/                           @olen-krerte
+/docker-compose*.yml                @olen-krerte
+/Caddyfile                          @olen-krerte
+
+# Observability / alerts
+/observability/                     @olen-krerte
+
+# Dokumentatsioon — vähem range
+/docs/                              @olen-krerte
+*.md                                @olen-krerte

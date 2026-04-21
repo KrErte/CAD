@@ -1,0 +1,69 @@
+name: Bug report
+description: Anna teada veast või tõrkest
+title: "[bug]: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Aitäh, et raporteerid! Mida selgemad detailid, seda kiiremini saame parandada.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Mis juhtus?
+      description: Kirjelda täpselt käitumist, mida nägid
+      placeholder: Näiteks "Kui klõpsan Generate, siis 500 Internal Server Error..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Oodatav käitumine
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduktsiooni sammud
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: input
+    id: request-id
+    attributes:
+      label: X-Request-Id (vastuse header'ist)
+      description: Aitab logi otsida Grafana'st
+      placeholder: "nt 7f3a9c1e-..."
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Komponent
+      options:
+        - backend (Spring Boot)
+        - frontend (Angular)
+        - worker (CadQuery)
+        - slicer (PrusaSlicer)
+        - infra / helm / CI
+        - muu / pole kindel
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versioon / commit SHA
+      placeholder: "nt v1.2.3 või f6dc13c"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logid / stack trace
+      render: shell
