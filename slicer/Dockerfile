@@ -30,7 +30,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-COPY app.py ./
+COPY app.py observability.py ./
 COPY profiles ./profiles
 
 # Slicing + gcode export are CPU-bound; default uvicorn single worker is fine
