@@ -9,7 +9,7 @@ plugins {
     // Spotless — automaatne formaadindus + license header
     id 'com.diffplug.spotless' version '6.25.0'
     // SpotBugs — static analysis (null-check, resource leak, concurrency bugs)
-    id 'com.github.spotbugs' version '6.0.22'
+    id 'com.github.spotbugs' version '6.5.1'
     // Error Prone — Google static analysis (laiendab javac hoiatusi)
 }
 
@@ -31,9 +31,9 @@ dependencies {
     implementation 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'com.stripe:stripe-java:26.1.0'
@@ -68,7 +68,7 @@ dependencies {
     // ── Object storage (S3 / MinIO) ──────────────────────────────────
     // STL / Gcode / preview-PNG fail'id lähevad S3-kompatibel storage'i,
     // mitte Postgres'i bytea veergu. Postgres jääb metadata / relational.
-    implementation 'software.amazon.awssdk:s3:2.28.5'
+    implementation 'software.amazon.awssdk:s3:2.42.37'
 
     // ── Vector search (pgvector) ─────────────────────────────────────
     // Embeddings RAG-lite jaoks — sarnased promptid + sarnased disainid
@@ -80,13 +80,13 @@ dependencies {
     testImplementation 'io.projectreactor:reactor-test'
     // Testcontainers — integration testid Postgres'iga
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
-    testImplementation 'org.testcontainers:junit-jupiter:1.20.2'
-    testImplementation 'org.testcontainers:postgresql:1.20.2'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:postgresql:1.21.4'
     // WireMock — Claude/Meshy API kontrakti-testid ilma päris raha kulutamata
-    testImplementation 'org.wiremock:wiremock-standalone:3.9.1'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
     // Testcontainers moodulid täiendava infra jaoks
-    testImplementation 'com.redis:testcontainers-redis:2.2.2'
-    testImplementation 'org.testcontainers:minio:1.20.2'
+    testImplementation 'com.redis:testcontainers-redis:2.2.4'
+    testImplementation 'org.testcontainers:minio:1.21.4'
 }
 
 tasks.named('test') {
