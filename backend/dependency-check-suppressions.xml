@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!--
+        OWASP dependency-check suppression'id.
+
+        Lisa siia kirjeid kujul:
+        <suppress>
+            <notes>False-positive: X-library ei kasuta vulnerable path'i</notes>
+            <packageUrl regex="true">^pkg:maven/org\.example/.*$</packageUrl>
+            <vulnerabilityName>CVE-2024-12345</vulnerabilityName>
+        </suppress>
+
+        Kõiki suppression'e tuleks kommenteerida — miks see on false-positive
+        või miks risk on aktsepteeritud.
+    -->
+</suppressions>

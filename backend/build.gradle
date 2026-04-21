@@ -3,6 +3,14 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.6'
     id 'java'
     id 'jacoco'
+    // ── Security ──
+    // OWASP dependency-check — avastab CVE'd sõltuvustes
+    id 'org.owasp.dependencycheck' version '10.0.4'
+    // Spotless — automaatne formaadindus + license header
+    id 'com.diffplug.spotless' version '6.25.0'
+    // SpotBugs — static analysis (null-check, resource leak, concurrency bugs)
+    id 'com.github.spotbugs' version '6.0.22'
+    // Error Prone — Google static analysis (laiendab javac hoiatusi)
 }
 
 group = 'ee.krerte'
@@ -81,4 +89,58 @@ jacocoTestCoverageVerification {
             limit { minimum = 0.60 }
         }
     }
+}
+
+// ── OWASP dependency-check ───────────────────────────────────────────
+// Käivita: ./gradlew dependencyCheckAnalyze
+// CI fail'ib kui CVSS score >= 7.0 ükski sõltuvus. Saab jätta tühja
+// .dependencyCheckSuppressions.xml faili, kui mõni alert on false-positive.
+dependencyCheck {
+    failBuildOnCVSS = 7.0
+    formats = ['HTML', 'JSON', 'SARIF']  // SARIF = GitHub Security tab'i upload
+    suppressionFile = 'dependency-check-suppressions.xml'
+    analyzers {
+        // Me ei kasuta .NET / Node / Swift jne — keelame
+        assemblyEnabled = false
+        nodeAudit.enabled = false
+        retirejs.enabled = false
+    }
+    // NVD API võti — ilma selleta on rate-limit drastiline (~30 min DL)
+    // Seadista: export NVD_API_KEY=...
+    nvd.apiKey = System.getenv('NVD_API_KEY') ?: ''
+}
+
+// ── Spotless (code formatting) ───────────────────────────────────────
+spotless {
+    java {
+        googleJavaFormat('1.23.0').aosp()   // 4-space indent (Spring-style)
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+        target 'src/**/*.java'
+        targetExclude 'src/**/generated/**'
+    }
+    format 'misc', {
+        target '*.gradle', '*.md', '.gitattributes', '.gitignore'
+        trimTrailingWhitespace()
+        indentWithSpaces(4)
+        endWithNewline()
+    }
+}
+
+// ── SpotBugs (static analysis) ───────────────────────────────────────
+spotbugs {
+    toolVersion = '4.8.6'
+    ignoreFailures = true   // esialgu warn-only, hiljem fail-on-error
+    effort = 'MAX'
+    reportLevel = 'MEDIUM'
+    excludeFilter = file('spotbugs-exclude.xml')
+}
+
+// Kõik checkid ühe task'iga
+tasks.register('securityCheck') {
+    group = 'verification'
+    description = 'Runs OWASP dep-check + SpotBugs + Spotless + test coverage gate'
+    dependsOn 'dependencyCheckAnalyze', 'spotbugsMain', 'spotlessCheck',
+              'jacocoTestCoverageVerification'
 }
