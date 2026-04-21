@@ -53,6 +53,16 @@ services:
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       SENTRY_ENV: ${SENTRY_ENV:-production}
+      # ── Redis cache + distributed rate limiting ──
+      REDIS_URL: redis://redis:6379
+      SPRING_DATA_REDIS_URL: redis://redis:6379
+      # ── Object storage (MinIO) ──
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_BUCKET: cad-artifacts
+      STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      STORAGE_REGION: eu-north-1
+      STORAGE_PATH_STYLE: "true"
       FREE_MONTHLY_QUOTA: ${FREE_MONTHLY_QUOTA:-3}
       MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
       MAIL_PORT: ${MAIL_PORT:-587}
