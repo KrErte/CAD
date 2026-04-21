@@ -1,0 +1,61 @@
+name: CodeQL (SAST)
+
+# Staatiline kood-analüüs: leiab SQL-injection, XSS, path traversal jne
+# juba source-koodist enne, kui see prod'i jõuab. Raport läheb Security tab'i.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Nädalas korra, et uued CodeQL reeglid jõuaksid tagumagi koodi
+    - cron: "17 4 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java (for backend CodeQL)
+        if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          # security-extended = rohkem reegleid, security-and-quality = veel rohkem
+          queries: security-extended
+
+      - name: Build backend (Java manual mode)
+        if: matrix.language == 'java-kotlin'
+        working-directory: backend
+        run: gradle build -x test --no-daemon
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

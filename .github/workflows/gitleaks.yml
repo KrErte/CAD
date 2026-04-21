@@ -1,0 +1,28 @@
+name: Gitleaks (secret detection)
+
+# Kontrollib, kas keegi on kogemata commit'inud API key'e, tokeneid või parooli
+# source-koodi. Jookseb PR'idel ja main push'idel.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Vajalik, et gitleaks saaks kogu git history't skan'ida
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Tasuta avalikele repodele; paid org'idele saab anda litsentsi
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
