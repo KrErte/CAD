@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Ignoreeri genereeritud klassid -->
+    <Match>
+        <Package name="~.*\.generated\..*"/>
+    </Match>
+
+    <!-- Spring auto-wired field'id — pole tavaliselt null kontrolli vaja -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+        <Package name="ee.krerte.cad"/>
+    </Match>
+
+    <!-- Lombok / record'id — SpotBugs arvab et exposed internal state -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- JPA entiteedid on mutable-by-design -->
+    <Match>
+        <Package name="~.*\.auth|~.*\.gallery|~.*\.printflow"/>
+        <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
+</FindBugsFilter>
