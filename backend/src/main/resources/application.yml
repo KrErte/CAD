@@ -28,6 +28,18 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # ── Redis cache + session + distributed rate limiter ──
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  cache:
+    type: redis
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -171,6 +183,19 @@ app:
   pricing-claude:
     input-eur-per-mtok: ${CLAUDE_INPUT_EUR_PER_MTOK:13.5}    # ~ $15/M USD
     output-eur-per-mtok: ${CLAUDE_OUTPUT_EUR_PER_MTOK:67.5}  # ~ $75/M USD
+
+  # ── Object storage (S3 / MinIO) ──
+  storage:
+    endpoint: ${STORAGE_ENDPOINT:}               # tühi = päris AWS S3, region'ist lähtub
+    bucket:   ${STORAGE_BUCKET:cad-artifacts}
+    region:   ${STORAGE_REGION:eu-north-1}
+    access-key: ${STORAGE_ACCESS_KEY:}
+    secret-key: ${STORAGE_SECRET_KEY:}
+    path-style: ${STORAGE_PATH_STYLE:true}       # MinIO = true, AWS = false
+
+  # ── Redis (dev default localhost, prod k8s service DNS) ──
+  redis:
+    url: ${REDIS_URL:redis://localhost:6379}
 
 sentry:
   dsn: ${SENTRY_DSN:}
