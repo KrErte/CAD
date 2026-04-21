@@ -2,6 +2,7 @@ plugins {
     id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'java'
+    id 'jacoco'
 }
 
 group = 'ee.krerte'
@@ -11,6 +12,7 @@ java.sourceCompatibility = JavaVersion.VERSION_21
 repositories { mavenCentral() }
 
 dependencies {
+    // ── Core ─────────────────────────────────────────────────────────
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -26,11 +28,56 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // ── Observability ────────────────────────────────────────────────
+    // Actuator — health, info, metrics, prometheus endpoint'id
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Micrometer → Prometheus scrape format (/actuator/prometheus)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    // OpenTelemetry — distributed tracing (backend → worker → slicer)
+    // Bridge Micrometer Observation API → OTel spans
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    // Loki logback appender — struktureeritud logid Grafana Loki jaoks
+    implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
+
+    // ── Error tracking ───────────────────────────────────────────────
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.14.0'
     implementation 'io.sentry:sentry-logback:7.14.0'
+
+    // ── Rate limiting (tulevases security-hardening branch'is laieneb) ──
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+
+    // ── Testing ──────────────────────────────────────────────────────
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'io.projectreactor:reactor-test'
+    // Testcontainers — integration testid Postgres'iga
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.2'
+    testImplementation 'org.testcontainers:postgresql:1.20.2'
+    // WireMock — Claude/Meshy API kontrakti-testid ilma päris raha kulutamata
+    testImplementation 'org.wiremock:wiremock-standalone:3.9.1'
 }
 
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true   // CI upload (Codecov / SonarQube)
+        html.required = true
+    }
+}
+
+// Code coverage gate — CI fail'ib kui total line coverage < 60%
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit { minimum = 0.60 }
+        }
+    }
+}

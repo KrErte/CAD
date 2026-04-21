@@ -1,0 +1,85 @@
+# Lokaalne observability stack — Prometheus + Grafana + Loki + Tempo.
+#
+# Kasutamine:
+#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+#
+# Siis:
+#   Grafana:     http://localhost:3000  (admin / admin)
+#   Prometheus:  http://localhost:9090
+#   Loki:        http://localhost:3100
+#   Tempo:       http://localhost:3200
+#
+# Backend skräpitakse automaatselt /actuator/prometheus endpoint'ilt.
+services:
+  backend:
+    environment:
+      APP_ENV: dev
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://tempo:4318/v1/traces
+      LOKI_URL: http://loki:3100
+      TRACING_SAMPLE: "1.0"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports: ["9090:9090"]
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules:/etc/prometheus/rules:ro
+      - prom-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/ready"]
+      interval: 10s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports: ["3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+
+  loki:
+    image: grafana/loki:3.1.1
+    ports: ["3100:3100"]
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+
+  tempo:
+    image: grafana/tempo:2.6.0
+    ports:
+      - "3200:3200"    # Tempo HTTP
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    command: ["-config.file=/etc/tempo/tempo-config.yml"]
+    volumes:
+      - ./observability/tempo/tempo-config.yml:/etc/tempo/tempo-config.yml:ro
+      - tempo-data:/var/tempo
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_NAME: "postgresql://aicad:${DB_PASSWORD:-aicad}@db:5432/aicad?sslmode=disable"
+    ports: ["9187:9187"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  prom-data:
+  grafana-data:
+  loki-data:
+  tempo-data:

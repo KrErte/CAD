@@ -1,9 +1,13 @@
 server:
   port: 8080
+  # Graceful shutdown — lase poolelioleval päringul lõpetada enne et pod kinni pannakse
+  shutdown: graceful
 
 spring:
   application:
     name: ai-cad-backend
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   servlet:
     multipart:
       max-file-size: 20MB
@@ -11,12 +15,16 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/aicad}
     username: ${DB_USER:aicad}
     password: ${DB_PASSWORD:aicad}
+    hikari:
+      # Prometheus saab pool-i meetrikad automaatselt
+      register-mbeans: true
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        generate_statistics: true   # JPA statistika Micrometer'isse
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -37,6 +45,77 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope: openid,email,profile
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+# ──────────────────────────────────────────────────────────────────────
+# Actuator + Micrometer + OpenTelemetry
+# ──────────────────────────────────────────────────────────────────────
+management:
+  endpoints:
+    web:
+      exposure:
+        # Avame ainult need, mis Prometheus + k8s probe'id vajavad.
+        # info / env / beans jne on sees ainult dev-profile'is.
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      # Liveness/readiness groupid eraldi — k8s'is eraldi probe'id.
+      probes:
+        enabled: true
+      show-details: when-authorized
+      group:
+        liveness:
+          include: livenessState,diskSpace
+        readiness:
+          # Readiness sõltub DB + dependent service'idest
+          include: readinessState,db,claudeApi,worker,slicer
+    prometheus:
+      enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      env: ${APP_ENV:local}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        claude.api.duration: true
+        worker.api.duration: true
+        slicer.api.duration: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+        claude.api.duration: 0.5, 0.95, 0.99
+      slo:
+        http.server.requests: 100ms, 500ms, 2s, 10s
+  tracing:
+    sampling:
+      # 100% dev, prod-is peaks olema 0.1 (10%) via APP_ENV üle-kirjutus
+      probability: ${TRACING_SAMPLE:1.0}
+    propagation:
+      type: w3c
+  otlp:
+    tracing:
+      # OTel collector / Tempo / Jaeger endpoint
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+      compression: gzip
+  info:
+    env:
+      enabled: true
+    git:
+      mode: full
+    build:
+      enabled: true
+
+# Build info meta (vajame actuator/info endpoint'is)
+info:
+  app:
+    name: ${spring.application.name}
+    description: AI-driven Estonian-language parametric CAD service
+    environment: ${APP_ENV:local}
 
 app:
   claude:
@@ -62,10 +141,8 @@ app:
   stripe:
     secret-key: ${STRIPE_SECRET_KEY:}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-    # Legacy — jääb alles tagasiühilduvuseks (hobi → maker alias koodis)
     price-hobi: ${STRIPE_PRICE_HOBI:}
     price-pro:  ${STRIPE_PRICE_PRO:}
-    # Uus 4-tier struktuur (2026) — kuu + aasta eraldi Price ID-d
     price-maker-monthly: ${STRIPE_PRICE_MAKER_MONTHLY:}
     price-maker-yearly:  ${STRIPE_PRICE_MAKER_YEARLY:}
     price-pro-monthly:   ${STRIPE_PRICE_PRO_MONTHLY:}
@@ -90,6 +167,10 @@ app:
     treatstock:
       api-key: ${PRICING_TREATSTOCK_KEY:}
       base-url: ${PRICING_TREATSTOCK_URL:https://api.treatstock.com}
+  # Claude API hinnakiri (€/1M token) — kasutame cost meetrikas
+  pricing-claude:
+    input-eur-per-mtok: ${CLAUDE_INPUT_EUR_PER_MTOK:13.5}    # ~ $15/M USD
+    output-eur-per-mtok: ${CLAUDE_OUTPUT_EUR_PER_MTOK:67.5}  # ~ $75/M USD
 
 sentry:
   dsn: ${SENTRY_DSN:}
@@ -101,3 +182,6 @@ sentry:
 logging:
   level:
     ee.krerte: DEBUG
+  pattern:
+    # Loki-sõbralik pattern — traceId/spanId automaatselt MDC-s
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

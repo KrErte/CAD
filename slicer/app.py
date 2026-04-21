@@ -32,7 +32,10 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
+from observability import setup_observability
+
 app = FastAPI(title="AI-CAD Slicer", version="0.1.0")
+setup_observability(app, service_name="ai-cad-slicer")
 
 PROFILES_DIR = Path(__file__).parent / "profiles"
 SLICER_BIN_ENV = os.environ.get("SLICER_BIN", "xvfb-run -a prusa-slicer")

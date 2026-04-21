@@ -1,0 +1,71 @@
+groups:
+  - name: ai-cad-slo
+    interval: 30s
+    rules:
+      # ── SLO: 99% päringuid < 2s ─────────────────────────────────
+      - alert: HttpLatencyP99High
+        expr: |
+          histogram_quantile(
+            0.99,
+            sum(rate(http_server_requests_seconds_bucket{service="backend"}[5m])) by (le, uri)
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "Backend p99 latency > 2s endpoint-il {{ $labels.uri }}"
+          description: "Viimased 10 min näitavad, et 1% päringutest kestab üle 2 sekundi."
+
+      # ── Claude API kulu ──────────────────────────────────────────
+      - alert: ClaudeCostBurnRateHigh
+        expr: |
+          increase(claude_api_cost_eur_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          cost: claude
+        annotations:
+          summary: "Claude API kulu > 10€/h"
+          description: "Viimase tunni jooksul on Claude API'd maksnud {{ $value | printf \"%.2f\" }} €. Kontrolli, kas on loop või rate-limit bypass."
+
+      # ── Service down (readiness probe fail) ─────────────────────
+      - alert: BackendDown
+        expr: up{job="ai-cad-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend ei vasta Prometheus scrape'ile"
+
+      - alert: WorkerDown
+        expr: up{job="ai-cad-worker"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CadQuery worker sidecar ei vasta"
+
+      # ── Error budget burn ───────────────────────────────────────
+      - alert: ErrorRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5..", service="backend"}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count{service="backend"}[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "5xx päringuid > 5% viimase 5 min jooksul"
+
+      # ── DB connection pool saturation ───────────────────────────
+      - alert: HikariPoolSaturated
+        expr: |
+          hikaricp_connections_active{pool="HikariPool-1"}
+          /
+          hikaricp_connections_max{pool="HikariPool-1"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Hikari DB pool > 90% kasutuses"
