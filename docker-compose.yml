@@ -9,9 +9,9 @@ services:
 
   slicer:
     build: ./slicer
-    ports: ["8100:8100"]
+    ports: ["8001:8001"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 15s
       timeout: 5s
       start_period: 20s
@@ -37,7 +37,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-4-6}
       WORKER_URL: http://worker:8000
-      SLICER_URL: http://slicer:8100
+      SLICER_URL: http://slicer:8001
       MESHY_API_KEY: ${MESHY_API_KEY:-}
       DB_URL: jdbc:postgresql://db:5432/aicad
       DB_USER: aicad
