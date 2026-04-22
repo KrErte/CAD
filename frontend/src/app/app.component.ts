@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { EXAMPLES, FEATURED_EXAMPLES, Example } from './examples';
 import * as THREE from 'three';
@@ -95,7 +96,7 @@ interface TemplateSchema {
             <option value="lv">&#127473;&#127483; LV</option>
             <option value="lt">&#127473;&#127481; LT</option>
           </select>
-          <button (click)="auth.loginWithGoogle()" class="btn-login">
+          <button (click)="goToAuth()" class="btn-login">
             {{ t('login') }}
           </button>
         </nav>
@@ -2310,7 +2311,10 @@ result = (
   private renderer!: THREE.WebGLRenderer;
   private mesh?: THREE.Mesh;
 
+  private router = inject(Router);
   constructor(private http: HttpClient, public auth: AuthService) {}
+
+  goToAuth() { this.router.navigate(['/auth']); }
 
   ngAfterViewInit() {
     const el = this.viewer.nativeElement;
