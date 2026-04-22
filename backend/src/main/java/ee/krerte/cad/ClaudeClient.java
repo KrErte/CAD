@@ -54,7 +54,9 @@ public class ClaudeClient {
             Rules:
             - All param values MUST respect the min/max in the catalog. Clamp if needed.
             - If the user omits a value, use the default.
-            - If no template fits, respond {"error":"no_match","summary_et":"..."}.
+            - ALWAYS pick the closest matching template, even if it's not a perfect fit.
+              Adapt the parameters creatively to approximate the user's request.
+              Never refuse — there is no "no_match". Every request can be approximated.
             - summary_et: one short Estonian sentence describing what will be printed.
             """;
 
