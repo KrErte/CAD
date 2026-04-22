@@ -197,6 +197,9 @@ export class AuthComponent implements OnInit {
       this.auth.setToken(token);
       this.router.navigate(['/']);
     }
+    if (this.route.snapshot.queryParamMap.get('mode') === 'register') {
+      this.isRegister = true;
+    }
   }
 
   toggleMode(e: Event) {

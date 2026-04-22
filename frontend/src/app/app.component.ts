@@ -99,6 +99,9 @@ interface TemplateSchema {
           <button (click)="goToAuth()" class="btn-login">
             {{ t('login') }}
           </button>
+          <button (click)="goToRegister()" class="btn-register">
+            Registreeru
+          </button>
         </nav>
         <nav class="header-nav" *ngIf="auth.me() as m">
           <a href="#mydesigns" (click)="loadMyDesigns()">{{ t('my_designs') }}</a>
@@ -1249,6 +1252,12 @@ interface TemplateSchema {
       background: var(--accent); padding: .4rem 1rem; border-radius: 8px;
       font-size: .85rem; font-weight: 600;
     }
+    .btn-register {
+      background: transparent; border: 1px solid var(--accent); color: var(--accent);
+      padding: .4rem 1rem; border-radius: 8px;
+      font-size: .85rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-register:hover { background: var(--accent); color: #fff; }
     .btn-logout {
       background: transparent; border: 1px solid var(--border);
       color: var(--text-muted); padding: .35rem .8rem; font-size: .8rem;
@@ -2315,6 +2324,7 @@ result = (
   constructor(private http: HttpClient, public auth: AuthService) {}
 
   goToAuth() { this.router.navigate(['/auth']); }
+  goToRegister() { this.router.navigate(['/auth'], { queryParams: { mode: 'register' } }); }
 
   ngAfterViewInit() {
     const el = this.viewer.nativeElement;
