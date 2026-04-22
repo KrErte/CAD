@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
-COPY app.py test_app.py evolve.py freeform.py printflow.py ./
+COPY app.py test_app.py evolve.py freeform.py printflow.py observability.py ./
 
 # SECURITY-FIX: non-root kasutaja — vähendab konteineri kompromiteerimise mõju
 RUN addgroup --system --gid 1001 appgroup && \

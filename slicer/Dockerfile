@@ -35,9 +35,9 @@ COPY profiles ./profiles
 
 # Slicing + gcode export are CPU-bound; default uvicorn single worker is fine
 # (horizontal scaling happens at the Deployment level).
-EXPOSE 8100
+EXPOSE 8001
 HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 \
-  CMD curl -fs http://localhost:8100/health || exit 1
+  CMD curl -fs http://localhost:8001/health || exit 1
 
 # SECURITY-FIX: non-root kasutaja — vähendab konteineri kompromiteerimise mõju
 RUN addgroup --system --gid 1001 appgroup && \
@@ -45,4 +45,4 @@ RUN addgroup --system --gid 1001 appgroup && \
     chown -R appuser:appgroup /app
 USER appuser
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8100"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]
