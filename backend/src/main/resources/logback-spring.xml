@@ -56,9 +56,6 @@
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SENTRY"/>
-        <if condition='isDefined("LOKI_URL")'>
-            <then><appender-ref ref="LOKI"/></then>
-        </if>
     </root>
 
     <logger name="ee.krerte" level="DEBUG"/>
