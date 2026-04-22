@@ -1,11 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from './auth.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   selector: 'app-auth',
   template: `
     <div class="auth-container">
@@ -19,6 +21,29 @@ import { AuthService } from './auth.service';
             <button class="btn btn-primary" (click)="goToApp()">Go to app</button>
           </div>
         } @else {
+          <form (ngSubmit)="onSubmit()" class="auth-form">
+            @if (isRegister) {
+              <input class="input" type="text" placeholder="Name" [(ngModel)]="name" name="name">
+            }
+            <input class="input" type="email" placeholder="Email" [(ngModel)]="email" name="email" required>
+            <input class="input" type="password" placeholder="Password (min 8 chars)" [(ngModel)]="password" name="password" required>
+
+            @if (error) {
+              <p class="error">{{ error }}</p>
+            }
+
+            <button class="btn btn-primary btn-full" type="submit" [disabled]="loading">
+              {{ loading ? 'Please wait...' : (isRegister ? 'Create account' : 'Sign in') }}
+            </button>
+
+            <p class="toggle">
+              {{ isRegister ? 'Already have an account?' : "Don't have an account?" }}
+              <a href="#" (click)="toggleMode($event)">{{ isRegister ? 'Sign in' : 'Create one' }}</a>
+            </p>
+          </form>
+
+          <div class="divider"><span>or</span></div>
+
           <button class="btn btn-google" (click)="auth.loginWithGoogle()">
             <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
               <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -65,9 +90,65 @@ import { AuthService } from './auth.service';
     .user-info strong {
       color: #f1f5f9;
     }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .input {
+      padding: 12px 16px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #f1f5f9;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .input:focus {
+      border-color: #6366f1;
+    }
+    .input::placeholder {
+      color: #64748b;
+    }
+    .error {
+      color: #f87171;
+      font-size: 13px;
+      margin: 0;
+    }
+    .toggle {
+      color: #94a3b8;
+      font-size: 13px;
+      margin: 4px 0 0;
+    }
+    .toggle a {
+      color: #818cf8;
+      text-decoration: none;
+    }
+    .toggle a:hover {
+      text-decoration: underline;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: #475569;
+      font-size: 13px;
+    }
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #334155;
+    }
+    .divider span {
+      padding: 0 12px;
+    }
     .btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 10px;
       padding: 12px 24px;
       border: none;
@@ -77,15 +158,22 @@ import { AuthService } from './auth.service';
       font-weight: 500;
       transition: background .15s;
     }
+    .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
     .btn-primary {
       background: #6366f1;
       color: white;
-      margin-top: 16px;
     }
-    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:hover:not(:disabled) { background: #4f46e5; }
+    .btn-full {
+      width: 100%;
+    }
     .btn-google {
       background: #f1f5f9;
       color: #1e293b;
+      width: 100%;
     }
     .btn-google:hover { background: #e2e8f0; }
   `]
@@ -94,6 +182,14 @@ export class AuthComponent implements OnInit {
   auth = inject(AuthService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private http = inject(HttpClient);
+
+  isRegister = false;
+  email = '';
+  password = '';
+  name = '';
+  error = '';
+  loading = false;
 
   ngOnInit() {
     const token = this.route.snapshot.queryParamMap.get('token');
@@ -101,6 +197,32 @@ export class AuthComponent implements OnInit {
       this.auth.setToken(token);
       this.router.navigate(['/']);
     }
+  }
+
+  toggleMode(e: Event) {
+    e.preventDefault();
+    this.isRegister = !this.isRegister;
+    this.error = '';
+  }
+
+  onSubmit() {
+    this.error = '';
+    this.loading = true;
+    const url = this.isRegister ? '/api/auth/register' : '/api/auth/login';
+    const body = this.isRegister
+      ? { email: this.email, name: this.name, password: this.password }
+      : { email: this.email, password: this.password };
+
+    this.http.post<{ access_token: string }>(url, body).subscribe({
+      next: res => {
+        this.auth.setToken(res.access_token);
+        this.router.navigate(['/']);
+      },
+      error: err => {
+        this.loading = false;
+        this.error = err.error?.error || 'Something went wrong';
+      }
+    });
   }
 
   goToApp() {

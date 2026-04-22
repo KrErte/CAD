@@ -28,6 +28,8 @@ public class User {
     private Instant planActiveUntil;
 
     @Column(nullable = false)
+    private String passwordHash;
+
     private Instant createdAt = Instant.now();
 
     public enum Plan { FREE, PRO, BUSINESS }
@@ -47,5 +49,7 @@ public class User {
     public void setStripeSubscriptionId(String s) { this.stripeSubscriptionId = s; }
     public Instant getPlanActiveUntil() { return planActiveUntil; }
     public void setPlanActiveUntil(Instant i) { this.planActiveUntil = i; }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
     public Instant getCreatedAt() { return createdAt; }
 }
