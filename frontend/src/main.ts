@@ -5,12 +5,12 @@ import { RootComponent } from './app/root.component';
 import { APP_ROUTES } from './app/app.routes';
 import { authInterceptor } from './app/auth.interceptor';
 
-// OAuth token pick-up ENNE Angular bootstrap'i — router wildcard redirect
-// muudab hash'i enne kui AuthService konstruktor jõuab token'i lugeda.
+// OAuth token pick-up: main.ts saves to localStorage as belt-and-suspenders
+// fallback; the AuthComponent at /#/auth handles the primary flow.
 const hashMatch = window.location.hash.match(/token=([^&]+)/);
 if (hashMatch) {
   localStorage.setItem('aicad_token', decodeURIComponent(hashMatch[1]));
-  history.replaceState(null, '', window.location.pathname + '#/');
+  // Don't clear the hash — let AuthComponent handle navigation
 }
 
 bootstrapApplication(RootComponent, {
