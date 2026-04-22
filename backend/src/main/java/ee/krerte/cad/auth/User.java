@@ -27,7 +27,6 @@ public class User {
     private String stripeSubscriptionId;
     private Instant planActiveUntil;
 
-    @Column(nullable = false)
     private String passwordHash;
 
     private Instant createdAt = Instant.now();
