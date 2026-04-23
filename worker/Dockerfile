@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # CadQuery 2.4 / VTK 9.2 need OSMesa + font stack for offscreen rendering.
 RUN apt-get update && apt-get install -y --no-install-recommends \
