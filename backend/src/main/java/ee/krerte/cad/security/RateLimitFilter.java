@@ -18,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,13 +52,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
     // Per-plan limiidid (calls per hour)
-    private final Map<String, TierLimits> tiers = Map.of(
+    private final Map<String, TierLimits> tiers = new HashMap<>(Map.of(
         "anonymous", new TierLimits(10, 5),
         "free",      new TierLimits(20, 10),
         "maker",     new TierLimits(100, 60),
         "pro",       new TierLimits(300, 200),
         "team",      new TierLimits(10_000, 10_000)
-    );
+    ));
 
     public RateLimitFilter(UserRepository users,
                            @Value("${app.ratelimit.spec-per-hour:20}") int freeSpec,

@@ -48,6 +48,8 @@ dependencies {
     implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
     // Loki logback appender — struktureeritud logid Grafana Loki jaoks
     implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
+    // Janino — logback conditional processing (<if> blocks in logback-spring.xml)
+    implementation 'org.codehaus.janino:janino:3.1.12'
 
     // ── Error tracking ───────────────────────────────────────────────
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.14.0'

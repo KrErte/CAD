@@ -16,7 +16,7 @@ import java.math.RoundingMode;
  *   unit       = max(base, setup_fee) * (1 + margin_pct/100) * rush_multiplier
  *   line_total = unit * quantity * (1 - volume_discount(quantity))
  */
-@Service
+@Service("printflowPricingService")
 public class PricingService {
 
     /** Arvutab ühe line hinna. */
