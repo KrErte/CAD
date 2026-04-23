@@ -19,3 +19,11 @@ pytest-cache-files-*/
 !.vscode/launch.json
 !.vscode/tasks.json
 *.iml
+
+# Applied patches bundle - commits in main history
+improvements-delivery/
+
+# Local debug/scratch
+backend-debug.log
+ssh_out.txt
+claude-code-prompts.md
