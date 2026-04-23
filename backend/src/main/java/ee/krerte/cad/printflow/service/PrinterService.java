@@ -10,16 +10,15 @@ import ee.krerte.cad.printflow.entity.PrinterEvent;
 import ee.krerte.cad.printflow.repo.PrintJobRepository;
 import ee.krerte.cad.printflow.repo.PrinterEventRepository;
 import ee.krerte.cad.printflow.repo.PrinterRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PrinterService {
@@ -33,9 +32,13 @@ public class PrinterService {
     private final PrinterEventPublisher eventPub;
     private final MockPrinterAdapter mockAdapter;
 
-    public PrinterService(PrinterRepository r, PrinterEventRepository er,
-                          PrintJobRepository jr, PrinterAdapterFactory f,
-                          PrinterEventPublisher ep, MockPrinterAdapter ma) {
+    public PrinterService(
+            PrinterRepository r,
+            PrinterEventRepository er,
+            PrintJobRepository jr,
+            PrinterAdapterFactory f,
+            PrinterEventPublisher ep,
+            MockPrinterAdapter ma) {
         this.repo = r;
         this.eventRepo = er;
         this.jobRepo = jr;
@@ -52,7 +55,10 @@ public class PrinterService {
     @Transactional(readOnly = true)
     public Printer get(Long id, Long orgId) {
         return repo.findByIdAndOrganizationId(id, orgId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "printer ei leitud"));
+                .orElseThrow(
+                        () ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "printer ei leitud"));
     }
 
     @Transactional
@@ -71,7 +77,8 @@ public class PrinterService {
         if (patch.getBuildVolumeXmm() != null) p.setBuildVolumeXmm(patch.getBuildVolumeXmm());
         if (patch.getBuildVolumeYmm() != null) p.setBuildVolumeYmm(patch.getBuildVolumeYmm());
         if (patch.getBuildVolumeZmm() != null) p.setBuildVolumeZmm(patch.getBuildVolumeZmm());
-        if (patch.getSupportedMaterialFamilies() != null) p.setSupportedMaterialFamilies(patch.getSupportedMaterialFamilies());
+        if (patch.getSupportedMaterialFamilies() != null)
+            p.setSupportedMaterialFamilies(patch.getSupportedMaterialFamilies());
         if (patch.getAdapterType() != null) p.setAdapterType(patch.getAdapterType());
         if (patch.getAdapterUrl() != null) p.setAdapterUrl(patch.getAdapterUrl());
         if (patch.getHourlyRateEur() != null) p.setHourlyRateEur(patch.getHourlyRateEur());
@@ -86,8 +93,8 @@ public class PrinterService {
     }
 
     /**
-     * Tõmba värske info printerilt ja salvesta event + SSE push. See
-     * kutsutakse JobScheduler-ist (scheduled) + UI "refresh" nupu peale.
+     * Tõmba värske info printerilt ja salvesta event + SSE push. See kutsutakse JobScheduler-ist
+     * (scheduled) + UI "refresh" nupu peale.
      */
     @Transactional
     public Printer heartbeat(Printer p) {
@@ -96,7 +103,11 @@ public class PrinterService {
         try {
             st = adapter.refresh(p);
         } catch (Exception e) {
-            log.warn("Adapter {} heartbeat ebaõnnestus printerile {}: {}", adapter.supportsType(), p.getName(), e.getMessage());
+            log.warn(
+                    "Adapter {} heartbeat ebaõnnestus printerile {}: {}",
+                    adapter.supportsType(),
+                    p.getName(),
+                    e.getMessage());
             st = AdapterStatus.offline();
         }
 
@@ -115,20 +126,25 @@ public class PrinterService {
         PrinterEvent ev = new PrinterEvent();
         ev.setPrinterId(p.getId());
         ev.setEventType("HEARTBEAT");
-        ev.setPayload(String.format(
-                "{\"status\":\"%s\",\"progress_pct\":%d,\"bed_c\":%s,\"hotend_c\":%s}",
-                st.status, st.progressPct == null ? 0 : st.progressPct,
-                st.bedTempC, st.hotendTempC));
+        ev.setPayload(
+                String.format(
+                        "{\"status\":\"%s\",\"progress_pct\":%d,\"bed_c\":%s,\"hotend_c\":%s}",
+                        st.status,
+                        st.progressPct == null ? 0 : st.progressPct,
+                        st.bedTempC,
+                        st.hotendTempC));
         eventRepo.save(ev);
 
-        eventPub.publish(p.getOrganizationId(), "printer", Map.of(
-                "printer_id", p.getId(),
-                "status", p.getStatus(),
-                "progress_pct", p.getProgressPct(),
-                "bed_c", p.getBedTempC(),
-                "hotend_c", p.getHotendTempC(),
-                "current_job_id", p.getCurrentJobId()
-        ));
+        eventPub.publish(
+                p.getOrganizationId(),
+                "printer",
+                Map.of(
+                        "printer_id", p.getId(),
+                        "status", p.getStatus(),
+                        "progress_pct", p.getProgressPct(),
+                        "bed_c", p.getBedTempC(),
+                        "hotend_c", p.getHotendTempC(),
+                        "current_job_id", p.getCurrentJobId()));
         return saved;
     }
 
@@ -157,7 +173,9 @@ public class PrinterService {
         ev.setPayload("{\"job_id\":" + job.getId() + "}");
         eventRepo.save(ev);
 
-        eventPub.publish(p.getOrganizationId(), success ? "job.complete" : "job.fail",
+        eventPub.publish(
+                p.getOrganizationId(),
+                success ? "job.complete" : "job.fail",
                 Map.of("job_id", job.getId(), "printer_id", p.getId()));
     }
 
@@ -187,7 +205,7 @@ public class PrinterService {
     @Transactional
     public void dispatchJob(Printer p, PrintJob job) {
         PrinterAdapter adapter = adapterFactory.forPrinter(p);
-        byte[] gcode = new byte[0];  // V1: mocked; V2 → genereerime slicer-sidecar'iga
+        byte[] gcode = new byte[0]; // V1: mocked; V2 → genereerime slicer-sidecar'iga
         String adapterJobId;
         try {
             adapterJobId = adapter.dispatch(p, gcode, job.getJobName());
@@ -211,7 +229,8 @@ public class PrinterService {
         PrinterEvent ev = new PrinterEvent();
         ev.setPrinterId(p.getId());
         ev.setEventType("JOB_START");
-        ev.setPayload("{\"job_id\":" + job.getId() + ",\"adapter_job_id\":\"" + adapterJobId + "\"}");
+        ev.setPayload(
+                "{\"job_id\":" + job.getId() + ",\"adapter_job_id\":\"" + adapterJobId + "\"}");
         eventRepo.save(ev);
     }
 }

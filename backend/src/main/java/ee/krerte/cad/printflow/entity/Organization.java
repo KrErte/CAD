@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -37,20 +36,67 @@ public class Organization {
     private Instant createdAt = Instant.now();
 
     // ── getters / setters ────────────────────────────────────────────
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getSlug() { return slug; }
-    public void setSlug(String slug) { this.slug = slug; }
-    public String getPlan() { return plan; }
-    public void setPlan(String plan) { this.plan = plan; }
-    public Long getOwnerUserId() { return ownerUserId; }
-    public void setOwnerUserId(Long u) { this.ownerUserId = u; }
-    public BigDecimal getHourlyRateEur() { return hourlyRateEur; }
-    public void setHourlyRateEur(BigDecimal v) { this.hourlyRateEur = v; }
-    public Integer getDefaultMarginPct() { return defaultMarginPct; }
-    public void setDefaultMarginPct(Integer v) { this.defaultMarginPct = v; }
-    public BigDecimal getDefaultSetupFeeEur() { return defaultSetupFeeEur; }
-    public void setDefaultSetupFeeEur(BigDecimal v) { this.defaultSetupFeeEur = v; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getPlan() {
+        return plan;
+    }
+
+    public void setPlan(String plan) {
+        this.plan = plan;
+    }
+
+    public Long getOwnerUserId() {
+        return ownerUserId;
+    }
+
+    public void setOwnerUserId(Long u) {
+        this.ownerUserId = u;
+    }
+
+    public BigDecimal getHourlyRateEur() {
+        return hourlyRateEur;
+    }
+
+    public void setHourlyRateEur(BigDecimal v) {
+        this.hourlyRateEur = v;
+    }
+
+    public Integer getDefaultMarginPct() {
+        return defaultMarginPct;
+    }
+
+    public void setDefaultMarginPct(Integer v) {
+        this.defaultMarginPct = v;
+    }
+
+    public BigDecimal getDefaultSetupFeeEur() {
+        return defaultSetupFeeEur;
+    }
+
+    public void setDefaultSetupFeeEur(BigDecimal v) {
+        this.defaultSetupFeeEur = v;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

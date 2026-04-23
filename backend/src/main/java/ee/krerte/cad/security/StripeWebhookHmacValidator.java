@@ -1,25 +1,25 @@
 package ee.krerte.cad.security;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * HMAC-SHA256 allkirja-kontroll Stripe webhook'ide jaoks.
  *
- * Stripe saadab {@code Stripe-Signature} header'i kujul:
- *   t=<timestamp>,v1=<hmac-sha256 signature>
+ * <p>Stripe saadab {@code Stripe-Signature} header'i kujul: t=<timestamp>,v1=<hmac-sha256
+ * signature>
  *
- * kus allkirja-payload on {@code "<timestamp>.<raw_body>"} ja võti on
- * {@code STRIPE_WEBHOOK_SECRET}.
+ * <p>kus allkirja-payload on {@code "<timestamp>.<raw_body>"} ja võti on {@code
+ * STRIPE_WEBHOOK_SECRET}.
  *
- * <p><b>Timing-safe</b>: {@link #compareDigest} kasutab konstantse-aja
- * võrdlust, et timing-rünnakuga ei saaks võtit bit-by-bit lekitada.
+ * <p><b>Timing-safe</b>: {@link #compareDigest} kasutab konstantse-aja võrdlust, et
+ * timing-rünnakuga ei saaks võtit bit-by-bit lekitada.
  *
- * <p><b>Replay-kaitse</b>: nõuame, et timestamp oleks viimase 5 min jooksul
- * (Stripe default tolerance). Vana allkiri lükatakse tagasi.
+ * <p><b>Replay-kaitse</b>: nõuame, et timestamp oleks viimase 5 min jooksul (Stripe default
+ * tolerance). Vana allkiri lükatakse tagasi.
  */
 public final class StripeWebhookHmacValidator {
 
@@ -36,7 +36,10 @@ public final class StripeWebhookHmacValidator {
             String[] kv = part.split("=", 2);
             if (kv.length != 2) continue;
             if ("t".equals(kv[0])) {
-                try { timestamp = Long.parseLong(kv[1]); } catch (NumberFormatException ignored) {}
+                try {
+                    timestamp = Long.parseLong(kv[1]);
+                } catch (NumberFormatException ignored) {
+                }
             } else if ("v1".equals(kv[0])) {
                 signature = kv[1];
             }

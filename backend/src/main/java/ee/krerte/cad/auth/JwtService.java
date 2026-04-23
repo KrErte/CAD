@@ -1,16 +1,15 @@
 package ee.krerte.cad.auth;
 
-import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
 
 @Service
 public class JwtService {
@@ -21,10 +20,12 @@ public class JwtService {
     private final SecretKey key;
     private final long ttlMs;
 
-    public JwtService(@Value("${app.jwt.secret:change-me-please-change-me-please-32bytes!!}") String secret,
-                      @Value("${app.jwt.ttl-hours:24}") long ttlHours) {
+    public JwtService(
+            @Value("${app.jwt.secret:change-me-please-change-me-please-32bytes!!}") String secret,
+            @Value("${app.jwt.ttl-hours:24}") long ttlHours) {
         if (DEFAULT_SECRET.equals(secret)) {
-            log.warn("⚠ JWT_SECRET kasutab vaikeväärtust! Sea JWT_SECRET keskkonnamuutuja tootmises.");
+            log.warn(
+                    "⚠ JWT_SECRET kasutab vaikeväärtust! Sea JWT_SECRET keskkonnamuutuja tootmises.");
         }
         if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("JWT secret peab olema vähemalt 32 baiti (256 bit)");

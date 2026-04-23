@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.time.Instant;
 
 @Entity
@@ -36,20 +35,67 @@ public class WebhookSubscription {
     @Column(name = "last_status_code")
     private Integer lastStatusCode;
 
-    public Long getId() { return id; }
-    public Long getOrganizationId() { return organizationId; }
-    public void setOrganizationId(Long v) { this.organizationId = v; }
-    public String getEventTypes() { return eventTypes; }
-    public void setEventTypes(String v) { this.eventTypes = v; }
-    public String getTargetUrl() { return targetUrl; }
-    public void setTargetUrl(String v) { this.targetUrl = v; }
-    public String getSecret() { return secret; }
-    public void setSecret(String v) { this.secret = v; }
-    public Boolean getActive() { return active; }
-    public void setActive(Boolean v) { this.active = v; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getLastFiredAt() { return lastFiredAt; }
-    public void setLastFiredAt(Instant v) { this.lastFiredAt = v; }
-    public Integer getLastStatusCode() { return lastStatusCode; }
-    public void setLastStatusCode(Integer v) { this.lastStatusCode = v; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long v) {
+        this.organizationId = v;
+    }
+
+    public String getEventTypes() {
+        return eventTypes;
+    }
+
+    public void setEventTypes(String v) {
+        this.eventTypes = v;
+    }
+
+    public String getTargetUrl() {
+        return targetUrl;
+    }
+
+    public void setTargetUrl(String v) {
+        this.targetUrl = v;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String v) {
+        this.secret = v;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean v) {
+        this.active = v;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getLastFiredAt() {
+        return lastFiredAt;
+    }
+
+    public void setLastFiredAt(Instant v) {
+        this.lastFiredAt = v;
+    }
+
+    public Integer getLastStatusCode() {
+        return lastStatusCode;
+    }
+
+    public void setLastStatusCode(Integer v) {
+        this.lastStatusCode = v;
+    }
 }

@@ -6,21 +6,19 @@ import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.entity.OrganizationMember;
 import ee.krerte.cad.printflow.repo.OrganizationMemberRepository;
 import ee.krerte.cad.printflow.repo.OrganizationRepository;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Lahendab päringu jooksvalt aktiivse organisatsiooni (tenant).
  *
- * V1: vaikimisi kasutaja esimene organisatsioon. V2-s tuleb header
- * `X-Org-Id`-ga switching.
+ * <p>V1: vaikimisi kasutaja esimene organisatsioon. V2-s tuleb header `X-Org-Id`-ga switching.
  */
 @Component
 public class OrganizationContext {
@@ -29,7 +27,8 @@ public class OrganizationContext {
     private final OrganizationRepository orgRepo;
     private final OrganizationMemberRepository memberRepo;
 
-    public OrganizationContext(UserRepository u, OrganizationRepository o, OrganizationMemberRepository m) {
+    public OrganizationContext(
+            UserRepository u, OrganizationRepository o, OrganizationMemberRepository m) {
         this.userRepo = u;
         this.orgRepo = o;
         this.memberRepo = m;
@@ -43,7 +42,10 @@ public class OrganizationContext {
         }
         String email = auth.getName();
         return userRepo.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "tundmatu kasutaja"));
+                .orElseThrow(
+                        () ->
+                                new ResponseStatusException(
+                                        HttpStatus.UNAUTHORIZED, "tundmatu kasutaja"));
     }
 
     /** Leia (või loo) vaikimisi organisation praeguse kasutaja jaoks. */
@@ -59,7 +61,10 @@ public class OrganizationContext {
         if (!memberships.isEmpty()) {
             Long orgId = memberships.get(0).getOrganizationId();
             return orgRepo.findById(orgId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "org kaotsi"));
+                    .orElseThrow(
+                            () ->
+                                    new ResponseStatusException(
+                                            HttpStatus.INTERNAL_SERVER_ERROR, "org kaotsi"));
         }
 
         // Kasutajal pole ühtegi org-i (nt uus kasutaja) → loome SOLO vaikimisi
@@ -90,8 +95,8 @@ public class OrganizationContext {
         User u = currentUser();
         Organization o = resolveForUser(u);
         if (!hasRole(o.getId(), u.getId(), minimumRole)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "nõuab rolli vähemalt " + minimumRole);
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "nõuab rolli vähemalt " + minimumRole);
         }
     }
 

@@ -1,9 +1,8 @@
 package ee.krerte.cad.auth;
 
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-
-import java.util.Optional;
 
 public interface UsageRepository extends JpaRepository<Usage, Long> {
     Optional<Usage> findByUserIdAndYearMonth(Long userId, String yearMonth);

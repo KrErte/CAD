@@ -4,13 +4,12 @@ import ee.krerte.cad.printflow.entity.Material;
 import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.repo.MaterialRepository;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/printflow/materials")
@@ -25,11 +24,14 @@ public class MaterialController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> list(@RequestParam(value = "all", defaultValue = "false") boolean all) {
+    public List<Map<String, Object>> list(
+            @RequestParam(value = "all", defaultValue = "false") boolean all) {
         Organization org = orgCtx.currentOrganization();
-        List<Material> ms = all
-                ? repo.findByOrganizationIdOrderByFamilyAscNameAsc(org.getId())
-                : repo.findByOrganizationIdAndActiveOrderByFamilyAscNameAsc(org.getId(), true);
+        List<Material> ms =
+                all
+                        ? repo.findByOrganizationIdOrderByFamilyAscNameAsc(org.getId())
+                        : repo.findByOrganizationIdAndActiveOrderByFamilyAscNameAsc(
+                                org.getId(), true);
         return ms.stream().map(MaterialController::render).toList();
     }
 
@@ -45,8 +47,9 @@ public class MaterialController {
     public Map<String, Object> update(@PathVariable Long id, @RequestBody Material patch) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("ADMIN");
-        Material m = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Material m =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (patch.getName() != null) m.setName(patch.getName());
         if (patch.getFamily() != null) m.setFamily(patch.getFamily());
         if (patch.getPricePerKgEur() != null) m.setPricePerKgEur(patch.getPricePerKgEur());
@@ -63,8 +66,9 @@ public class MaterialController {
     public Map<String, Object> delete(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("ADMIN");
-        Material m = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Material m =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         m.setActive(false);
         repo.save(m);
         return Map.of("deleted", true);

@@ -4,14 +4,13 @@ import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.entity.PrintJob;
 import ee.krerte.cad.printflow.repo.PrintJobRepository;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/printflow/jobs")
@@ -26,19 +25,22 @@ public class JobController {
     }
 
     @GetMapping
-    public List<Map<String, Object>> list(@RequestParam(value = "status", required = false) String status) {
+    public List<Map<String, Object>> list(
+            @RequestParam(value = "status", required = false) String status) {
         Organization org = orgCtx.currentOrganization();
-        List<PrintJob> all = status != null
-                ? repo.findByOrganizationIdAndStatus(org.getId(), status)
-                : repo.findByOrganizationIdOrderByQueuedAtDesc(org.getId());
+        List<PrintJob> all =
+                status != null
+                        ? repo.findByOrganizationIdAndStatus(org.getId(), status)
+                        : repo.findByOrganizationIdOrderByQueuedAtDesc(org.getId());
         return all.stream().map(JobController::render).toList();
     }
 
     @GetMapping("/{id}")
     public Map<String, Object> get(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
-        PrintJob j = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        PrintJob j =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return render(j);
     }
 
@@ -46,8 +48,9 @@ public class JobController {
     public Map<String, Object> cancel(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("OPERATOR");
-        PrintJob j = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        PrintJob j =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if ("DONE".equals(j.getStatus()) || "CANCELLED".equals(j.getStatus())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "juba lõpetatud");
         }
@@ -58,11 +61,13 @@ public class JobController {
     }
 
     @PostMapping("/{id}/priority")
-    public Map<String, Object> priority(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+    public Map<String, Object> priority(
+            @PathVariable Long id, @RequestBody Map<String, Integer> body) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("OPERATOR");
-        PrintJob j = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        PrintJob j =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         Integer pri = body.get("priority");
         if (pri == null || pri < 0 || pri > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "priority 0..100");

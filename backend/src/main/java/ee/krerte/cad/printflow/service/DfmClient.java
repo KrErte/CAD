@@ -1,6 +1,7 @@
 package ee.krerte.cad.printflow.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,12 +12,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.Duration;
-
 /**
- * Talks to the Python worker's /dfm endpoint. Sends the STL bytes and gets
- * back a structured DFM report (wall thickness, overhang%, watertightness,
- * issues list).
+ * Talks to the Python worker's /dfm endpoint. Sends the STL bytes and gets back a structured DFM
+ * report (wall thickness, overhang%, watertightness, issues list).
  */
 @Component
 public class DfmClient {
@@ -33,21 +31,27 @@ public class DfmClient {
     }
 
     /**
-     * Saada STL DFM analüüsiks. Kui materjali-piirid on antud, kasutab
-     * worker neid issue-rules'is (nt. min_wall_mm).
+     * Saada STL DFM analüüsiks. Kui materjali-piirid on antud, kasutab worker neid issue-rules'is
+     * (nt. min_wall_mm).
      */
-    public JsonNode analyze(byte[] stl, String fileName,
-                            Double minWallMm, Integer maxOverhangDeg) {
+    public JsonNode analyze(byte[] stl, String fileName, Double minWallMm, Integer maxOverhangDeg) {
         MultipartBodyBuilder mb = new MultipartBodyBuilder();
-        mb.part("stl", new ByteArrayResource(stl) {
-            @Override public String getFilename() { return fileName != null ? fileName : "part.stl"; }
-        }).contentType(MediaType.APPLICATION_OCTET_STREAM);
+        mb.part(
+                        "stl",
+                        new ByteArrayResource(stl) {
+                            @Override
+                            public String getFilename() {
+                                return fileName != null ? fileName : "part.stl";
+                            }
+                        })
+                .contentType(MediaType.APPLICATION_OCTET_STREAM);
 
         if (minWallMm != null) mb.part("min_wall_mm", String.valueOf(minWallMm));
         if (maxOverhangDeg != null) mb.part("max_overhang_deg", String.valueOf(maxOverhangDeg));
 
         try {
-            return webClient.post()
+            return webClient
+                    .post()
                     .uri(workerUrl + "/dfm")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
                     .body(BodyInserters.fromMultipartData(mb.build()))
@@ -62,11 +66,12 @@ public class DfmClient {
     }
 
     /**
-     * Nesting (2D packing) — saadab build-plaadi mõõdud + osade bbox'id,
-     * saab tagasi paigutuse (x, y, rotation).
+     * Nesting (2D packing) — saadab build-plaadi mõõdud + osade bbox'id, saab tagasi paigutuse (x,
+     * y, rotation).
      */
     public JsonNode nest(JsonNode body) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/nest")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)

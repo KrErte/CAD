@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -45,7 +44,7 @@ public class QuoteLine {
     private BigDecimal totalEur = BigDecimal.ZERO;
 
     @Column(name = "slicer_result", columnDefinition = "text")
-    private String slicerResult;   // JSON-encoded slicer response
+    private String slicerResult; // JSON-encoded slicer response
 
     @Column(name = "dfm_report_id")
     private Long dfmReportId;
@@ -53,32 +52,115 @@ public class QuoteLine {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
-    public Long getId() { return id; }
-    public Long getQuoteId() { return quoteId; }
-    public void setQuoteId(Long v) { this.quoteId = v; }
-    public Integer getLineNo() { return lineNo; }
-    public void setLineNo(Integer v) { this.lineNo = v; }
-    public String getFileName() { return fileName; }
-    public void setFileName(String v) { this.fileName = v; }
-    public byte[] getStlBytes() { return stlBytes; }
-    public void setStlBytes(byte[] v) { this.stlBytes = v; }
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer v) { this.quantity = v; }
-    public Long getMaterialId() { return materialId; }
-    public void setMaterialId(Long v) { this.materialId = v; }
-    public Integer getInfillPct() { return infillPct; }
-    public void setInfillPct(Integer v) { this.infillPct = v; }
-    public BigDecimal getLayerHeightMm() { return layerHeightMm; }
-    public void setLayerHeightMm(BigDecimal v) { this.layerHeightMm = v; }
-    public String getColor() { return color; }
-    public void setColor(String v) { this.color = v; }
-    public BigDecimal getUnitPriceEur() { return unitPriceEur; }
-    public void setUnitPriceEur(BigDecimal v) { this.unitPriceEur = v; }
-    public BigDecimal getTotalEur() { return totalEur; }
-    public void setTotalEur(BigDecimal v) { this.totalEur = v; }
-    public String getSlicerResult() { return slicerResult; }
-    public void setSlicerResult(String v) { this.slicerResult = v; }
-    public Long getDfmReportId() { return dfmReportId; }
-    public void setDfmReportId(Long v) { this.dfmReportId = v; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getQuoteId() {
+        return quoteId;
+    }
+
+    public void setQuoteId(Long v) {
+        this.quoteId = v;
+    }
+
+    public Integer getLineNo() {
+        return lineNo;
+    }
+
+    public void setLineNo(Integer v) {
+        this.lineNo = v;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String v) {
+        this.fileName = v;
+    }
+
+    public byte[] getStlBytes() {
+        return stlBytes;
+    }
+
+    public void setStlBytes(byte[] v) {
+        this.stlBytes = v;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer v) {
+        this.quantity = v;
+    }
+
+    public Long getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(Long v) {
+        this.materialId = v;
+    }
+
+    public Integer getInfillPct() {
+        return infillPct;
+    }
+
+    public void setInfillPct(Integer v) {
+        this.infillPct = v;
+    }
+
+    public BigDecimal getLayerHeightMm() {
+        return layerHeightMm;
+    }
+
+    public void setLayerHeightMm(BigDecimal v) {
+        this.layerHeightMm = v;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String v) {
+        this.color = v;
+    }
+
+    public BigDecimal getUnitPriceEur() {
+        return unitPriceEur;
+    }
+
+    public void setUnitPriceEur(BigDecimal v) {
+        this.unitPriceEur = v;
+    }
+
+    public BigDecimal getTotalEur() {
+        return totalEur;
+    }
+
+    public void setTotalEur(BigDecimal v) {
+        this.totalEur = v;
+    }
+
+    public String getSlicerResult() {
+        return slicerResult;
+    }
+
+    public void setSlicerResult(String v) {
+        this.slicerResult = v;
+    }
+
+    public Long getDfmReportId() {
+        return dfmReportId;
+    }
+
+    public void setDfmReportId(Long v) {
+        this.dfmReportId = v;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 /**
- * Tracks Stripe subscription details per user.
- * Separated from User to keep subscription lifecycle data clean.
+ * Tracks Stripe subscription details per user. Separated from User to keep subscription lifecycle
+ * data clean.
  */
 @Entity
 @Table(name = "user_subscriptions")
@@ -51,24 +51,83 @@ public class UserSubscription {
 
     // --- Getters & Setters ---
 
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public String getStripeCustomerId() { return stripeCustomerId; }
-    public void setStripeCustomerId(String s) { this.stripeCustomerId = s; }
-    public String getStripeSubscriptionId() { return stripeSubscriptionId; }
-    public void setStripeSubscriptionId(String s) { this.stripeSubscriptionId = s; }
-    public User.Plan getPlan() { return plan; }
-    public void setPlan(User.Plan plan) { this.plan = plan; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Instant getCurrentPeriodEnd() { return currentPeriodEnd; }
-    public void setCurrentPeriodEnd(Instant i) { this.currentPeriodEnd = i; }
-    public int getModelCount() { return modelCount; }
-    public void setModelCount(int c) { this.modelCount = c; }
-    public int getModelLimit() { return modelLimit; }
-    public void setModelLimit(int l) { this.modelLimit = l; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant i) { this.updatedAt = i; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public String getStripeCustomerId() {
+        return stripeCustomerId;
+    }
+
+    public void setStripeCustomerId(String s) {
+        this.stripeCustomerId = s;
+    }
+
+    public String getStripeSubscriptionId() {
+        return stripeSubscriptionId;
+    }
+
+    public void setStripeSubscriptionId(String s) {
+        this.stripeSubscriptionId = s;
+    }
+
+    public User.Plan getPlan() {
+        return plan;
+    }
+
+    public void setPlan(User.Plan plan) {
+        this.plan = plan;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Instant getCurrentPeriodEnd() {
+        return currentPeriodEnd;
+    }
+
+    public void setCurrentPeriodEnd(Instant i) {
+        this.currentPeriodEnd = i;
+    }
+
+    public int getModelCount() {
+        return modelCount;
+    }
+
+    public void setModelCount(int c) {
+        this.modelCount = c;
+    }
+
+    public int getModelLimit() {
+        return modelLimit;
+    }
+
+    public void setModelLimit(int l) {
+        this.modelLimit = l;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant i) {
+        this.updatedAt = i;
+    }
 }

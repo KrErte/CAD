@@ -6,15 +6,14 @@ import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.repo.MaterialRepository;
 import ee.krerte.cad.printflow.service.DfmService;
 import ee.krerte.cad.printflow.service.OrganizationContext;
+import java.io.IOException;
+import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import java.io.IOException;
-import java.util.Map;
 
 /** DFM endpoint — iseseisev (quote'ist sõltumatu) analüüs. */
 @RestController
@@ -34,8 +33,8 @@ public class DfmController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, Object>> analyze(
             @RequestParam("stl") MultipartFile stl,
-            @RequestParam(value = "material_id", required = false) Long materialId
-    ) throws IOException {
+            @RequestParam(value = "material_id", required = false) Long materialId)
+            throws IOException {
         Organization org = orgCtx.currentOrganization();
 
         Material material = null;
@@ -47,8 +46,9 @@ public class DfmController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "STL puudub");
         }
 
-        DfmReport r = dfm.analyzeAndStore(org.getId(), stl.getBytes(),
-                stl.getOriginalFilename(), material);
+        DfmReport r =
+                dfm.analyzeAndStore(
+                        org.getId(), stl.getBytes(), stl.getOriginalFilename(), material);
         return ResponseEntity.ok(QuoteController.renderDfm(r));
     }
 }

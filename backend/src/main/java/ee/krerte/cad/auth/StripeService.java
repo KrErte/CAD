@@ -7,25 +7,25 @@ import com.stripe.model.*;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
+import jakarta.annotation.PostConstruct;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.annotation.PostConstruct;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-
 /**
  * Centralised Stripe integration service.
  *
  * <p>Hinnastruktuur:
+ *
  * <ul>
- *   <li>Free — 0 €, 3 mudelit/kuu</li>
- *   <li>Pro — 14.99 €/kuu, 50 mudelit/kuu</li>
- *   <li>Business — 49.99 €/kuu, 200 mudelit/kuu + API ligipääs</li>
+ *   <li>Free — 0 €, 3 mudelit/kuu
+ *   <li>Pro — 14.99 €/kuu, 50 mudelit/kuu
+ *   <li>Business — 49.99 €/kuu, 200 mudelit/kuu + API ligipääs
  * </ul>
  */
 @Service
@@ -51,11 +51,11 @@ public class StripeService {
     @Value("${app.frontend-url:http://localhost:4200}")
     private String frontendUrl;
 
-    private static final Map<User.Plan, Integer> PLAN_LIMITS = Map.of(
-            User.Plan.FREE, 3,
-            User.Plan.PRO, 50,
-            User.Plan.BUSINESS, 200
-    );
+    private static final Map<User.Plan, Integer> PLAN_LIMITS =
+            Map.of(
+                    User.Plan.FREE, 3,
+                    User.Plan.PRO, 50,
+                    User.Plan.BUSINESS, 200);
 
     public StripeService(UserRepository users, UserSubscriptionRepository subscriptions) {
         this.users = users;
@@ -79,12 +79,14 @@ public class StripeService {
     // ───────── Checkout ─────────
 
     /**
-     * Creates a Stripe Checkout Session for upgrading to Pro or Business.
-     * Returns the checkout URL to redirect the user to.
+     * Creates a Stripe Checkout Session for upgrading to Pro or Business. Returns the checkout URL
+     * to redirect the user to.
      */
     public String createCheckoutSession(Long userId, String priceId) throws StripeException {
-        User user = users.findById(userId).orElseThrow(
-                () -> new IllegalArgumentException("User not found: " + userId));
+        User user =
+                users.findById(userId)
+                        .orElseThrow(
+                                () -> new IllegalArgumentException("User not found: " + userId));
 
         // Reuse existing Stripe customer or create a new one
         String customerId = getOrCreateCustomerId(user);
@@ -92,30 +94,31 @@ public class StripeService {
         // Determine tier from price ID
         String tier = priceId.equals(priceProId) ? "pro" : "business";
 
-        SessionCreateParams params = SessionCreateParams.builder()
-                .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
-                .setCustomer(customerId)
-                .setClientReferenceId(String.valueOf(userId))
-                .addLineItem(SessionCreateParams.LineItem.builder()
-                        .setPrice(priceId)
-                        .setQuantity(1L)
-                        .build())
-                .putMetadata("tier", tier)
-                .putMetadata("user_id", String.valueOf(userId))
-                .setSuccessUrl(frontendUrl + "/#/billing?ok=1&tier=" + tier)
-                .setCancelUrl(frontendUrl + "/#/pricing")
-                .setAllowPromotionCodes(true)
-                .setBillingAddressCollection(SessionCreateParams.BillingAddressCollection.REQUIRED)
-                .build();
+        SessionCreateParams params =
+                SessionCreateParams.builder()
+                        .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
+                        .setCustomer(customerId)
+                        .setClientReferenceId(String.valueOf(userId))
+                        .addLineItem(
+                                SessionCreateParams.LineItem.builder()
+                                        .setPrice(priceId)
+                                        .setQuantity(1L)
+                                        .build())
+                        .putMetadata("tier", tier)
+                        .putMetadata("user_id", String.valueOf(userId))
+                        .setSuccessUrl(frontendUrl + "/#/billing?ok=1&tier=" + tier)
+                        .setCancelUrl(frontendUrl + "/#/pricing")
+                        .setAllowPromotionCodes(true)
+                        .setBillingAddressCollection(
+                                SessionCreateParams.BillingAddressCollection.REQUIRED)
+                        .build();
 
         com.stripe.model.checkout.Session session =
                 com.stripe.model.checkout.Session.create(params);
         return session.getUrl();
     }
 
-    /**
-     * Returns the Stripe price ID for a given tier name.
-     */
+    /** Returns the Stripe price ID for a given tier name. */
     public String getPriceId(String tier) {
         return switch (tier.toLowerCase()) {
             case "pro" -> priceProId;
@@ -126,9 +129,7 @@ public class StripeService {
 
     // ───────── Billing Portal ─────────
 
-    /**
-     * Creates a Stripe Billing Portal session for managing subscription.
-     */
+    /** Creates a Stripe Billing Portal session for managing subscription. */
     public String createPortalSession(Long userId) throws StripeException {
         User user = users.findById(userId).orElseThrow();
         UserSubscription sub = subscriptions.findByUserId(userId).orElse(null);
@@ -151,25 +152,36 @@ public class StripeService {
     // ───────── Subscription Status ─────────
 
     public record SubscriptionStatus(
-            User.Plan plan, String status, Instant currentPeriodEnd,
-            int modelCount, int modelLimit, String stripeSubscriptionId) {}
+            User.Plan plan,
+            String status,
+            Instant currentPeriodEnd,
+            int modelCount,
+            int modelLimit,
+            String stripeSubscriptionId) {}
 
-    /**
-     * Returns the current subscription status for a user.
-     */
+    /** Returns the current subscription status for a user. */
     public SubscriptionStatus getSubscription(Long userId) {
         Optional<UserSubscription> subOpt = subscriptions.findByUserId(userId);
         if (subOpt.isPresent()) {
             UserSubscription sub = subOpt.get();
             return new SubscriptionStatus(
-                    sub.getPlan(), sub.getStatus(), sub.getCurrentPeriodEnd(),
-                    sub.getModelCount(), sub.getModelLimit(), sub.getStripeSubscriptionId());
+                    sub.getPlan(),
+                    sub.getStatus(),
+                    sub.getCurrentPeriodEnd(),
+                    sub.getModelCount(),
+                    sub.getModelLimit(),
+                    sub.getStripeSubscriptionId());
         }
         // Fallback to User entity
         User user = users.findById(userId).orElseThrow();
         int limit = PLAN_LIMITS.getOrDefault(user.getPlan(), 3);
-        return new SubscriptionStatus(user.getPlan(), "active", user.getPlanActiveUntil(),
-                0, limit, user.getStripeSubscriptionId());
+        return new SubscriptionStatus(
+                user.getPlan(),
+                "active",
+                user.getPlanActiveUntil(),
+                0,
+                limit,
+                user.getStripeSubscriptionId());
     }
 
     public static int getLimitForPlan(User.Plan plan) {
@@ -178,11 +190,10 @@ public class StripeService {
 
     // ───────── Webhook Handling ─────────
 
-    /**
-     * Verifies the Stripe webhook signature and processes the event.
-     */
+    /** Verifies the Stripe webhook signature and processes the event. */
     @Transactional
-    public void handleWebhook(String payload, String sigHeader) throws SignatureVerificationException {
+    public void handleWebhook(String payload, String sigHeader)
+            throws SignatureVerificationException {
         Event event;
         if (!webhookSecret.isBlank()) {
             event = Webhook.constructEvent(payload, sigHeader, webhookSecret);
@@ -232,21 +243,26 @@ public class StripeService {
         int limit = getLimitForPlan(plan);
 
         // Update User entity
-        users.findById(userId).ifPresent(u -> {
-            u.setPlan(plan);
-            u.setStripeCustomerId(customerId);
-            u.setStripeSubscriptionId(subId);
-            u.setPlanActiveUntil(Instant.now().plusSeconds(35 * 24 * 3600L));
-            users.save(u);
-        });
+        users.findById(userId)
+                .ifPresent(
+                        u -> {
+                            u.setPlan(plan);
+                            u.setStripeCustomerId(customerId);
+                            u.setStripeSubscriptionId(subId);
+                            u.setPlanActiveUntil(Instant.now().plusSeconds(35 * 24 * 3600L));
+                            users.save(u);
+                        });
 
         // Upsert UserSubscription
-        UserSubscription sub = subscriptions.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserSubscription s = new UserSubscription();
-                    s.setUserId(userId);
-                    return s;
-                });
+        UserSubscription sub =
+                subscriptions
+                        .findByUserId(userId)
+                        .orElseGet(
+                                () -> {
+                                    UserSubscription s = new UserSubscription();
+                                    s.setUserId(userId);
+                                    return s;
+                                });
         sub.setStripeCustomerId(customerId);
         sub.setStripeSubscriptionId(subId);
         sub.setPlan(plan);
@@ -264,42 +280,55 @@ public class StripeService {
         String customerId = subscription.getCustomer();
         String status = subscription.getStatus();
 
-        subscriptions.findByStripeCustomerId(customerId).ifPresent(sub -> {
-            sub.setStatus(status);
-            if (subscription.getCurrentPeriodEnd() != null) {
-                sub.setCurrentPeriodEnd(Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
-            }
-            sub.setUpdatedAt(Instant.now());
-            subscriptions.save(sub);
+        subscriptions
+                .findByStripeCustomerId(customerId)
+                .ifPresent(
+                        sub -> {
+                            sub.setStatus(status);
+                            if (subscription.getCurrentPeriodEnd() != null) {
+                                sub.setCurrentPeriodEnd(
+                                        Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
+                            }
+                            sub.setUpdatedAt(Instant.now());
+                            subscriptions.save(sub);
 
-            // Sync plan status to User entity
-            users.findByStripeCustomerId(customerId).ifPresent(u -> {
-                if ("active".equals(status) || "trialing".equals(status)) {
-                    // Plan stays as-is
-                } else if ("canceled".equals(status) || "unpaid".equals(status)) {
-                    u.setPlan(User.Plan.FREE);
-                    users.save(u);
-                }
-            });
-        });
+                            // Sync plan status to User entity
+                            users.findByStripeCustomerId(customerId)
+                                    .ifPresent(
+                                            u -> {
+                                                if ("active".equals(status)
+                                                        || "trialing".equals(status)) {
+                                                    // Plan stays as-is
+                                                } else if ("canceled".equals(status)
+                                                        || "unpaid".equals(status)) {
+                                                    u.setPlan(User.Plan.FREE);
+                                                    users.save(u);
+                                                }
+                                            });
+                        });
     }
 
     private void handleSubscriptionDeleted(StripeObject obj) {
         Subscription subscription = (Subscription) obj;
         String customerId = subscription.getCustomer();
 
-        subscriptions.findByStripeCustomerId(customerId).ifPresent(sub -> {
-            sub.setPlan(User.Plan.FREE);
-            sub.setStatus("canceled");
-            sub.setModelLimit(getLimitForPlan(User.Plan.FREE));
-            sub.setUpdatedAt(Instant.now());
-            subscriptions.save(sub);
-        });
+        subscriptions
+                .findByStripeCustomerId(customerId)
+                .ifPresent(
+                        sub -> {
+                            sub.setPlan(User.Plan.FREE);
+                            sub.setStatus("canceled");
+                            sub.setModelLimit(getLimitForPlan(User.Plan.FREE));
+                            sub.setUpdatedAt(Instant.now());
+                            subscriptions.save(sub);
+                        });
 
-        users.findByStripeCustomerId(customerId).ifPresent(u -> {
-            u.setPlan(User.Plan.FREE);
-            users.save(u);
-        });
+        users.findByStripeCustomerId(customerId)
+                .ifPresent(
+                        u -> {
+                            u.setPlan(User.Plan.FREE);
+                            users.save(u);
+                        });
 
         log.info("Subscription canceled for customer {}", customerId);
     }
@@ -308,17 +337,22 @@ public class StripeService {
         Invoice invoice = (Invoice) obj;
         String customerId = invoice.getCustomer();
 
-        users.findByStripeCustomerId(customerId).ifPresent(u -> {
-            u.setPlanActiveUntil(Instant.now().plusSeconds(35 * 24 * 3600L));
-            users.save(u);
-        });
+        users.findByStripeCustomerId(customerId)
+                .ifPresent(
+                        u -> {
+                            u.setPlanActiveUntil(Instant.now().plusSeconds(35 * 24 * 3600L));
+                            users.save(u);
+                        });
 
-        subscriptions.findByStripeCustomerId(customerId).ifPresent(sub -> {
-            sub.setCurrentPeriodEnd(Instant.now().plusSeconds(35 * 24 * 3600L));
-            sub.setModelCount(0); // Reset monthly count on new billing period
-            sub.setUpdatedAt(Instant.now());
-            subscriptions.save(sub);
-        });
+        subscriptions
+                .findByStripeCustomerId(customerId)
+                .ifPresent(
+                        sub -> {
+                            sub.setCurrentPeriodEnd(Instant.now().plusSeconds(35 * 24 * 3600L));
+                            sub.setModelCount(0); // Reset monthly count on new billing period
+                            sub.setUpdatedAt(Instant.now());
+                            subscriptions.save(sub);
+                        });
     }
 
     // ───────── Helpers ─────────
@@ -334,11 +368,12 @@ public class StripeService {
             return user.getStripeCustomerId();
         }
         // Create new Stripe customer
-        CustomerCreateParams params = CustomerCreateParams.builder()
-                .setEmail(user.getEmail())
-                .setName(user.getName())
-                .putMetadata("user_id", String.valueOf(user.getId()))
-                .build();
+        CustomerCreateParams params =
+                CustomerCreateParams.builder()
+                        .setEmail(user.getEmail())
+                        .setName(user.getName())
+                        .putMetadata("user_id", String.valueOf(user.getId()))
+                        .build();
         Customer customer = Customer.create(params);
         user.setStripeCustomerId(customer.getId());
         users.save(user);

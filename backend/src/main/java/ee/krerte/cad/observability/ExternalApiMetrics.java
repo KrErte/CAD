@@ -1,21 +1,21 @@
 package ee.krerte.cad.observability;
 
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.util.function.Supplier;
+import org.springframework.stereotype.Component;
 
 /**
- * Ühtne fasaad kõigile välja-minevatele HTTP-kutsetele — worker, slicer,
- * Meshy, partnerite pricing API-d. Registreerib:
+ * Ühtne fasaad kõigile välja-minevatele HTTP-kutsetele — worker, slicer, Meshy, partnerite pricing
+ * API-d. Registreerib:
+ *
  * <ul>
- *   <li>{@code external.api.duration{service, endpoint, status}} — timer</li>
- *   <li>{@code external.api.requests.total{service, endpoint, status}} — counter</li>
+ *   <li>{@code external.api.duration{service, endpoint, status}} — timer
+ *   <li>{@code external.api.requests.total{service, endpoint, status}} — counter
  * </ul>
  *
  * Kasuta klienti nii:
+ *
  * <pre>
  *   metrics.time("worker", "/generate", () -> webClient.post()...)
  * </pre>
@@ -39,22 +39,46 @@ public class ExternalApiMetrics {
             throw e;
         } finally {
             Duration elapsed = Duration.ofNanos(System.nanoTime() - start);
-            registry.timer("external.api.duration",
-                    "service", service, "endpoint", endpoint, "status", status
-            ).record(elapsed);
-            registry.counter("external.api.requests.total",
-                    "service", service, "endpoint", endpoint, "status", status
-            ).increment();
+            registry.timer(
+                            "external.api.duration",
+                            "service",
+                            service,
+                            "endpoint",
+                            endpoint,
+                            "status",
+                            status)
+                    .record(elapsed);
+            registry.counter(
+                            "external.api.requests.total",
+                            "service",
+                            service,
+                            "endpoint",
+                            endpoint,
+                            "status",
+                            status)
+                    .increment();
         }
     }
 
     public void record(String service, String endpoint, long durationMs, String status) {
-        registry.timer("external.api.duration",
-                "service", service, "endpoint", endpoint, "status", status
-        ).record(Duration.ofMillis(durationMs));
-        registry.counter("external.api.requests.total",
-                "service", service, "endpoint", endpoint, "status", status
-        ).increment();
+        registry.timer(
+                        "external.api.duration",
+                        "service",
+                        service,
+                        "endpoint",
+                        endpoint,
+                        "status",
+                        status)
+                .record(Duration.ofMillis(durationMs));
+        registry.counter(
+                        "external.api.requests.total",
+                        "service",
+                        service,
+                        "endpoint",
+                        endpoint,
+                        "status",
+                        status)
+                .increment();
     }
 
     private String classifyError(Throwable e) {

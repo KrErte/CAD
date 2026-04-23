@@ -31,7 +31,8 @@ public class EmailService {
     @Async
     public void sendWelcome(String toEmail, String name) {
         String subject = "Tere tulemast TehisAI CAD-i!";
-        String body = """
+        String body =
+                """
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;padding:2rem;border-radius:12px">
               <h1 style="color:#a5b4fc">Tere, %s!</h1>
               <p>Oled nüüd TehisAI CAD kasutaja. Sul on <strong>3 tasuta STL-genereerimist kuus</strong>.</p>
@@ -53,14 +54,16 @@ public class EmailService {
                 TehisAI CAD · tehisaicad.ee · See kiri saadeti, kuna registreerusid meie teenusesse.
               </p>
             </div>
-            """.formatted(name != null ? name : "kasutaja", frontendUrl, frontendUrl);
+            """
+                        .formatted(name != null ? name : "kasutaja", frontendUrl, frontendUrl);
         send(toEmail, subject, body);
     }
 
     @Async
     public void sendQuotaWarning(String toEmail, String name, int used, int limit) {
         String subject = "Sinu tasuta piir on peaaegu täis";
-        String body = """
+        String body =
+                """
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;padding:2rem;border-radius:12px">
               <h2 style="color:#fbbf24">⚠️ %d/%d STL-i kasutatud sel kuul</h2>
               <p>Tere, %s! Oled kasutanud %d oma %d tasuta STL-genereerimisest sel kuul.</p>
@@ -72,14 +75,22 @@ public class EmailService {
                 TehisAI CAD · tehisaicad.ee
               </p>
             </div>
-            """.formatted(used, limit, name != null ? name : "kasutaja", used, limit, frontendUrl);
+            """
+                        .formatted(
+                                used,
+                                limit,
+                                name != null ? name : "kasutaja",
+                                used,
+                                limit,
+                                frontendUrl);
         send(toEmail, subject, body);
     }
 
     @Async
     public void sendQuotaExhausted(String toEmail, String name) {
         String subject = "Tasuta piir on sel kuul täis";
-        String body = """
+        String body =
+                """
             <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#e2e8f0;background:#0f172a;padding:2rem;border-radius:12px">
               <h2 style="color:#ef4444">Tasuta STL-id on sel kuul otsas</h2>
               <p>Tere, %s! Oled kasutanud kõik tasuta genereerimised sel kuul.</p>
@@ -95,7 +106,8 @@ public class EmailService {
                 TehisAI CAD · tehisaicad.ee
               </p>
             </div>
-            """.formatted(name != null ? name : "kasutaja", frontendUrl);
+            """
+                        .formatted(name != null ? name : "kasutaja", frontendUrl);
         send(toEmail, subject, body);
     }
 

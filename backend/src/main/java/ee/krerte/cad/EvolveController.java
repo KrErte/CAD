@@ -4,35 +4,33 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Size;
-import java.util.Map;
-
 /**
  * Darwin CAD — evolutsiooniline parameetriline disain.
  *
  * <p>See kontroller orkestreerib kolme poolt:
+ *
  * <ol>
- *   <li>Kasutaja saadab eestikeelse soovi → {@link ClaudeClient#specFromPrompt}
- *       valib template'i (juba olemas).</li>
- *   <li>Worker {@code /evolve/seed} genereerib 6 varianti (populatsioon) iga
- *       oma SVG-eelvaate, mõõtude ja ancestry-ga.</li>
- *   <li>Claude Vision {@link ClaudeClient#rankVariants} vaatab kõiki 6 pilti
- *       korraga, reastab nad kasutaja algse soovi vastu, tagastab punktid +
- *       põhjenduse.</li>
+ *   <li>Kasutaja saadab eestikeelse soovi → {@link ClaudeClient#specFromPrompt} valib template'i
+ *       (juba olemas).
+ *   <li>Worker {@code /evolve/seed} genereerib 6 varianti (populatsioon) iga oma SVG-eelvaate,
+ *       mõõtude ja ancestry-ga.
+ *   <li>Claude Vision {@link ClaudeClient#rankVariants} vaatab kõiki 6 pilti korraga, reastab nad
+ *       kasutaja algse soovi vastu, tagastab punktid + põhjenduse.
  * </ol>
  *
- * <p>Kasutaja valib ühe (või mitu) edasipääseja ja kutsutakse
- * {@code /evolve/cross} järgmise põlvkonna jaoks. Tsükkel jätkub kuni
- * kasutaja on rahul.
+ * <p>Kasutaja valib ühe (või mitu) edasipääseja ja kutsutakse {@code /evolve/cross} järgmise
+ * põlvkonna jaoks. Tsükkel jätkub kuni kasutaja on rahul.
  *
- * <p>See on tõeliselt enneolematu — Zoo, Adam, Backflip teevad KÕIK
- * "üks-prompt-üks-vastus". Darwin-loop on täiesti uus mudel.
+ * <p>See on tõeliselt enneolematu — Zoo, Adam, Backflip teevad KÕIK "üks-prompt-üks-vastus".
+ * Darwin-loop on täiesti uus mudel.
  */
 @RestController
 @RequestMapping("/api/evolve")
@@ -50,22 +48,25 @@ public class EvolveController {
     }
 
     /**
-     * Esimene põlvkond — võtab eestikeelse soovi, valib template'i (Claude),
-     * seejärel palub worker'il toota 6 juhuslikku varianti + SVG-eelvaateid.
-     * Variandid hinnatakse Claude Vision-iga ja tagastatakse reastatud kujul.
+     * Esimene põlvkond — võtab eestikeelse soovi, valib template'i (Claude), seejärel palub
+     * worker'il toota 6 juhuslikku varianti + SVG-eelvaateid. Variandid hinnatakse Claude
+     * Vision-iga ja tagastatakse reastatud kujul.
      *
-     * <p>Kasutaja kogeb: "Ma kirjutasin 1 lause, sain 6 erinevat disaini koos
-     * põhjendusega, miks üks parem kui teine." See on uus produkti-kogemus.
+     * <p>Kasutaja kogeb: "Ma kirjutasin 1 lause, sain 6 erinevat disaini koos põhjendusega, miks
+     * üks parem kui teine." See on uus produkti-kogemus.
      */
     // BUG-FIX: sisendvalidatsioon — prompt pikkus piiratud 500 märgile
-    public record SeedRequest(@Size(max = 500, message = "Prompt max 500 tähemärki") String prompt_et, Integer n) {}
+    public record SeedRequest(
+            @Size(max = 500, message = "Prompt max 500 tähemärki") String prompt_et, Integer n) {}
 
     @PostMapping("/seed")
     public ResponseEntity<?> seed(@Valid @RequestBody SeedRequest req) {
         if (req == null || req.prompt_et() == null || req.prompt_et().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "prompt_required",
-                    "message", "Palun kirjuta, mida sa tahad teha."));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", "prompt_required",
+                                    "message", "Palun kirjuta, mida sa tahad teha."));
         }
         int n = (req.n() == null || req.n() <= 0) ? 6 : Math.min(req.n(), 12);
 
@@ -78,13 +79,17 @@ public class EvolveController {
             spec = claude.specFromPrompt(req.prompt_et(), catalog);
         } catch (Exception e) {
             log.error("Claude spec failed", e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "claude_failed", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "claude_failed", "message", e.getMessage()));
         }
         if (spec.has("error")) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", spec.get("error").asText(),
-                    "message", spec.path("summary_et").asText("Ei leidnud sobivat template'it")));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", spec.get("error").asText(),
+                                    "message",
+                                            spec.path("summary_et")
+                                                    .asText("Ei leidnud sobivat template'it")));
         }
         String template = spec.path("template").asText();
 
@@ -98,8 +103,8 @@ public class EvolveController {
             population = worker.evolveSeed(evolveReq);
         } catch (Exception e) {
             log.error("Worker evolve/seed failed", e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "worker_failed", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "worker_failed", "message", e.getMessage()));
         }
 
         // 3) Claude Vision batch-ranking — kui API key pole, jätkame ilma
@@ -115,34 +120,40 @@ public class EvolveController {
             return ResponseEntity.ok(wrapUnranked(population, template, req.prompt_et()));
         }
 
-        return ResponseEntity.ok(Map.of(
-                "template", template,
-                "prompt_et", req.prompt_et(),
-                "generation", population.path("generation").asInt(1),
-                "variants", ranked,                 // reastatud punktide kahanemise järgi
-                "elapsed_ms", population.path("elapsed_ms").asInt(0)
-        ));
+        return ResponseEntity.ok(
+                Map.of(
+                        "template", template,
+                        "prompt_et", req.prompt_et(),
+                        "generation", population.path("generation").asInt(1),
+                        "variants", ranked, // reastatud punktide kahanemise järgi
+                        "elapsed_ms", population.path("elapsed_ms").asInt(0)));
     }
 
     /**
-     * Järgmine põlvkond — ristamine valitud vanemate (variantide) vahel +
-     * mutatsioon. Kasutaja võib valida 1–3 vanemat. Seejärel sama ranking.
+     * Järgmine põlvkond — ristamine valitud vanemate (variantide) vahel + mutatsioon. Kasutaja võib
+     * valida 1–3 vanemat. Seejärel sama ranking.
      */
-    public record CrossRequest(JsonNode parents,    // array Variant objektidest (workerilt)
-                                Integer n,
-                                Double mutation,
-                                String prompt_et) {}
+    public record CrossRequest(
+            JsonNode parents, // array Variant objektidest (workerilt)
+            Integer n,
+            Double mutation,
+            String prompt_et) {}
 
     @PostMapping("/cross")
     public ResponseEntity<?> cross(@RequestBody CrossRequest req) {
-        if (req == null || req.parents() == null || !req.parents().isArray()
+        if (req == null
+                || req.parents() == null
+                || !req.parents().isArray()
                 || req.parents().size() == 0) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "parents_required",
-                    "message", "Palun vali vähemalt üks vanem."));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", "parents_required",
+                                    "message", "Palun vali vähemalt üks vanem."));
         }
         int n = (req.n() == null || req.n() <= 0) ? 6 : Math.min(req.n(), 12);
-        double mutation = req.mutation() == null ? 0.2 : Math.max(0.0, Math.min(0.5, req.mutation()));
+        double mutation =
+                req.mutation() == null ? 0.2 : Math.max(0.0, Math.min(0.5, req.mutation()));
 
         ObjectNode crossReq = mapper.createObjectNode();
         crossReq.set("parents", req.parents());
@@ -154,8 +165,8 @@ public class EvolveController {
             population = worker.evolveCross(crossReq);
         } catch (Exception e) {
             log.error("Worker evolve/cross failed", e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "worker_failed", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "worker_failed", "message", e.getMessage()));
         }
 
         String template = req.parents().get(0).path("template").asText();
@@ -169,16 +180,17 @@ public class EvolveController {
             return ResponseEntity.ok(wrapUnranked(population, template, promptEt));
         }
 
-        return ResponseEntity.ok(Map.of(
-                "template", template,
-                "prompt_et", promptEt,
-                "generation", population.path("generation").asInt(),
-                "variants", ranked,
-                "elapsed_ms", population.path("elapsed_ms").asInt(0)
-        ));
+        return ResponseEntity.ok(
+                Map.of(
+                        "template", template,
+                        "prompt_et", promptEt,
+                        "generation", population.path("generation").asInt(),
+                        "variants", ranked,
+                        "elapsed_ms", population.path("elapsed_ms").asInt(0)));
     }
 
-    private Map<String, Object> wrapUnranked(JsonNode population, String template, String promptEt) {
+    private Map<String, Object> wrapUnranked(
+            JsonNode population, String template, String promptEt) {
         // Kui ranking ei tööta, lisame fallback-i: deterministic "score" iga
         // variandi juures heuristiliselt (väiksem overhang_risk + mõistlik mass).
         ArrayNode out = mapper.createArrayNode();
@@ -188,17 +200,23 @@ public class EvolveController {
             ObjectNode enriched = v.deepCopy();
             int score = 7 - (v.path("metrics").path("overhang_risk").asBoolean(false) ? 2 : 0);
             enriched.put("score", score);
-            enriched.put("reasoning_et", "Heuristiline hinnang — AI-ülevaade oli hetkel kättesaamatu.");
+            enriched.put(
+                    "reasoning_et", "Heuristiline hinnang — AI-ülevaade oli hetkel kättesaamatu.");
             enriched.put("rank", i++);
             out.add(enriched);
         }
         return Map.of(
-                "template", template,
-                "prompt_et", promptEt,
-                "generation", population.path("generation").asInt(1),
-                "variants", out,
-                "elapsed_ms", population.path("elapsed_ms").asInt(0),
-                "ranking_source", "heuristic"
-        );
+                "template",
+                template,
+                "prompt_et",
+                promptEt,
+                "generation",
+                population.path("generation").asInt(1),
+                "variants",
+                out,
+                "elapsed_ms",
+                population.path("elapsed_ms").asInt(0),
+                "ranking_source",
+                "heuristic");
     }
 }

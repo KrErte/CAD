@@ -5,13 +5,12 @@ import ee.krerte.cad.printflow.entity.Printer;
 import ee.krerte.cad.printflow.service.OrganizationContext;
 import ee.krerte.cad.printflow.service.PrinterEventPublisher;
 import ee.krerte.cad.printflow.service.PrinterService;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/printflow/printers")
@@ -112,8 +111,9 @@ public class PrinterController {
         m.put("current_job_id", p.getCurrentJobId());
         m.put("bed_temp_c", p.getBedTempC());
         m.put("hotend_temp_c", p.getHotendTempC());
-        m.put("build_volume_mm", List.of(
-                p.getBuildVolumeXmm(), p.getBuildVolumeYmm(), p.getBuildVolumeZmm()));
+        m.put(
+                "build_volume_mm",
+                List.of(p.getBuildVolumeXmm(), p.getBuildVolumeYmm(), p.getBuildVolumeZmm()));
         m.put("supported_material_families", p.getSupportedMaterialFamilies());
         m.put("adapter_type", p.getAdapterType());
         m.put("adapter_url", p.getAdapterUrl());

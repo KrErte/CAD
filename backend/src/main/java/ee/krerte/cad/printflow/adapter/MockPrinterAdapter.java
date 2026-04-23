@@ -1,32 +1,31 @@
 package ee.krerte.cad.printflow.adapter;
 
 import ee.krerte.cad.printflow.entity.Printer;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import org.springframework.stereotype.Component;
 
 /**
- * Simuleeritud printeriadapter. Hoiab mällu print-oleku + progressi. Iga
- * `refresh()` kõne lükkab edasi 0.1% progressi (või lõpetab, kui progress
- * jõudis 100%).
+ * Simuleeritud printeriadapter. Hoiab mällu print-oleku + progressi. Iga `refresh()` kõne lükkab
+ * edasi 0.1% progressi (või lõpetab, kui progress jõudis 100%).
  *
- * Seda kasutame demo + testide jaoks, kuni Bambu/Moonraker-adapterid on
- * olemas.
+ * <p>Seda kasutame demo + testide jaoks, kuni Bambu/Moonraker-adapterid on olemas.
  */
 @Component
 public class MockPrinterAdapter implements PrinterAdapter {
 
     /**
-     * Mälus olev per-printeri state (status, progress, temps).
-     * Thread-safe, et scheduler paralleelselt saaks heartbeat'e teha.
+     * Mälus olev per-printeri state (status, progress, temps). Thread-safe, et scheduler
+     * paralleelselt saaks heartbeat'e teha.
      */
     private final ConcurrentHashMap<Long, MockState> state = new ConcurrentHashMap<>();
 
     @Override
-    public String supportsType() { return "MOCK"; }
+    public String supportsType() {
+        return "MOCK";
+    }
 
     @Override
     public AdapterStatus status(Printer p) {
@@ -76,12 +75,21 @@ public class MockPrinterAdapter implements PrinterAdapter {
         MockState s = state.computeIfAbsent(p.getId(), k -> MockState.idle());
         if ("PRINTING".equals(s.status)) {
             // 5–12% per heartbeat, natuke varieeruv
-            s.progressPct = Math.min(100, s.progressPct + ThreadLocalRandom.current().nextInt(5, 12));
+            s.progressPct =
+                    Math.min(100, s.progressPct + ThreadLocalRandom.current().nextInt(5, 12));
             // väikesed temperatuuride kõikumised
-            s.bedTempC = new BigDecimal(String.format(java.util.Locale.US, "%.1f",
-                    60.0 + ThreadLocalRandom.current().nextDouble(-0.8, 0.8)));
-            s.hotendTempC = new BigDecimal(String.format(java.util.Locale.US, "%.1f",
-                    210.0 + ThreadLocalRandom.current().nextDouble(-1.5, 1.5)));
+            s.bedTempC =
+                    new BigDecimal(
+                            String.format(
+                                    java.util.Locale.US,
+                                    "%.1f",
+                                    60.0 + ThreadLocalRandom.current().nextDouble(-0.8, 0.8)));
+            s.hotendTempC =
+                    new BigDecimal(
+                            String.format(
+                                    java.util.Locale.US,
+                                    "%.1f",
+                                    210.0 + ThreadLocalRandom.current().nextDouble(-1.5, 1.5)));
             if (s.progressPct >= 100) {
                 s.status = "IDLE";
                 s.progressPct = 0;

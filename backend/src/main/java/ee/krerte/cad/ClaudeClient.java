@@ -11,13 +11,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Map;
-
 /**
  * Thin wrapper around Anthropic's Messages API.
  *
- * Prompts Claude to translate an Estonian free-text description into a strict JSON
- * payload { "template": "...", "params": {...} } matching one of the worker templates.
+ * <p>Prompts Claude to translate an Estonian free-text description into a strict JSON payload {
+ * "template": "...", "params": {...} } matching one of the worker templates.
  */
 @Component
 public class ClaudeClient {
@@ -27,9 +25,14 @@ public class ClaudeClient {
     private final WebClient webClient;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${app.claude.api-key}") private String apiKey;
-    @Value("${app.claude.model}")   private String model;
-    @Value("${app.claude.base-url}") private String baseUrl;
+    @Value("${app.claude.api-key}")
+    private String apiKey;
+
+    @Value("${app.claude.model}")
+    private String model;
+
+    @Value("${app.claude.base-url}")
+    private String baseUrl;
 
     public ClaudeClient(WebClient webClient) {
         this.webClient = webClient;
@@ -43,7 +46,8 @@ public class ClaudeClient {
         // kontrollsümboolid (v.a. reavahetused) ja piira pikkust.
         userPrompt = sanitize(userPrompt);
 
-        String system = """
+        String system =
+                """
             You are a CAD parameter extractor for an Estonian 3D-printing service.
             The user describes a part in Estonian (or English). Your job: pick ONE
             template from the provided catalog and fill its numeric parameters.
@@ -60,8 +64,11 @@ public class ClaudeClient {
             - summary_et: one short Estonian sentence describing what will be printed.
             """;
 
-        String userMsg = "Catalog:\n" + templateCatalog.toPrettyString()
-                + "\n\nUser request (Estonian):\n" + userPrompt;
+        String userMsg =
+                "Catalog:\n"
+                        + templateCatalog.toPrettyString()
+                        + "\n\nUser request (Estonian):\n"
+                        + userPrompt;
 
         ObjectNode body = mapper.createObjectNode();
         body.put("model", model);
@@ -72,15 +79,17 @@ public class ClaudeClient {
         m.put("role", "user");
         m.put("content", userMsg);
 
-        JsonNode resp = webClient.post()
-                .uri(baseUrl + "/v1/messages")
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", "2023-06-01")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode resp =
+                webClient
+                        .post()
+                        .uri(baseUrl + "/v1/messages")
+                        .header("x-api-key", apiKey)
+                        .header("anthropic-version", "2023-06-01")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .block();
 
         if (resp == null || !resp.has("content")) {
             throw new RuntimeException("Empty response from Claude: " + resp);
@@ -96,7 +105,8 @@ public class ClaudeClient {
         }
         JsonNode firstBlock = contentArr.get(0);
         if (firstBlock == null || !firstBlock.has("text")) {
-            throw new RuntimeException("Claude response first content block missing 'text': " + firstBlock);
+            throw new RuntimeException(
+                    "Claude response first content block missing 'text': " + firstBlock);
         }
         String text = firstBlock.get("text").asText("").trim();
         // strip accidental ```json fences
@@ -110,31 +120,29 @@ public class ClaudeClient {
     /**
      * AI Design Review — the unprecedented bit.
      *
-     * Feeds Claude three things:
-     *   1. the user's original Estonian prompt (so Claude knows the INTENT),
-     *   2. the resolved parametric spec,
-     *   3. a base64 PNG screenshot of the three.js preview (so Claude
-     *      actually SEES the design, not just numbers).
+     * <p>Feeds Claude three things: 1. the user's original Estonian prompt (so Claude knows the
+     * INTENT), 2. the resolved parametric spec, 3. a base64 PNG screenshot of the three.js preview
+     * (so Claude actually SEES the design, not just numbers).
      *
-     * Claude replies via a forced tool call `submit_design_review` whose
-     * schema guarantees a structured JSON response — no fragile
-     * "parse the assistant's markdown" step.
+     * <p>Claude replies via a forced tool call `submit_design_review` whose schema guarantees a
+     * structured JSON response — no fragile "parse the assistant's markdown" step.
      *
-     * The returned JsonNode is the tool's `input` object:
-     *   { score, verdict_et, strengths[], weaknesses[], suggestions[] }
-     * where each suggestion MAY carry { param, new_value } so the
+     * <p>The returned JsonNode is the tool's `input` object: { score, verdict_et, strengths[],
+     * weaknesses[], suggestions[] } where each suggestion MAY carry { param, new_value } so the
      * frontend can offer one-click apply.
      *
-     * @param userPromptEt   the original Estonian description
-     * @param spec           the spec the user is about to print
+     * @param userPromptEt the original Estonian description
+     * @param spec the spec the user is about to print
      * @param imageBase64Png three.js canvas PNG (no data-URL prefix) — may be null
      */
-    public JsonNode reviewDesign(String userPromptEt, JsonNode spec, String imageBase64Png) throws Exception {
+    public JsonNode reviewDesign(String userPromptEt, JsonNode spec, String imageBase64Png)
+            throws Exception {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("ANTHROPIC_API_KEY not configured");
         }
 
-        String system = """
+        String system =
+                """
             Sa oled eesti 3D-printimise ja parameetrilise CAD-i ekspert, kellel on
             20 aastat töökogemust FDM-printimisega (PLA, PETG) ja tootedisainiga.
             Kasutaja on just genereerinud endale detaili oma eestikeelse kirjelduse
@@ -167,11 +175,16 @@ public class ClaudeClient {
         ObjectNode toolSchema = tool.putObject("input_schema");
         toolSchema.put("type", "object");
         ArrayNode required = toolSchema.putArray("required");
-        required.add("score"); required.add("verdict_et");
-        required.add("strengths"); required.add("weaknesses"); required.add("suggestions");
+        required.add("score");
+        required.add("verdict_et");
+        required.add("strengths");
+        required.add("weaknesses");
+        required.add("suggestions");
         ObjectNode props = toolSchema.putObject("properties");
         props.putObject("score")
-                .put("type", "integer").put("minimum", 1).put("maximum", 10)
+                .put("type", "integer")
+                .put("minimum", 1)
+                .put("maximum", 10)
                 .put("description", "Üldine hinne 1–10. 10 = valmis printimiseks, 1 = loobu.");
         props.putObject("verdict_et")
                 .put("type", "string")
@@ -180,23 +193,42 @@ public class ClaudeClient {
         strengths.put("type", "array").put("description", "2–4 tugevust eesti keeles.");
         strengths.putObject("items").put("type", "string");
         ObjectNode weaknesses = props.putObject("weaknesses");
-        weaknesses.put("type", "array").put("description", "0–4 muret eesti keeles. Tühi kui disain on puhas.");
+        weaknesses
+                .put("type", "array")
+                .put("description", "0–4 muret eesti keeles. Tühi kui disain on puhas.");
         weaknesses.putObject("items").put("type", "string");
         ObjectNode suggestions = props.putObject("suggestions");
-        suggestions.put("type", "array").put("description", "0–4 konkreetset soovitust. Eelista numbrilisi param-muudatusi.");
+        suggestions
+                .put("type", "array")
+                .put(
+                        "description",
+                        "0–4 konkreetset soovitust. Eelista numbrilisi param-muudatusi.");
         ObjectNode sugItem = suggestions.putObject("items");
         sugItem.put("type", "object");
         ArrayNode sugReq = sugItem.putArray("required");
-        sugReq.add("label_et"); sugReq.add("rationale_et");
+        sugReq.add("label_et");
+        sugReq.add("rationale_et");
         ObjectNode sugProps = sugItem.putObject("properties");
-        sugProps.putObject("label_et").put("type", "string")
-                .put("description", "Lühike tegevuskuju eesti keeles — nt 'Suurenda seinapaksust 5mm peale'.");
-        sugProps.putObject("rationale_et").put("type", "string")
-                .put("description", "Üks lause miks — nt 'praegune 3mm võib 5kg all väänduma hakata'.");
-        sugProps.putObject("param").put("type", "string")
-                .put("description", "Spec.params võti, mida muuta. Jäta välja kui soovitus pole numbriline.");
-        sugProps.putObject("new_value").put("type", "number")
-                .put("description", "Uus väärtus param-ile. Peab jääma template skeemi min/max piiresse.");
+        sugProps.putObject("label_et")
+                .put("type", "string")
+                .put(
+                        "description",
+                        "Lühike tegevuskuju eesti keeles — nt 'Suurenda seinapaksust 5mm peale'.");
+        sugProps.putObject("rationale_et")
+                .put("type", "string")
+                .put(
+                        "description",
+                        "Üks lause miks — nt 'praegune 3mm võib 5kg all väänduma hakata'.");
+        sugProps.putObject("param")
+                .put("type", "string")
+                .put(
+                        "description",
+                        "Spec.params võti, mida muuta. Jäta välja kui soovitus pole numbriline.");
+        sugProps.putObject("new_value")
+                .put("type", "number")
+                .put(
+                        "description",
+                        "Uus väärtus param-ile. Peab jääma template skeemi min/max piiresse.");
 
         // ---- Request body ----
         ObjectNode body = mapper.createObjectNode();
@@ -219,12 +251,14 @@ public class ClaudeClient {
 
         ObjectNode textBlock = contents.addObject();
         textBlock.put("type", "text");
-        textBlock.put("text",
-                "Kasutaja algne soov (eesti keeles):\n" +
-                (userPromptEt == null || userPromptEt.isBlank()
-                        ? "(ei ole salvestatud — vaata ainult spec'i ja pilti)"
-                        : userPromptEt) +
-                "\n\nResolveeritud spec:\n" + spec.toPrettyString());
+        textBlock.put(
+                "text",
+                "Kasutaja algne soov (eesti keeles):\n"
+                        + (userPromptEt == null || userPromptEt.isBlank()
+                                ? "(ei ole salvestatud — vaata ainult spec'i ja pilti)"
+                                : userPromptEt)
+                        + "\n\nResolveeritud spec:\n"
+                        + spec.toPrettyString());
 
         if (imageBase64Png != null && !imageBase64Png.isBlank()) {
             ObjectNode imageBlock = contents.addObject();
@@ -235,15 +269,17 @@ public class ClaudeClient {
             src.put("data", imageBase64Png);
         }
 
-        JsonNode resp = webClient.post()
-                .uri(baseUrl + "/v1/messages")
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", "2023-06-01")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode resp =
+                webClient
+                        .post()
+                        .uri(baseUrl + "/v1/messages")
+                        .header("x-api-key", apiKey)
+                        .header("anthropic-version", "2023-06-01")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .block();
 
         if (resp == null || !resp.has("content")) {
             throw new RuntimeException("Empty response from Claude: " + resp);
@@ -263,31 +299,30 @@ public class ClaudeClient {
      * Darwin CAD — batch-ranking mitmele variandile korraga.
      *
      * <p>Saadab Claude'ile:
+     *
      * <ul>
-     *   <li>kasutaja originaalse eestikeelse soovi (intent),</li>
-     *   <li>iga variandi spec-i (template + params + metrics),</li>
-     *   <li>iga variandi SVG-eelvaate konverteerituna base64-PNG-le
-     *       (tegelikult siin me pareda lihtsuse kasuks saadame SVG-d tekstina
-     *       — Claude Vision suudab SVG-d lugeda tekstina, ning see on
-     *       odavam kui raster-render).</li>
+     *   <li>kasutaja originaalse eestikeelse soovi (intent),
+     *   <li>iga variandi spec-i (template + params + metrics),
+     *   <li>iga variandi SVG-eelvaate konverteerituna base64-PNG-le (tegelikult siin me pareda
+     *       lihtsuse kasuks saadame SVG-d tekstina — Claude Vision suudab SVG-d lugeda tekstina,
+     *       ning see on odavam kui raster-render).
      * </ul>
      *
-     * <p>Claude peab vastama forceitud tool-use'iga {@code rank_variants},
-     * mis tagastab array {@code [{variant_id, score, reasoning_et, rank}]}.
-     * See on BATCH ranking — üks LLM-kutse reastab kõik 6 varianti
-     * ühekorraga, mis on ~6× odavam kui kuus eraldi kutset.
+     * <p>Claude peab vastama forceitud tool-use'iga {@code rank_variants}, mis tagastab array
+     * {@code [{variant_id, score, reasoning_et, rank}]}. See on BATCH ranking — üks LLM-kutse
+     * reastab kõik 6 varianti ühekorraga, mis on ~6× odavam kui kuus eraldi kutset.
      *
-     * <p>Miks see on tähtis: kasutaja ei näe pelgalt 6 pilti, vaid näeb
-     * neid REASTATUNA + iga variandi juures 1-lause põhjendus eesti keeles.
-     * See on "AI on sinu disainijuhendaja" kogemus, mitte "AI on geomeetria-
-     * automaat".
+     * <p>Miks see on tähtis: kasutaja ei näe pelgalt 6 pilti, vaid näeb neid REASTATUNA + iga
+     * variandi juures 1-lause põhjendus eesti keeles. See on "AI on sinu disainijuhendaja" kogemus,
+     * mitte "AI on geomeetria- automaat".
      *
      * @param userPromptEt algne eestikeelne soov
-     * @param template     mille templaadi piires evolutsioon toimub
-     * @param population   workeri vastus /evolve/seed või /evolve/cross
+     * @param template mille templaadi piires evolutsioon toimub
+     * @param population workeri vastus /evolve/seed või /evolve/cross
      * @return tagastatud array Variant objekte koos score/reasoning/rank
      */
-    public JsonNode rankVariants(String userPromptEt, String template, JsonNode population) throws Exception {
+    public JsonNode rankVariants(String userPromptEt, String template, JsonNode population)
+            throws Exception {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("ANTHROPIC_API_KEY not configured");
         }
@@ -296,7 +331,8 @@ public class ClaudeClient {
             throw new RuntimeException("No variants to rank");
         }
 
-        String system = """
+        String system =
+                """
             Sa oled eesti 3D-printimise ja parameetrilise CAD-i ekspert.
             Kasutaja kirjeldas detaili eesti keeles. Nüüd on automaatselt
             genereeritud MITU VARIANTI (populatsioon). Sinu ülesanne on
@@ -331,14 +367,23 @@ public class ClaudeClient {
         ObjectNode items = ranked.putObject("items");
         items.put("type", "object");
         ArrayNode itReq = items.putArray("required");
-        itReq.add("variant_id"); itReq.add("score"); itReq.add("reasoning_et"); itReq.add("rank");
+        itReq.add("variant_id");
+        itReq.add("score");
+        itReq.add("reasoning_et");
+        itReq.add("rank");
         ObjectNode itProps = items.putObject("properties");
-        itProps.putObject("variant_id").put("type", "string")
-                .put("description", "Variandi ID, mida reastatakse (kopeeri täpselt nagu sisendis).");
+        itProps.putObject("variant_id")
+                .put("type", "string")
+                .put(
+                        "description",
+                        "Variandi ID, mida reastatakse (kopeeri täpselt nagu sisendis).");
         itProps.putObject("score").put("type", "integer").put("minimum", 1).put("maximum", 10);
-        itProps.putObject("rank").put("type", "integer").put("minimum", 0)
+        itProps.putObject("rank")
+                .put("type", "integer")
+                .put("minimum", 0)
                 .put("description", "0 = parim, suureneb halvima poole.");
-        itProps.putObject("reasoning_et").put("type", "string")
+        itProps.putObject("reasoning_et")
+                .put("type", "string")
                 .put("description", "Üks lause eesti keeles.");
 
         // Koosta user-message: tekst + iga variandi kohta pilt (SVG konverteeri
@@ -365,14 +410,20 @@ public class ClaudeClient {
         // Intro-tekst
         ObjectNode intro = contents.addObject();
         intro.put("type", "text");
-        intro.put("text",
-                "Kasutaja algne soov (eesti keeles):\n" +
-                (userPromptEt == null || userPromptEt.isBlank() ? "(pole salvestatud)" : userPromptEt) +
-                "\n\nTemplate: " + template +
-                "\n\nAllpool on " + variants.size() + " varianti. Iga juures on " +
-                "(1) variandi ID, (2) parameetrid, (3) arvutatud mõõdud " +
-                "(maht, prindiaeg, kaal, overhang-risk), (4) SVG-eelvaade koodina. " +
-                "Reasta nad kasutaja soovi vastu.");
+        intro.put(
+                "text",
+                "Kasutaja algne soov (eesti keeles):\n"
+                        + (userPromptEt == null || userPromptEt.isBlank()
+                                ? "(pole salvestatud)"
+                                : userPromptEt)
+                        + "\n\nTemplate: "
+                        + template
+                        + "\n\nAllpool on "
+                        + variants.size()
+                        + " varianti. Iga juures on "
+                        + "(1) variandi ID, (2) parameetrid, (3) arvutatud mõõdud "
+                        + "(maht, prindiaeg, kaal, overhang-risk), (4) SVG-eelvaade koodina. "
+                        + "Reasta nad kasutaja soovi vastu.");
 
         // Iga variandi kohta üks tekstblokk — kompaktselt, et ei ületada
         // context-aknat. SVG-d me piirame ~800 tähemärgile (path-commands).
@@ -391,15 +442,17 @@ public class ClaudeClient {
             block.put("text", sb.toString());
         }
 
-        JsonNode resp = webClient.post()
-                .uri(baseUrl + "/v1/messages")
-                .header("x-api-key", apiKey)
-                .header("anthropic-version", "2023-06-01")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(JsonNode.class)
-                .block();
+        JsonNode resp =
+                webClient
+                        .post()
+                        .uri(baseUrl + "/v1/messages")
+                        .header("x-api-key", apiKey)
+                        .header("anthropic-version", "2023-06-01")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(body)
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .block();
         if (resp == null || !resp.has("content")) {
             throw new RuntimeException("Empty response from Claude: " + resp);
         }
@@ -417,8 +470,8 @@ public class ClaudeClient {
     }
 
     /**
-     * BUG-FIX: sanitize kasutaja sisendit enne API-sse saatmist.
-     * Eemaldab kontrollsümbolid (v.a. newline/tab) ja piirab pikkust 500 märgile.
+     * BUG-FIX: sanitize kasutaja sisendit enne API-sse saatmist. Eemaldab kontrollsümbolid (v.a.
+     * newline/tab) ja piirab pikkust 500 märgile.
      */
     private static String sanitize(String input) {
         if (input == null) return "";
@@ -432,8 +485,8 @@ public class ClaudeClient {
     }
 
     /**
-     * Liida ranking-vastus tagasi originaalvariantidega. Iga variant saab
-     * score, reasoning_et, rank — ning lõpptulemus sorteeritakse rank-i järgi.
+     * Liida ranking-vastus tagasi originaalvariantidega. Iga variant saab score, reasoning_et, rank
+     * — ning lõpptulemus sorteeritakse rank-i järgi.
      */
     private JsonNode mergeRanking(JsonNode variants, JsonNode rankedArr) {
         // Index originaalid variant_id järgi

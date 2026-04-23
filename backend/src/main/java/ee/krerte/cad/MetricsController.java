@@ -1,5 +1,9 @@
 package ee.krerte.cad;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -8,29 +12,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerInterceptor;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lihtne in-memory monitoring — mõeldud admin-dashboardile.
  *
- * <p>Salvestab iga endpointi kohta viimased 1000 latentsi­mõõdet ringbuffer-is,
- * millest arvutame p50/p95/p99. Samuti loeme:
+ * <p>Salvestab iga endpointi kohta viimased 1000 latentsi­mõõdet ringbuffer-is, millest arvutame
+ * p50/p95/p99. Samuti loeme:
+ *
  * <ul>
- *   <li>HTTP status koodide jagunemine (2xx/4xx/5xx kaupa)</li>
- *   <li>Claude API kutsete arv + kumulatiivne latentsus</li>
- *   <li>Darwin evolve/* kutsete arv (oluline äri-metric)</li>
- *   <li>Freeform generate kutsete arv</li>
+ *   <li>HTTP status koodide jagunemine (2xx/4xx/5xx kaupa)
+ *   <li>Claude API kutsete arv + kumulatiivne latentsus
+ *   <li>Darwin evolve/* kutsete arv (oluline äri-metric)
+ *   <li>Freeform generate kutsete arv
  * </ul>
  *
- * <p>Keset kasvu saab see migreerida Prometheus/Micrometer peale, aga esimestel
- * 1000 kasutajal on in-memory piisav ja null-overhead.
+ * <p>Keset kasvu saab see migreerida Prometheus/Micrometer peale, aga esimestel 1000 kasutajal on
+ * in-memory piisav ja null-overhead.
  *
- * <p>Endpoint: <code>GET /api/admin/metrics</code> (admin-only, kontrollib
- * AdminController õigusi).
+ * <p>Endpoint: <code>GET /api/admin/metrics</code> (admin-only, kontrollib AdminController õigusi).
  */
 @Component
 @RestController
@@ -43,7 +42,7 @@ public class MetricsController implements HandlerInterceptor {
     // endpoint → ringbuffer of latency (ms)
     private final Map<String, long[]> latencies = new ConcurrentHashMap<>();
     private final Map<String, Integer> latencyCursor = new ConcurrentHashMap<>();
-    private final Map<String, Integer> latencyCount  = new ConcurrentHashMap<>();
+    private final Map<String, Integer> latencyCount = new ConcurrentHashMap<>();
 
     // endpoint → status code counters
     private final Map<String, long[]> statusCounters = new ConcurrentHashMap<>(); // [2xx, 4xx, 5xx]
@@ -59,8 +58,8 @@ public class MetricsController implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest req, HttpServletResponse res,
-                                 Object handler, Exception ex) {
+    public void afterCompletion(
+            HttpServletRequest req, HttpServletResponse res, Object handler, Exception ex) {
         Long start = (Long) req.getAttribute("_start_ns");
         if (start == null) return;
         long ms = (System.nanoTime() - start) / 1_000_000L;
@@ -129,19 +128,20 @@ public class MetricsController implements HandlerInterceptor {
             long[] buf = latencies.get(path);
             long[] samples = Arrays.copyOf(buf, n);
             Arrays.sort(samples);
-            long p50 = samples[(int)(n * 0.50)];
-            long p95 = samples[Math.min(n - 1, (int)(n * 0.95))];
-            long p99 = samples[Math.min(n - 1, (int)(n * 0.99))];
+            long p50 = samples[(int) (n * 0.50)];
+            long p95 = samples[Math.min(n - 1, (int) (n * 0.95))];
+            long p99 = samples[Math.min(n - 1, (int) (n * 0.99))];
             long[] st = statusCounters.getOrDefault(path, new long[3]);
-            endpoints.put(path, Map.of(
-                    "count", n,
-                    "p50_ms", p50,
-                    "p95_ms", p95,
-                    "p99_ms", p99,
-                    "status_2xx", st[0],
-                    "status_4xx", st[1],
-                    "status_5xx", st[2]
-            ));
+            endpoints.put(
+                    path,
+                    Map.of(
+                            "count", n,
+                            "p50_ms", p50,
+                            "p95_ms", p95,
+                            "p99_ms", p99,
+                            "status_2xx", st[0],
+                            "status_4xx", st[1],
+                            "status_5xx", st[2]));
         }
         out.put("endpoints", endpoints);
         out.put("business", counters);

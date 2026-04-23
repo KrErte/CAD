@@ -1,33 +1,32 @@
 package ee.krerte.cad.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import ee.krerte.cad.printflow.entity.Printer;
 import ee.krerte.cad.printflow.repo.PrinterRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Integration test päris Postgres'iga (Testcontainers).
  *
  * <p>Valideerime, et:
+ *
  * <ol>
- *   <li>Flyway migratsioonid jooksevad puhtalt</li>
- *   <li>JPA @Column mapping'ud (nt {@code bed_temp_c numeric(5,2)}) ei konflikti
- *       Hibernate ddl-auto=validate'iga</li>
- *   <li>Custom query meetodid (findByOrganizationIdOrderByNameAsc) genereerivad
- *       päris Postgres'ile töötava SQL'i (mitte H2-dialect-only)</li>
+ *   <li>Flyway migratsioonid jooksevad puhtalt
+ *   <li>JPA @Column mapping'ud (nt {@code bed_temp_c numeric(5,2)}) ei konflikti Hibernate
+ *       ddl-auto=validate'iga
+ *   <li>Custom query meetodid (findByOrganizationIdOrderByNameAsc) genereerivad päris Postgres'ile
+ *       töötava SQL'i (mitte H2-dialect-only)
  * </ol>
  */
 @DisplayName("PrinterRepository + Postgres")
 class PrinterRepositoryIT extends AbstractPostgresIntegrationTest {
 
-    @Autowired
-    private PrinterRepository repo;
+    @Autowired private PrinterRepository repo;
 
     @BeforeEach
     void cleanup() {
@@ -60,7 +59,7 @@ class PrinterRepositoryIT extends AbstractPostgresIntegrationTest {
     void tenantIsolation() {
         repo.save(newPrinter(1L, "Bambu X1", "IDLE"));
         repo.save(newPrinter(1L, "Prusa MK4", "PRINTING"));
-        repo.save(newPrinter(2L, "Voron 2.4", "IDLE"));   // teine tenant
+        repo.save(newPrinter(2L, "Voron 2.4", "IDLE")); // teine tenant
 
         List<Printer> orgOne = repo.findByOrganizationIdOrderByNameAsc(1L);
         assertThat(orgOne).hasSize(2);

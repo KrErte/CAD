@@ -5,14 +5,13 @@ import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.repo.CustomerRepository;
 import ee.krerte.cad.printflow.repo.QuoteRepository;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/printflow/customers")
@@ -31,15 +30,17 @@ public class CustomerController {
     @GetMapping
     public List<Map<String, Object>> list() {
         Organization org = orgCtx.currentOrganization();
-        return repo.findByOrganizationIdOrderByCreatedAtDesc(org.getId())
-                .stream().map(CustomerController::render).toList();
+        return repo.findByOrganizationIdOrderByCreatedAtDesc(org.getId()).stream()
+                .map(CustomerController::render)
+                .toList();
     }
 
     @GetMapping("/{id}")
     public Map<String, Object> get(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
-        Customer c = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Customer c =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return render(c);
     }
 
@@ -56,8 +57,9 @@ public class CustomerController {
     public Map<String, Object> update(@PathVariable Long id, @RequestBody Customer patch) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("OPERATOR");
-        Customer c = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Customer c =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (patch.getKind() != null) c.setKind(patch.getKind());
         if (patch.getName() != null) c.setName(patch.getName());
         if (patch.getEmail() != null) c.setEmail(patch.getEmail());
@@ -75,8 +77,9 @@ public class CustomerController {
     public Map<String, Object> delete(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("ADMIN");
-        Customer c = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Customer c =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         repo.delete(c);
         return Map.of("deleted", true);
     }

@@ -18,8 +18,6 @@ public class CollabWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws/collab")
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+        registry.addEndpoint("/ws/collab").setAllowedOriginPatterns("*").withSockJS();
     }
 }

@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -54,51 +53,151 @@ public class DfmReport {
     private Integer thinFeaturesCount;
 
     /**
-     * JSON text (stored as jsonb). We keep it as String to avoid an
-     * optional Hibernate-JSON mapping dependency; the service layer
-     * (re)serializes when writing.
+     * JSON text (stored as jsonb). We keep it as String to avoid an optional Hibernate-JSON mapping
+     * dependency; the service layer (re)serializes when writing.
      */
     @Column(columnDefinition = "jsonb")
     private String issues;
 
     @Column(nullable = false, length = 8)
-    private String severity = "OK";   // OK|WARN|BLOCK
+    private String severity = "OK"; // OK|WARN|BLOCK
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
-    public Long getId() { return id; }
-    public Long getOrganizationId() { return organizationId; }
-    public void setOrganizationId(Long v) { this.organizationId = v; }
-    public String getFileName() { return fileName; }
-    public void setFileName(String v) { this.fileName = v; }
-    public Integer getSizeBytes() { return sizeBytes; }
-    public void setSizeBytes(Integer v) { this.sizeBytes = v; }
-    public BigDecimal getBboxXmm() { return bboxXmm; }
-    public void setBboxXmm(BigDecimal v) { this.bboxXmm = v; }
-    public BigDecimal getBboxYmm() { return bboxYmm; }
-    public void setBboxYmm(BigDecimal v) { this.bboxYmm = v; }
-    public BigDecimal getBboxZmm() { return bboxZmm; }
-    public void setBboxZmm(BigDecimal v) { this.bboxZmm = v; }
-    public BigDecimal getVolumeCm3() { return volumeCm3; }
-    public void setVolumeCm3(BigDecimal v) { this.volumeCm3 = v; }
-    public Integer getTriangles() { return triangles; }
-    public void setTriangles(Integer v) { this.triangles = v; }
-    public Boolean getIsWatertight() { return isWatertight; }
-    public void setIsWatertight(Boolean v) { this.isWatertight = v; }
-    public Integer getSelfIntersections() { return selfIntersections; }
-    public void setSelfIntersections(Integer v) { this.selfIntersections = v; }
-    public BigDecimal getMinWallMm() { return minWallMm; }
-    public void setMinWallMm(BigDecimal v) { this.minWallMm = v; }
-    public BigDecimal getOverhangAreaCm2() { return overhangAreaCm2; }
-    public void setOverhangAreaCm2(BigDecimal v) { this.overhangAreaCm2 = v; }
-    public BigDecimal getOverhangPct() { return overhangPct; }
-    public void setOverhangPct(BigDecimal v) { this.overhangPct = v; }
-    public Integer getThinFeaturesCount() { return thinFeaturesCount; }
-    public void setThinFeaturesCount(Integer v) { this.thinFeaturesCount = v; }
-    public String getIssues() { return issues; }
-    public void setIssues(String v) { this.issues = v; }
-    public String getSeverity() { return severity; }
-    public void setSeverity(String v) { this.severity = v; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long v) {
+        this.organizationId = v;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String v) {
+        this.fileName = v;
+    }
+
+    public Integer getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public void setSizeBytes(Integer v) {
+        this.sizeBytes = v;
+    }
+
+    public BigDecimal getBboxXmm() {
+        return bboxXmm;
+    }
+
+    public void setBboxXmm(BigDecimal v) {
+        this.bboxXmm = v;
+    }
+
+    public BigDecimal getBboxYmm() {
+        return bboxYmm;
+    }
+
+    public void setBboxYmm(BigDecimal v) {
+        this.bboxYmm = v;
+    }
+
+    public BigDecimal getBboxZmm() {
+        return bboxZmm;
+    }
+
+    public void setBboxZmm(BigDecimal v) {
+        this.bboxZmm = v;
+    }
+
+    public BigDecimal getVolumeCm3() {
+        return volumeCm3;
+    }
+
+    public void setVolumeCm3(BigDecimal v) {
+        this.volumeCm3 = v;
+    }
+
+    public Integer getTriangles() {
+        return triangles;
+    }
+
+    public void setTriangles(Integer v) {
+        this.triangles = v;
+    }
+
+    public Boolean getIsWatertight() {
+        return isWatertight;
+    }
+
+    public void setIsWatertight(Boolean v) {
+        this.isWatertight = v;
+    }
+
+    public Integer getSelfIntersections() {
+        return selfIntersections;
+    }
+
+    public void setSelfIntersections(Integer v) {
+        this.selfIntersections = v;
+    }
+
+    public BigDecimal getMinWallMm() {
+        return minWallMm;
+    }
+
+    public void setMinWallMm(BigDecimal v) {
+        this.minWallMm = v;
+    }
+
+    public BigDecimal getOverhangAreaCm2() {
+        return overhangAreaCm2;
+    }
+
+    public void setOverhangAreaCm2(BigDecimal v) {
+        this.overhangAreaCm2 = v;
+    }
+
+    public BigDecimal getOverhangPct() {
+        return overhangPct;
+    }
+
+    public void setOverhangPct(BigDecimal v) {
+        this.overhangPct = v;
+    }
+
+    public Integer getThinFeaturesCount() {
+        return thinFeaturesCount;
+    }
+
+    public void setThinFeaturesCount(Integer v) {
+        this.thinFeaturesCount = v;
+    }
+
+    public String getIssues() {
+        return issues;
+    }
+
+    public void setIssues(String v) {
+        this.issues = v;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String v) {
+        this.severity = v;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

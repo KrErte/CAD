@@ -1,15 +1,15 @@
 package ee.krerte.cad.auth;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-
-import java.time.Instant;
 
 @Entity
 @Table(name = "designs")
 public class Design {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "user_id", nullable = false)
@@ -35,17 +35,56 @@ public class Design {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
-    public Long getId() { return id; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long u) { this.userId = u; }
-    public String getTemplate() { return template; }
-    public void setTemplate(String t) { this.template = t; }
-    public String getParams() { return params; }
-    public void setParams(String p) { this.params = p; }
-    public String getSummaryEt() { return summaryEt; }
-    public void setSummaryEt(String s) { this.summaryEt = s; }
-    public byte[] getStl() { return stl; }
-    public void setStl(byte[] s) { this.stl = s; this.sizeBytes = s == null ? 0 : s.length; }
-    public int getSizeBytes() { return sizeBytes; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long u) {
+        this.userId = u;
+    }
+
+    public String getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(String t) {
+        this.template = t;
+    }
+
+    public String getParams() {
+        return params;
+    }
+
+    public void setParams(String p) {
+        this.params = p;
+    }
+
+    public String getSummaryEt() {
+        return summaryEt;
+    }
+
+    public void setSummaryEt(String s) {
+        this.summaryEt = s;
+    }
+
+    public byte[] getStl() {
+        return stl;
+    }
+
+    public void setStl(byte[] s) {
+        this.stl = s;
+        this.sizeBytes = s == null ? 0 : s.length;
+    }
+
+    public int getSizeBytes() {
+        return sizeBytes;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

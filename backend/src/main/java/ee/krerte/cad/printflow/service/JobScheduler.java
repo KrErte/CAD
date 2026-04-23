@@ -6,24 +6,21 @@ import ee.krerte.cad.printflow.entity.Printer;
 import ee.krerte.cad.printflow.repo.MaterialRepository;
 import ee.krerte.cad.printflow.repo.PrintJobRepository;
 import ee.krerte.cad.printflow.repo.PrinterRepository;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * Peamine scheduler-luup. Kord 15 sekundis:
- *   1) iga printeri peal heartbeat();
- *   2) iga IDLE printeri peal — leia queue'st sobiv job, dispatcher'da.
+ * Peamine scheduler-luup. Kord 15 sekundis: 1) iga printeri peal heartbeat(); 2) iga IDLE printeri
+ * peal — leia queue'st sobiv job, dispatcher'da.
  *
- * Match'iv loogika:
- *   - material.family peab olema printeri supported_material_families CSV'is
- *   - priority desc, queuedAt asc
+ * <p>Match'iv loogika: - material.family peab olema printeri supported_material_families CSV'is -
+ * priority desc, queuedAt asc
  */
 @Component
 public class JobScheduler {
@@ -35,15 +32,17 @@ public class JobScheduler {
     private final MaterialRepository materialRepo;
     private final PrinterService printerService;
 
-    public JobScheduler(PrinterRepository p, PrintJobRepository j, MaterialRepository m, PrinterService ps) {
+    public JobScheduler(
+            PrinterRepository p, PrintJobRepository j, MaterialRepository m, PrinterService ps) {
         this.printerRepo = p;
         this.jobRepo = j;
         this.materialRepo = m;
         this.printerService = ps;
     }
 
-    @Scheduled(fixedDelayString = "${app.printflow.scheduler.heartbeat-ms:15000}",
-               initialDelayString = "${app.printflow.scheduler.initial-ms:5000}")
+    @Scheduled(
+            fixedDelayString = "${app.printflow.scheduler.heartbeat-ms:15000}",
+            initialDelayString = "${app.printflow.scheduler.initial-ms:5000}")
     public void tick() {
         try {
             List<Printer> all = printerRepo.findAll();
@@ -74,15 +73,15 @@ public class JobScheduler {
         }
     }
 
-    /**
-     * Leiame printerile sobiva queue-järgse töö (material-match + priority).
-     */
+    /** Leiame printerile sobiva queue-järgse töö (material-match + priority). */
     private PrintJob pickNextForPrinter(Printer printer) {
         Set<String> supported = parseSupportedFamilies(printer.getSupportedMaterialFamilies());
-        List<PrintJob> queued = jobRepo.findByOrganizationIdAndStatusOrderByPriorityDescQueuedAtAsc(
-                printer.getOrganizationId(), "QUEUED");
+        List<PrintJob> queued =
+                jobRepo.findByOrganizationIdAndStatusOrderByPriorityDescQueuedAtAsc(
+                        printer.getOrganizationId(), "QUEUED");
         for (PrintJob job : queued) {
-            if (job.getMaterialId() == null) return job;  // ilma-materjali-töö → anna ükskõik mis printerile
+            if (job.getMaterialId() == null)
+                return job; // ilma-materjali-töö → anna ükskõik mis printerile
             Material m = materialRepo.findById(job.getMaterialId()).orElse(null);
             if (m == null) continue;
             if (supported.contains(m.getFamily())) return job;

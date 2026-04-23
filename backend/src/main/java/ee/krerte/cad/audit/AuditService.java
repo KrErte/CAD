@@ -2,6 +2,7 @@ package ee.krerte.cad.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -10,23 +11,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 /**
  * Keskne teenus audit-kirjete tegemiseks.
  *
  * <p>Kasutamine:
+ *
  * <pre>
  *   auditService.record("DESIGN_CREATE", "design", designId, "SUCCESS",
  *       Map.of("template", spec.get("template").asText()));
  * </pre>
  *
- * <p><b>Async</b>: audit-write on {@code @Async} — ei blokeeri request'i.
- * Kui audit-kirjutamine fail'ib (DB down), siis me logime ERROR ja liigume
- * edasi — äri-tegevus ei tohi peatuda logging-failure'i tõttu.
+ * <p><b>Async</b>: audit-write on {@code @Async} — ei blokeeri request'i. Kui audit-kirjutamine
+ * fail'ib (DB down), siis me logime ERROR ja liigume edasi — äri-tegevus ei tohi peatuda
+ * logging-failure'i tõttu.
  *
- * <p><b>Context</b>: tõmbame user'i SecurityContext'ist ja request-id
- * MDC'st automaatselt — kutsuja ei pea neid edasi andma.
+ * <p><b>Context</b>: tõmbame user'i SecurityContext'ist ja request-id MDC'st automaatselt — kutsuja
+ * ei pea neid edasi andma.
  */
 @Service
 public class AuditService {
@@ -44,8 +44,12 @@ public class AuditService {
     }
 
     @Async
-    public void record(String action, String targetType, Long targetId, String outcome,
-                       Map<String, ?> details) {
+    public void record(
+            String action,
+            String targetType,
+            Long targetId,
+            String outcome,
+            Map<String, ?> details) {
         try {
             var entry = new AuditLog();
             entry.setAction(action);
@@ -58,7 +62,10 @@ public class AuditService {
             if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
                 // Me hoiame userId tavaliselt Principal.getName() kujul string'ina —
                 // controller'id võivad konverteerida kui tarvis
-                try { entry.setActorUserId(Long.parseLong(auth.getName())); } catch (Exception ignored) {}
+                try {
+                    entry.setActorUserId(Long.parseLong(auth.getName()));
+                } catch (Exception ignored) {
+                }
             }
 
             if (request != null) {
@@ -72,8 +79,13 @@ public class AuditService {
 
             repo.save(entry);
         } catch (Exception e) {
-            log.error("Audit log write failed: action={} target={}:{} outcome={} err={}",
-                action, targetType, targetId, outcome, e.getMessage());
+            log.error(
+                    "Audit log write failed: action={} target={}:{} outcome={} err={}",
+                    action,
+                    targetType,
+                    targetId,
+                    outcome,
+                    e.getMessage());
         }
     }
 

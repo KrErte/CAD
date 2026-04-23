@@ -7,31 +7,27 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
  * Idempotency-Key filter — RFC 7231 / Stripe-stiilis.
  *
- * Kui klient saadab {@code X-Idempotency-Key: <uuid>} header'iga POST
- * päringu, cachime response'i 24h. Samasuguse key'ga teine request tagastab
- * cached vastuse — ei tööta controller'i metoodi uuesti, ei kuluta Claude
- * raha, ei looma duplicate orders'e.
+ * <p>Kui klient saadab {@code X-Idempotency-Key: <uuid>} header'iga POST päringu, cachime
+ * response'i 24h. Samasuguse key'ga teine request tagastab cached vastuse — ei tööta controller'i
+ * metoodi uuesti, ei kuluta Claude raha, ei looma duplicate orders'e.
  *
- * Sobib:
- *   - /api/generate  (retry võrgu vigast)
- *   - /api/orders    (topelt-tellimuse kaitse)
- *   - /api/billing/* (topelt-payment kaitse)
+ * <p>Sobib: - /api/generate (retry võrgu vigast) - /api/orders (topelt-tellimuse kaitse) -
+ * /api/billing/* (topelt-payment kaitse)
  *
- * Märkus: in-memory cache — restart kustutab. Prod-is kasuta Redis't (järgmine
- * branch, db-infrastructure).
+ * <p>Märkus: in-memory cache — restart kustutab. Prod-is kasuta Redis't (järgmine branch,
+ * db-infrastructure).
  */
 @Component
 public class IdempotencyKeyFilter extends OncePerRequestFilter {
@@ -50,7 +46,8 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
+    protected void doFilterInternal(
+            HttpServletRequest req, HttpServletResponse resp, FilterChain chain)
             throws ServletException, IOException {
 
         String key = req.getHeader("X-Idempotency-Key");
@@ -80,20 +77,26 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
         // Cache ainult 2xx/4xx (mitte 5xx - neid tahame uuesti proovida)
         int status = wrapped.getStatus();
         if (status >= 200 && status < 500 && cache.size() < MAX_ENTRIES) {
-            cache.put(scoped, new CachedResponse(
-                status,
-                Map.of("Content-Type", wrapped.getContentType() == null ? "application/json" : wrapped.getContentType()),
-                wrapped.getBody(),
-                Instant.now().toEpochMilli() + TTL_MS
-            ));
+            cache.put(
+                    scoped,
+                    new CachedResponse(
+                            status,
+                            Map.of(
+                                    "Content-Type",
+                                    wrapped.getContentType() == null
+                                            ? "application/json"
+                                            : wrapped.getContentType()),
+                            wrapped.getBody(),
+                            Instant.now().toEpochMilli() + TTL_MS));
         }
         wrapped.flush();
     }
 
     private String scopeKey(HttpServletRequest req, String key) {
-        String user = req.getUserPrincipal() != null
-                ? req.getUserPrincipal().getName()
-                : req.getRemoteAddr();
+        String user =
+                req.getUserPrincipal() != null
+                        ? req.getUserPrincipal().getName()
+                        : req.getRemoteAddr();
         return user + ":" + req.getMethod() + ":" + req.getRequestURI() + ":" + key;
     }
 
@@ -102,8 +105,11 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
         cache.entrySet().removeIf(e -> e.getValue().expiresAt < now);
     }
 
-    private record CachedResponse(int status, Map<String, String> headers, byte[] body, long expiresAt) {
-        boolean isExpired() { return Instant.now().toEpochMilli() > expiresAt; }
+    private record CachedResponse(
+            int status, Map<String, String> headers, byte[] body, long expiresAt) {
+        boolean isExpired() {
+            return Instant.now().toEpochMilli() > expiresAt;
+        }
     }
 
     /** ServletResponse wrapper, mis kapitaliseerib kirjutatud body't. */
@@ -112,16 +118,28 @@ public class IdempotencyKeyFilter extends OncePerRequestFilter {
         private PrintWriter writer;
         private ServletOutputStream stream;
 
-        CapturingResponse(HttpServletResponse response) { super(response); }
+        CapturingResponse(HttpServletResponse response) {
+            super(response);
+        }
 
         @Override
         public ServletOutputStream getOutputStream() {
             if (stream == null) {
-                stream = new ServletOutputStream() {
-                    @Override public boolean isReady() { return true; }
-                    @Override public void setWriteListener(WriteListener w) {}
-                    @Override public void write(int b) { buffer.write(b); }
-                };
+                stream =
+                        new ServletOutputStream() {
+                            @Override
+                            public boolean isReady() {
+                                return true;
+                            }
+
+                            @Override
+                            public void setWriteListener(WriteListener w) {}
+
+                            @Override
+                            public void write(int b) {
+                                buffer.write(b);
+                            }
+                        };
             }
             return stream;
         }

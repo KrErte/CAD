@@ -5,18 +5,17 @@ import ee.krerte.cad.printflow.entity.Rfq;
 import ee.krerte.cad.printflow.repo.OrganizationRepository;
 import ee.krerte.cad.printflow.repo.RfqRepository;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Request-For-Quote voog — klient ise täidab vormi (public POST), admin näeb
- * RFQ liste ja saab muuta staatust.
+ * Request-For-Quote voog — klient ise täidab vormi (public POST), admin näeb RFQ liste ja saab
+ * muuta staatust.
  */
 @RestController
 @RequestMapping("/api/printflow/rfq")
@@ -35,8 +34,12 @@ public class RfqController {
     /** PUBLIC endpoint — klient täidab vormi. Org slug URL-is. */
     @PostMapping("/public/{slug}")
     public Map<String, Object> submit(@PathVariable String slug, @RequestBody Rfq input) {
-        Organization org = orgRepo.findBySlug(slug)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "org ei leitud"));
+        Organization org =
+                orgRepo.findBySlug(slug)
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND, "org ei leitud"));
         if (input.getContactEmail() == null || input.getContactEmail().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "contact_email puudub");
         }
@@ -47,31 +50,40 @@ public class RfqController {
         input.setStatus("NEW");
         input.setUpdatedAt(Instant.now());
         Rfq saved = repo.save(input);
-        return Map.of("id", saved.getId(), "status", saved.getStatus(),
-                "message_et", "Tänan! Võtame teiega ühendust 24h jooksul.");
+        return Map.of(
+                "id",
+                saved.getId(),
+                "status",
+                saved.getStatus(),
+                "message_et",
+                "Tänan! Võtame teiega ühendust 24h jooksul.");
     }
 
     @GetMapping
     public List<Map<String, Object>> list() {
         Organization org = orgCtx.currentOrganization();
-        return repo.findByOrganizationIdOrderByCreatedAtDesc(org.getId())
-                .stream().map(RfqController::render).toList();
+        return repo.findByOrganizationIdOrderByCreatedAtDesc(org.getId()).stream()
+                .map(RfqController::render)
+                .toList();
     }
 
     @GetMapping("/{id}")
     public Map<String, Object> get(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
-        Rfq r = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Rfq r =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         return render(r);
     }
 
     @PostMapping("/{id}/status")
-    public Map<String, Object> status(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public Map<String, Object> status(
+            @PathVariable Long id, @RequestBody Map<String, String> body) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("OPERATOR");
-        Rfq r = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Rfq r =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         String next = body.getOrDefault("status", "IN_REVIEW");
         r.setStatus(next);
         r.setUpdatedAt(Instant.now());

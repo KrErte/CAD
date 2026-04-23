@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public class AdapterStatus {
     /** "IDLE" | "PRINTING" | "PAUSED" | "ERROR" | "OFFLINE" */
     public String status;
+
     public Integer progressPct;
     public BigDecimal bedTempC;
     public BigDecimal hotendTempC;

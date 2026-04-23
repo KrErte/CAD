@@ -3,18 +3,15 @@ package ee.krerte.cad.printflow.service;
 import ee.krerte.cad.printflow.entity.PrintJob;
 import ee.krerte.cad.printflow.entity.Quote;
 import ee.krerte.cad.printflow.repo.*;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
-/**
- * KPI-d: revenue, active jobs, success rate, printer OEE, top materials.
- */
+/** KPI-d: revenue, active jobs, success rate, printer OEE, top materials. */
 @Service
 public class AnalyticsService {
 
@@ -23,7 +20,8 @@ public class AnalyticsService {
     private final PrinterRepository printerRepo;
     private final MaterialRepository materialRepo;
 
-    public AnalyticsService(QuoteRepository q, PrintJobRepository j, PrinterRepository p, MaterialRepository m) {
+    public AnalyticsService(
+            QuoteRepository q, PrintJobRepository j, PrinterRepository p, MaterialRepository m) {
         this.quoteRepo = q;
         this.jobRepo = j;
         this.printerRepo = p;
@@ -35,11 +33,12 @@ public class AnalyticsService {
         Map<String, Object> r = new LinkedHashMap<>();
 
         // Revenue = sum of ACCEPTED quote totals
-        BigDecimal revenue = quoteRepo.findByOrganizationIdAndStatus(orgId, "ACCEPTED").stream()
-                .map(Quote::getTotalEur)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal revenue =
+                quoteRepo.findByOrganizationIdAndStatus(orgId, "ACCEPTED").stream()
+                        .map(Quote::getTotalEur)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .setScale(2, RoundingMode.HALF_UP);
         r.put("revenue_eur", revenue);
 
         r.put("quotes_total", quoteRepo.countByOrganizationId(orgId));
@@ -68,8 +67,12 @@ public class AnalyticsService {
         r.put("printers_printing", printersPrinting);
         r.put("printers_offline", printersOffline);
 
-        double oee = (printersIdle + printersPrinting) == 0 ? 0
-                : 100.0 * printersPrinting / (printersIdle + printersPrinting + printersOffline);
+        double oee =
+                (printersIdle + printersPrinting) == 0
+                        ? 0
+                        : 100.0
+                                * printersPrinting
+                                / (printersIdle + printersPrinting + printersOffline);
         r.put("oee_pct", BigDecimal.valueOf(oee).setScale(1, RoundingMode.HALF_UP));
         r.put("calculated_at", Instant.now());
         return r;
@@ -78,24 +81,31 @@ public class AnalyticsService {
     public List<Map<String, Object>> topMaterials(Long orgId) {
         // group usage by material over last 90 days
         List<PrintJob> recent = jobRepo.findByOrganizationIdOrderByQueuedAtDesc(orgId);
-        Map<Long, Long> counts = recent.stream()
-                .filter(j -> j.getMaterialId() != null)
-                .collect(Collectors.groupingBy(PrintJob::getMaterialId, Collectors.counting()));
+        Map<Long, Long> counts =
+                recent.stream()
+                        .filter(j -> j.getMaterialId() != null)
+                        .collect(
+                                Collectors.groupingBy(
+                                        PrintJob::getMaterialId, Collectors.counting()));
 
         List<Map<String, Object>> out = new ArrayList<>();
         counts.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue(), a.getValue()))
                 .limit(10)
-                .forEach(e -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("material_id", e.getKey());
-                    row.put("job_count", e.getValue());
-                    materialRepo.findById(e.getKey()).ifPresent(m -> {
-                        row.put("name", m.getName());
-                        row.put("family", m.getFamily());
-                    });
-                    out.add(row);
-                });
+                .forEach(
+                        e -> {
+                            Map<String, Object> row = new LinkedHashMap<>();
+                            row.put("material_id", e.getKey());
+                            row.put("job_count", e.getValue());
+                            materialRepo
+                                    .findById(e.getKey())
+                                    .ifPresent(
+                                            m -> {
+                                                row.put("name", m.getName());
+                                                row.put("family", m.getFamily());
+                                            });
+                            out.add(row);
+                        });
         return out;
     }
 
@@ -106,15 +116,19 @@ public class AnalyticsService {
             if (q.getAcceptedAt() == null) continue;
             if (q.getAcceptedAt().isBefore(since)) continue;
             String d = q.getAcceptedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().toString();
-            byDay.merge(d, q.getTotalEur() != null ? q.getTotalEur() : BigDecimal.ZERO, BigDecimal::add);
+            byDay.merge(
+                    d,
+                    q.getTotalEur() != null ? q.getTotalEur() : BigDecimal.ZERO,
+                    BigDecimal::add);
         }
         List<Map<String, Object>> out = new ArrayList<>();
-        byDay.forEach((day, eur) -> {
-            Map<String, Object> r = new LinkedHashMap<>();
-            r.put("date", day);
-            r.put("revenue_eur", eur);
-            out.add(r);
-        });
+        byDay.forEach(
+                (day, eur) -> {
+                    Map<String, Object> r = new LinkedHashMap<>();
+                    r.put("date", day);
+                    r.put("revenue_eur", eur);
+                    out.add(r);
+                });
         return out;
     }
 }

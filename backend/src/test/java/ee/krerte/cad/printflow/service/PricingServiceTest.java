@@ -1,20 +1,17 @@
 package ee.krerte.cad.printflow.service;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import ee.krerte.cad.printflow.entity.Material;
 import ee.krerte.cad.printflow.entity.Organization;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
-
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Puhtalt ühiku-test — ei vaja Spring konteksti ega DB-d.
- * Kontrollib hinnastamise valemit:
- *   base = filament + (time/3600) * hourly
- *   unit = max(base, setup) * (1 + margin/100) * rush
- *   line = unit * qty * (1 - volume_discount)
+ * Puhtalt ühiku-test — ei vaja Spring konteksti ega DB-d. Kontrollib hinnastamise valemit: base =
+ * filament + (time/3600) * hourly unit = max(base, setup) * (1 + margin/100) * rush line = unit *
+ * qty * (1 - volume_discount)
  */
 class PricingServiceTest {
 
@@ -42,12 +39,12 @@ class PricingServiceTest {
 
     @Test
     void volumeDiscount_tiers() {
-        assertEquals(0.0,  PricingService.volumeDiscount(1),   0.001);
-        assertEquals(0.0,  PricingService.volumeDiscount(4),   0.001);
-        assertEquals(0.05, PricingService.volumeDiscount(5),   0.001);
-        assertEquals(0.05, PricingService.volumeDiscount(19),  0.001);
-        assertEquals(0.10, PricingService.volumeDiscount(20),  0.001);
-        assertEquals(0.10, PricingService.volumeDiscount(99),  0.001);
+        assertEquals(0.0, PricingService.volumeDiscount(1), 0.001);
+        assertEquals(0.0, PricingService.volumeDiscount(4), 0.001);
+        assertEquals(0.05, PricingService.volumeDiscount(5), 0.001);
+        assertEquals(0.05, PricingService.volumeDiscount(19), 0.001);
+        assertEquals(0.10, PricingService.volumeDiscount(20), 0.001);
+        assertEquals(0.10, PricingService.volumeDiscount(99), 0.001);
         assertEquals(0.15, PricingService.volumeDiscount(100), 0.001);
         assertEquals(0.15, PricingService.volumeDiscount(500), 0.001);
     }
@@ -116,11 +113,12 @@ class PricingServiceTest {
         // aga org hourly is null → NPE risk. Meie valem kasutab fallback 2.50
         // ainult kui material.getOrganizationId() == null. Kontrollime käitumist:
         Material ownerMat = new Material();
-        ownerMat.setOrganizationId(null);  // "system material"
+        ownerMat.setOrganizationId(null); // "system material"
         ownerMat.setPricePerKgEur(new BigDecimal("25.00"));
         ownerMat.setSetupFeeEur(new BigDecimal("3.00"));
 
-        PricingService.LinePricing p = svc.calculate(orgNoRate, ownerMat, 1, 3600, 50, BigDecimal.ONE);
+        PricingService.LinePricing p =
+                svc.calculate(orgNoRate, ownerMat, 1, 3600, 50, BigDecimal.ONE);
         // filament 1.25 + time (2.50€ fallback) = 3.75, setup 3€ → base 3.75
         // unit = 3.75 * 1.30 = 4.875 → 4.88
         assertEquals(new BigDecimal("4.88"), p.unitPriceEur);

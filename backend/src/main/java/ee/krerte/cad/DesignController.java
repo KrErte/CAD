@@ -2,20 +2,19 @@ package ee.krerte.cad;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ee.krerte.cad.auth.QuotaService;
+import ee.krerte.cad.auth.RateLimitService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import ee.krerte.cad.auth.QuotaService;
-import ee.krerte.cad.auth.RateLimitService;
 import org.springframework.security.core.context.SecurityContextHolder;
-import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")
@@ -31,9 +30,13 @@ public class DesignController {
     private final QuotaService quotaService;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy,
-                            SlicerClient slicer, RateLimitService rateLimiter,
-                            QuotaService quotaService) {
+    public DesignController(
+            ClaudeClient claude,
+            WorkerClient worker,
+            MeshyClient meshy,
+            SlicerClient slicer,
+            RateLimitService rateLimiter,
+            QuotaService quotaService) {
         this.claude = claude;
         this.worker = worker;
         this.meshy = meshy;
@@ -60,24 +63,31 @@ public class DesignController {
         // BUG-FIX: rate limiting — varem puudus, kasutaja sai piiramatult Claude API päringuid teha
         long userId = currentUserId();
         if (!rateLimiter.allow(userId, "spec")) {
-            return ResponseEntity.status(429).body(Map.of(
-                    "error", "rate_limited",
-                    "message", "Liiga palju päringuid. Proovi minuti pärast uuesti.",
-                    "remaining", rateLimiter.remaining(userId, "spec")));
+            return ResponseEntity.status(429)
+                    .body(
+                            Map.of(
+                                    "error", "rate_limited",
+                                    "message",
+                                            "Liiga palju päringuid. Proovi minuti pärast uuesti.",
+                                    "remaining", rateLimiter.remaining(userId, "spec")));
         }
         JsonNode catalog = worker.templates();
         JsonNode spec = claude.specFromPrompt(req.prompt(), catalog);
         if (spec.has("error")) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", spec.get("error").asText(),
-                    "message", spec.path("summary_et").asText("Ei leidnud sobivat template'it")));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", spec.get("error").asText(),
+                                    "message",
+                                            spec.path("summary_et")
+                                                    .asText("Ei leidnud sobivat template'it")));
         }
         return ResponseEntity.ok(spec);
     }
 
     /**
-     * Fast, free metrics endpoint — passes through to the worker's heuristic.
-     * Called on every slider change so it must stay cheap (no slicing here).
+     * Fast, free metrics endpoint — passes through to the worker's heuristic. Called on every
+     * slider change so it must stay cheap (no slicing here).
      */
     @PostMapping("/metrics")
     public ResponseEntity<?> metrics(@RequestBody JsonNode spec) {
@@ -85,8 +95,8 @@ public class DesignController {
             return ResponseEntity.ok(worker.metrics(spec));
         } catch (Exception e) {
             log.warn("Worker /metrics failed: {}", e.getMessage());
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "worker_failed", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "worker_failed", "message", e.getMessage()));
         }
     }
 
@@ -96,21 +106,30 @@ public class DesignController {
         // BUG-FIX: rate limiting generate endpointil — varem puudus
         long userId = currentUserId();
         if (!rateLimiter.allow(userId, "generate")) {
-            return ResponseEntity.status(429).body(Map.of(
-                    "error", "rate_limited",
-                    "message", "Liiga palju genereerimisi. Proovi minuti pärast uuesti.",
-                    "remaining", rateLimiter.remaining(userId, "generate")));
+            return ResponseEntity.status(429)
+                    .body(
+                            Map.of(
+                                    "error", "rate_limited",
+                                    "message",
+                                            "Liiga palju genereerimisi. Proovi minuti pärast uuesti.",
+                                    "remaining", rateLimiter.remaining(userId, "generate")));
         }
         // Subscription quota check — verify monthly model limit
         QuotaService.Status quota = quotaService.status(userId);
         if (!quota.allowed()) {
-            return ResponseEntity.status(403).body(Map.of(
-                    "error", "quota_exceeded",
-                    "message", "Kuu limiit täis (" + quota.used() + "/" + quota.limit()
-                               + "). Uuenda plaani, et jätkata.",
-                    "used", quota.used(),
-                    "limit", quota.limit(),
-                    "plan", quota.plan().name()));
+            return ResponseEntity.status(403)
+                    .body(
+                            Map.of(
+                                    "error", "quota_exceeded",
+                                    "message",
+                                            "Kuu limiit täis ("
+                                                    + quota.used()
+                                                    + "/"
+                                                    + quota.limit()
+                                                    + "). Uuenda plaani, et jätkata.",
+                                    "used", quota.used(),
+                                    "limit", quota.limit(),
+                                    "plan", quota.plan().name()));
         }
         byte[] stl = worker.generate(spec);
         String name = spec.path("template").asText("model") + ".stl";
@@ -121,20 +140,20 @@ public class DesignController {
     }
 
     /**
-     * Cost/time preview: generate STL internally, slice it with PrusaSlicer
-     * (sidecar), return { print_time_sec, filament_g, filament_cost_eur, ... }.
+     * Cost/time preview: generate STL internally, slice it with PrusaSlicer (sidecar), return {
+     * print_time_sec, filament_g, filament_cost_eur, ... }.
      *
-     * Gracefully degrades: if the slicer sidecar isn't configured or fails,
-     * we fall back to the worker's volume-based heuristic so the UI always
-     * gets SOME answer. The response includes a "source" field so the
-     * frontend can tell whether the numbers are "exact" (slicer) or
+     * <p>Gracefully degrades: if the slicer sidecar isn't configured or fails, we fall back to the
+     * worker's volume-based heuristic so the UI always gets SOME answer. The response includes a
+     * "source" field so the frontend can tell whether the numbers are "exact" (slicer) or
      * "estimate" (heuristic).
      */
-    public record PreviewRequest(@NotBlank String template,
-                                 JsonNode params,
-                                 String material,
-                                 String fillDensity,
-                                 String layerHeight) {}
+    public record PreviewRequest(
+            @NotBlank String template,
+            JsonNode params,
+            String material,
+            String fillDensity,
+            String layerHeight) {}
 
     @PostMapping("/preview")
     public ResponseEntity<?> preview(@RequestBody JsonNode body) {
@@ -154,9 +173,8 @@ public class DesignController {
             heuristic = worker.metrics(body);
         } catch (Exception e) {
             log.warn("Worker /metrics failed: {}", e.getMessage());
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "worker_failed",
-                    "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "worker_failed", "message", e.getMessage()));
         }
 
         // --- If the slicer isn't enabled, return only the heuristic.
@@ -202,14 +220,15 @@ public class DesignController {
                 "print_time_sec", heuristic.path("print_time_min_estimate").asInt() * 60,
                 "print_time_human", heuristic.path("print_time_min_estimate").asInt() + " min",
                 "filament_g", heuristic.path("weight_g_pla").asDouble(),
-                "filament_cost_eur", round2(heuristic.path("weight_g_pla").asDouble() / 1000.0 * 25.0),
+                "filament_cost_eur",
+                        round2(heuristic.path("weight_g_pla").asDouble() / 1000.0 * 25.0),
                 "volume_cm3", heuristic.path("volume_cm3").asDouble(),
                 "bbox_mm", heuristic.path("bbox_mm"),
-                "overhang_risk", heuristic.path("overhang_risk").asBoolean(false)
-        );
+                "overhang_risk", heuristic.path("overhang_risk").asBoolean(false));
     }
 
-    private Map<String, Object> mergeSlicerAndHeuristic(JsonNode slicerResp, JsonNode heuristic, String preset) {
+    private Map<String, Object> mergeSlicerAndHeuristic(
+            JsonNode slicerResp, JsonNode heuristic, String preset) {
         Map<String, Object> out = new java.util.LinkedHashMap<>();
         out.put("source", "slicer");
         out.put("preset", preset);
@@ -233,53 +252,56 @@ public class DesignController {
     /** Abimeetod rate limitingu jaoks — tagastab kasutaja ID või 0 anonüümsele. */
     private long currentUserId() {
         try {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            Object principal =
+                    SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             if (principal instanceof Long id) return id;
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return 0L; // anonüümne kasutaja — limiteeritakse samuti
     }
 
     /**
-     * AI Design Review — Claude LOOKS at the generated preview (via vision)
-     * together with the user's original Estonian prompt and the resolved spec,
-     * then returns a structured JSON critique:
-     *   { score, verdict_et, strengths[], weaknesses[], suggestions[] }
+     * AI Design Review — Claude LOOKS at the generated preview (via vision) together with the
+     * user's original Estonian prompt and the resolved spec, then returns a structured JSON
+     * critique: { score, verdict_et, strengths[], weaknesses[], suggestions[] }
      *
-     * Each suggestion may carry { param, new_value } so the frontend can
-     * offer one-click "apply this fix" buttons that tweak the slider and
-     * regenerate. This is the bit no other CAD tool ships today — a
-     * self-critiquing generative pipeline.
+     * <p>Each suggestion may carry { param, new_value } so the frontend can offer one-click "apply
+     * this fix" buttons that tweak the slider and regenerate. This is the bit no other CAD tool
+     * ships today — a self-critiquing generative pipeline.
      *
-     * Request body:
-     *   {
-     *     "spec": { template, params, summary_et },
-     *     "prompt_et": "kasutaja originaal eestikeelne soov" (optional),
-     *     "image_base64": "<PNG canvas, no data:image/... prefix>" (optional but strongly recommended)
-     *   }
+     * <p>Request body: { "spec": { template, params, summary_et }, "prompt_et": "kasutaja originaal
+     * eestikeelne soov" (optional), "image_base64": "<PNG canvas, no data:image/... prefix>"
+     * (optional but strongly recommended) }
      */
     public record ReviewRequest(JsonNode spec, String prompt_et, String image_base64) {}
 
     @PostMapping("/review")
     public ResponseEntity<?> review(@RequestBody ReviewRequest req) {
         if (req == null || req.spec() == null || !req.spec().hasNonNull("template")) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "spec_required",
-                    "message", "Review vajab 'spec' väljal vähemalt template'it ja param'eid."));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", "spec_required",
+                                    "message",
+                                            "Review vajab 'spec' väljal vähemalt template'it ja param'eid."));
         }
         try {
             JsonNode review = claude.reviewDesign(req.prompt_et(), req.spec(), req.image_base64());
             return ResponseEntity.ok(review);
         } catch (IllegalStateException e) {
-            // ANTHROPIC_API_KEY not configured — return friendly message so the UI can suppress the button.
+            // ANTHROPIC_API_KEY not configured — return friendly message so the UI can suppress the
+            // button.
             log.warn("Review disabled: {}", e.getMessage());
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "review_disabled",
-                    "message", "AI ülevaade pole hetkel saadaval (Claude API võti puudu)."));
+            return ResponseEntity.status(503)
+                    .body(
+                            Map.of(
+                                    "error", "review_disabled",
+                                    "message",
+                                            "AI ülevaade pole hetkel saadaval (Claude API võti puudu)."));
         } catch (Exception e) {
             log.error("Review failed", e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "review_failed",
-                    "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "review_failed", "message", e.getMessage()));
         }
     }
 
@@ -295,28 +317,37 @@ public class DesignController {
     }
 
     /**
-     * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai.
-     * Returns JSON { "model_url": "..." } that the frontend loads as GLB.
+     * Fallback: when no parametric template fits, generate a free-form mesh via Meshy.ai. Returns
+     * JSON { "model_url": "..." } that the frontend loads as GLB.
      */
     /**
-     * BUG-FIX: Meshy endpoint tagastab nüüd CompletableFuture<ResponseEntity>,
-     * et Tomcat servlet-thread vabaneks kohe. Polling toimub eraldi threadpoolist.
-     * Varem blokeeris Thread.sleep(5000) × 60 iteratsiooni otse servlet-threadil.
+     * BUG-FIX: Meshy endpoint tagastab nüüd CompletableFuture<ResponseEntity>, et Tomcat
+     * servlet-thread vabaneks kohe. Polling toimub eraldi threadpoolist. Varem blokeeris
+     * Thread.sleep(5000) × 60 iteratsiooni otse servlet-threadil.
      */
     @PostMapping("/meshy")
-    public java.util.concurrent.CompletableFuture<ResponseEntity<?>> meshy(@Valid @RequestBody DesignRequest req) {
+    public java.util.concurrent.CompletableFuture<ResponseEntity<?>> meshy(
+            @Valid @RequestBody DesignRequest req) {
         if (!meshy.enabled()) {
             return java.util.concurrent.CompletableFuture.completedFuture(
-                    ResponseEntity.status(503).body(Map.of(
-                            "error", "meshy_disabled",
-                            "message", "Meshy API key pole konfigureeritud")));
+                    ResponseEntity.status(503)
+                            .body(
+                                    Map.of(
+                                            "error", "meshy_disabled",
+                                            "message", "Meshy API key pole konfigureeritud")));
         }
         return meshy.textTo3DAsync(req.prompt())
-                .<ResponseEntity<?>>thenApply(url -> ResponseEntity.ok(Map.of("model_url", url, "format", "glb")))
-                .exceptionally(e -> {
-                    log.error("Meshy generation failed", e);
-                    String msg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-                    return ResponseEntity.status(500).body(Map.of("error", "meshy_failed", "message", msg));
-                });
+                .<ResponseEntity<?>>thenApply(
+                        url -> ResponseEntity.ok(Map.of("model_url", url, "format", "glb")))
+                .exceptionally(
+                        e -> {
+                            log.error("Meshy generation failed", e);
+                            String msg =
+                                    e.getCause() != null
+                                            ? e.getCause().getMessage()
+                                            : e.getMessage();
+                            return ResponseEntity.status(500)
+                                    .body(Map.of("error", "meshy_failed", "message", msg));
+                        });
     }
 }

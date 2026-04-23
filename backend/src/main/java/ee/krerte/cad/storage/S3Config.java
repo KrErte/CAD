@@ -1,5 +1,6 @@
 package ee.krerte.cad.storage;
 
+import java.net.URI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,30 +11,40 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
-import java.net.URI;
-
 /**
- * AWS S3 / MinIO client-konfig. Kasutab path-style URL'e (minio.krerte.ee/bucket/key),
- * kuna MinIO ei toeta virtual-hosted-style vaikimisi.
+ * AWS S3 / MinIO client-konfig. Kasutab path-style URL'e (minio.krerte.ee/bucket/key), kuna MinIO
+ * ei toeta virtual-hosted-style vaikimisi.
  *
- * <p>Prod: AWS S3 region=eu-north-1 (Stockholm) + IAM role'iga credentials.
- * Dev / k3s: MinIO http://minio:9000 + access-key/secret .env'is.
+ * <p>Prod: AWS S3 region=eu-north-1 (Stockholm) + IAM role'iga credentials. Dev / k3s: MinIO
+ * http://minio:9000 + access-key/secret .env'is.
  */
 @Configuration
 public class S3Config {
 
-    @Value("${app.storage.endpoint:}")        String endpoint;
-    @Value("${app.storage.region:eu-north-1}") String region;
-    @Value("${app.storage.access-key:}")      String accessKey;
-    @Value("${app.storage.secret-key:}")      String secretKey;
-    @Value("${app.storage.path-style:true}")  boolean pathStyle;
+    @Value("${app.storage.endpoint:}")
+    String endpoint;
+
+    @Value("${app.storage.region:eu-north-1}")
+    String region;
+
+    @Value("${app.storage.access-key:}")
+    String accessKey;
+
+    @Value("${app.storage.secret-key:}")
+    String secretKey;
+
+    @Value("${app.storage.path-style:true}")
+    boolean pathStyle;
 
     @Bean
     public S3Client s3Client() {
-        var builder = S3Client.builder()
-            .region(Region.of(region))
-            .serviceConfiguration(S3Configuration.builder()
-                .pathStyleAccessEnabled(pathStyle).build());
+        var builder =
+                S3Client.builder()
+                        .region(Region.of(region))
+                        .serviceConfiguration(
+                                S3Configuration.builder()
+                                        .pathStyleAccessEnabled(pathStyle)
+                                        .build());
         applyCredentials(builder);
         if (!endpoint.isBlank()) builder.endpointOverride(URI.create(endpoint));
         return builder.build();
@@ -41,22 +52,28 @@ public class S3Config {
 
     @Bean
     public S3Presigner s3Presigner() {
-        var builder = S3Presigner.builder()
-            .region(Region.of(region))
-            .serviceConfiguration(S3Configuration.builder()
-                .pathStyleAccessEnabled(pathStyle).build());
+        var builder =
+                S3Presigner.builder()
+                        .region(Region.of(region))
+                        .serviceConfiguration(
+                                S3Configuration.builder()
+                                        .pathStyleAccessEnabled(pathStyle)
+                                        .build());
         if (!endpoint.isBlank()) builder.endpointOverride(URI.create(endpoint));
         if (!accessKey.isBlank()) {
-            builder.credentialsProvider(StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)));
+            builder.credentialsProvider(
+                    StaticCredentialsProvider.create(
+                            AwsBasicCredentials.create(accessKey, secretKey)));
         }
         return builder.build();
     }
 
-    private <T extends software.amazon.awssdk.services.s3.S3ClientBuilder> void applyCredentials(T builder) {
+    private <T extends software.amazon.awssdk.services.s3.S3ClientBuilder> void applyCredentials(
+            T builder) {
         if (!accessKey.isBlank()) {
-            builder.credentialsProvider(StaticCredentialsProvider.create(
-                AwsBasicCredentials.create(accessKey, secretKey)));
+            builder.credentialsProvider(
+                    StaticCredentialsProvider.create(
+                            AwsBasicCredentials.create(accessKey, secretKey)));
         }
         // Muidu: default chain (IAM role, env, ~/.aws/credentials)
     }

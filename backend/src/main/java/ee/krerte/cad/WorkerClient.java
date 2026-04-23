@@ -20,7 +20,8 @@ public class WorkerClient {
     }
 
     public JsonNode templates() {
-        return webClient.get()
+        return webClient
+                .get()
                 .uri(workerUrl + "/templates")
                 .retrieve()
                 .bodyToMono(JsonNode.class)
@@ -28,7 +29,8 @@ public class WorkerClient {
     }
 
     public byte[] generate(JsonNode spec) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/generate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(spec)
@@ -38,11 +40,12 @@ public class WorkerClient {
     }
 
     /**
-     * Fast heuristic metrics (volume / bbox / rough print-time) — doesn't
-     * shell out to PrusaSlicer, safe to call on every slider tick.
+     * Fast heuristic metrics (volume / bbox / rough print-time) — doesn't shell out to PrusaSlicer,
+     * safe to call on every slider tick.
      */
     public JsonNode metrics(JsonNode spec) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/metrics")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(spec)
@@ -53,7 +56,8 @@ public class WorkerClient {
 
     /** STEP-i eksport — insener-tasandi B-Rep fail. Täiendab STL väljundi. */
     public byte[] generateStep(JsonNode spec) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/generate_step")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(spec)
@@ -66,7 +70,8 @@ public class WorkerClient {
 
     /** Esimese põlvkonna populatsioon — 6–8 varianti SVG-eelvaatega. */
     public JsonNode evolveSeed(JsonNode body) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/evolve/seed")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
@@ -77,7 +82,8 @@ public class WorkerClient {
 
     /** Järgmine põlvkond — vanemate ristamine ja mutatsioon. */
     public JsonNode evolveCross(JsonNode body) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/evolve/cross")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
@@ -89,11 +95,12 @@ public class WorkerClient {
     // --- Freeform script-gen -----------------------------------------------
 
     /**
-     * Saadab LLM-genereeritud CadQuery Pythoni koodi sandbox-worker'ile.
-     * Worker tagastab JSON-i {ok, error, files:{stl,step}, elapsed_ms}.
+     * Saadab LLM-genereeritud CadQuery Pythoni koodi sandbox-worker'ile. Worker tagastab JSON-i
+     * {ok, error, files:{stl,step}, elapsed_ms}.
      */
     public JsonNode freeformGenerate(JsonNode body) {
-        return webClient.post()
+        return webClient
+                .post()
                 .uri(workerUrl + "/freeform/generate")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)

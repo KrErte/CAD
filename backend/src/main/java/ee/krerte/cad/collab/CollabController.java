@@ -1,28 +1,29 @@
 package ee.krerte.cad.collab;
 
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
- * Real-time collaborative design editing via WebSocket/STOMP.
- * Users join a room (design session), and all parameter changes
- * are broadcast to everyone in that room.
+ * Real-time collaborative design editing via WebSocket/STOMP. Users join a room (design session),
+ * and all parameter changes are broadcast to everyone in that room.
  */
 @Controller
 public class CollabController {
 
     /** Active rooms: roomId -> set of user names */
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, String>> rooms = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ConcurrentHashMap<String, String>> rooms =
+            new ConcurrentHashMap<>();
 
     public record ParamUpdate(String user, String param, double value, long ts) {}
+
     public record CursorUpdate(String user, String param, String color) {}
+
     public record RoomEvent(String type, String user, String roomId, int userCount, long ts) {}
 
     /** Create a new collaboration room, returns room ID. */

@@ -1,11 +1,10 @@
 package ee.krerte.cad.auth;
 
 import ee.krerte.cad.mail.EmailService;
+import java.time.YearMonth;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.YearMonth;
 
 @Service
 public class QuotaService {
@@ -17,10 +16,13 @@ public class QuotaService {
     private final int proMonthly;
     private final int businessMonthly;
 
-    public QuotaService(UserRepository users, UsageRepository usages, EmailService emailService,
-                        @Value("${app.quota.free-monthly:3}") int freeMonthly,
-                        @Value("${app.quota.pro-monthly:50}") int proMonthly,
-                        @Value("${app.quota.business-monthly:200}") int businessMonthly) {
+    public QuotaService(
+            UserRepository users,
+            UsageRepository usages,
+            EmailService emailService,
+            @Value("${app.quota.free-monthly:3}") int freeMonthly,
+            @Value("${app.quota.pro-monthly:50}") int proMonthly,
+            @Value("${app.quota.business-monthly:200}") int businessMonthly) {
         this.users = users;
         this.usages = usages;
         this.emailService = emailService;
@@ -50,12 +52,15 @@ public class QuotaService {
     @Transactional
     public void recordStl(Long userId) {
         String ym = YearMonth.now().toString();
-        Usage usage = usages.findByUserIdAndYearMonth(userId, ym).orElseGet(() -> {
-            Usage n = new Usage();
-            n.setUserId(userId);
-            n.setYearMonth(ym);
-            return n;
-        });
+        Usage usage =
+                usages.findByUserIdAndYearMonth(userId, ym)
+                        .orElseGet(
+                                () -> {
+                                    Usage n = new Usage();
+                                    n.setUserId(userId);
+                                    n.setYearMonth(ym);
+                                    return n;
+                                });
         usage.increment();
         usages.save(usage);
 

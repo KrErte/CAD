@@ -3,17 +3,16 @@ package ee.krerte.cad.gallery;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ee.krerte.cad.auth.DesignRepository;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
- * Design version history — every regeneration saves a snapshot.
- * Users can browse history and rollback to any version.
+ * Design version history — every regeneration saves a snapshot. Users can browse history and
+ * rollback to any version.
  */
 @RestController
 @RequestMapping("/api/designs/{designId}/versions")
@@ -40,16 +39,19 @@ public class VersionController {
             return ResponseEntity.status(404).build();
         }
 
-        List<Map<String, Object>> versions = versionRepo.findByDesignIdOrderByVersionDesc(designId)
-                .stream().map(v -> {
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("version", v.getVersion());
-                    m.put("params", safeJson(v.getParams()));
-                    m.put("summary_et", v.getSummaryEt());
-                    m.put("size_bytes", v.getSizeBytes());
-                    m.put("created_at", v.getCreatedAt().toString());
-                    return m;
-                }).toList();
+        List<Map<String, Object>> versions =
+                versionRepo.findByDesignIdOrderByVersionDesc(designId).stream()
+                        .map(
+                                v -> {
+                                    Map<String, Object> m = new LinkedHashMap<>();
+                                    m.put("version", v.getVersion());
+                                    m.put("params", safeJson(v.getParams()));
+                                    m.put("summary_et", v.getSummaryEt());
+                                    m.put("size_bytes", v.getSizeBytes());
+                                    m.put("created_at", v.getCreatedAt().toString());
+                                    return m;
+                                })
+                        .toList();
         return ResponseEntity.ok(versions);
     }
 
@@ -84,10 +86,11 @@ public class VersionController {
         }
         designRepo.save(design);
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Taastatud versioon " + version,
-                "params", safeJson(targetVersion.getParams()),
-                "current_version", nextVer + 1));
+        return ResponseEntity.ok(
+                Map.of(
+                        "message", "Taastatud versioon " + version,
+                        "params", safeJson(targetVersion.getParams()),
+                        "current_version", nextVer + 1));
     }
 
     /** Download STL of a specific version. */
@@ -110,6 +113,10 @@ public class VersionController {
     }
 
     private JsonNode safeJson(String s) {
-        try { return mapper.readTree(s); } catch (Exception e) { return mapper.createObjectNode(); }
+        try {
+            return mapper.readTree(s);
+        } catch (Exception e) {
+            return mapper.createObjectNode();
+        }
     }
 }

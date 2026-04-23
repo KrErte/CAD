@@ -2,31 +2,26 @@ package ee.krerte.cad.printflow.controller;
 
 import ee.krerte.cad.printflow.entity.*;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import ee.krerte.cad.printflow.service.PricingService;
 import ee.krerte.cad.printflow.service.QuoteService;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.*;
 
 /**
  * Instant Quote Engine — sisuke REST API.
  *
- * POST /api/printflow/quotes (multipart)
- *   stl, file_name, material_id, quantity, infill_pct, color, customer_id, rush
- * GET  /api/printflow/quotes
- * GET  /api/printflow/quotes/{id}
- * POST /api/printflow/quotes/{id}/accept
- * GET  /api/printflow/quotes/public/{token}   — publik "accept-link" kliendile
+ * <p>POST /api/printflow/quotes (multipart) stl, file_name, material_id, quantity, infill_pct,
+ * color, customer_id, rush GET /api/printflow/quotes GET /api/printflow/quotes/{id} POST
+ * /api/printflow/quotes/{id}/accept GET /api/printflow/quotes/public/{token} — publik "accept-link"
+ * kliendile
  */
 @RestController
 @RequestMapping("/api/printflow/quotes")
@@ -50,8 +45,8 @@ public class QuoteController {
             @RequestParam(value = "infill_pct", defaultValue = "20") Integer infillPct,
             @RequestParam(value = "color", required = false) String color,
             @RequestParam(value = "customer_id", required = false) Long customerId,
-            @RequestParam(value = "rush", defaultValue = "false") boolean rush
-    ) throws IOException {
+            @RequestParam(value = "rush", defaultValue = "false") boolean rush)
+            throws IOException {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("OPERATOR");
 
@@ -63,11 +58,21 @@ public class QuoteController {
         }
 
         byte[] bytes = stl.getBytes();
-        String fileName = stl.getOriginalFilename() != null ? stl.getOriginalFilename() : "part.stl";
+        String fileName =
+                stl.getOriginalFilename() != null ? stl.getOriginalFilename() : "part.stl";
 
-        QuoteService.QuoteResult r = quoteService.createFromUpload(
-                org, orgCtx.currentUser(),
-                bytes, fileName, materialId, quantity, infillPct, color, customerId, rush);
+        QuoteService.QuoteResult r =
+                quoteService.createFromUpload(
+                        org,
+                        orgCtx.currentUser(),
+                        bytes,
+                        fileName,
+                        materialId,
+                        quantity,
+                        infillPct,
+                        color,
+                        customerId,
+                        rush);
 
         return ResponseEntity.ok(renderResult(r));
     }
@@ -75,9 +80,7 @@ public class QuoteController {
     @GetMapping
     public List<Map<String, Object>> list() {
         Organization org = orgCtx.currentOrganization();
-        return quoteService.list(org.getId()).stream()
-                .map(QuoteController::renderQuote)
-                .toList();
+        return quoteService.list(org.getId()).stream().map(QuoteController::renderQuote).toList();
     }
 
     @GetMapping("/{id}")
@@ -141,11 +144,12 @@ public class QuoteController {
         }
         out.put("blocked", false);
         out.put("quote", renderQuote(r.quote));
-        out.put("line", Map.of(
-                "id", r.line.getId(),
-                "unit_price_eur", r.line.getUnitPriceEur(),
-                "total_eur", r.line.getTotalEur()
-        ));
+        out.put(
+                "line",
+                Map.of(
+                        "id", r.line.getId(),
+                        "unit_price_eur", r.line.getUnitPriceEur(),
+                        "total_eur", r.line.getTotalEur()));
         out.put("dfm", renderDfm(r.dfm));
         out.put("slicer", r.slicer);
         if (r.pricing != null) {
@@ -170,11 +174,12 @@ public class QuoteController {
         m.put("is_watertight", d.getIsWatertight());
         m.put("triangles", d.getTriangles());
         m.put("volume_cm3", d.getVolumeCm3());
-        m.put("bbox_mm", List.of(
-                d.getBboxXmm() != null ? d.getBboxXmm() : BigDecimal.ZERO,
-                d.getBboxYmm() != null ? d.getBboxYmm() : BigDecimal.ZERO,
-                d.getBboxZmm() != null ? d.getBboxZmm() : BigDecimal.ZERO
-        ));
+        m.put(
+                "bbox_mm",
+                List.of(
+                        d.getBboxXmm() != null ? d.getBboxXmm() : BigDecimal.ZERO,
+                        d.getBboxYmm() != null ? d.getBboxYmm() : BigDecimal.ZERO,
+                        d.getBboxZmm() != null ? d.getBboxZmm() : BigDecimal.ZERO));
         m.put("min_wall_mm", d.getMinWallMm());
         m.put("overhang_pct", d.getOverhangPct());
         m.put("thin_features_count", d.getThinFeaturesCount());

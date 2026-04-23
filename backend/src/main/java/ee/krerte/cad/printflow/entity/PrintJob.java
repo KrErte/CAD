@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -49,7 +48,7 @@ public class PrintJob {
     private BigDecimal estimatedFilamentG;
 
     @Column(nullable = false, length = 16)
-    private String status = "QUEUED";  // QUEUED|ASSIGNED|PRINTING|PAUSED|DONE|FAILED|CANCELLED
+    private String status = "QUEUED"; // QUEUED|ASSIGNED|PRINTING|PAUSED|DONE|FAILED|CANCELLED
 
     @Column(name = "progress_pct", nullable = false)
     private Integer progressPct = 0;
@@ -69,42 +68,155 @@ public class PrintJob {
     @Column(nullable = false)
     private Integer retries = 0;
 
-    public Long getId() { return id; }
-    public Long getOrganizationId() { return organizationId; }
-    public void setOrganizationId(Long v) { this.organizationId = v; }
-    public Long getQuoteId() { return quoteId; }
-    public void setQuoteId(Long v) { this.quoteId = v; }
-    public Long getQuoteLineId() { return quoteLineId; }
-    public void setQuoteLineId(Long v) { this.quoteLineId = v; }
-    public Long getBuildPlateId() { return buildPlateId; }
-    public void setBuildPlateId(Long v) { this.buildPlateId = v; }
-    public Long getMaterialId() { return materialId; }
-    public void setMaterialId(Long v) { this.materialId = v; }
-    public Long getSpoolId() { return spoolId; }
-    public void setSpoolId(Long v) { this.spoolId = v; }
-    public Long getPrinterId() { return printerId; }
-    public void setPrinterId(Long v) { this.printerId = v; }
-    public Integer getPriority() { return priority; }
-    public void setPriority(Integer v) { this.priority = v; }
-    public String getJobName() { return jobName; }
-    public void setJobName(String v) { this.jobName = v; }
-    public String getGcodeRef() { return gcodeRef; }
-    public void setGcodeRef(String v) { this.gcodeRef = v; }
-    public Integer getEstimatedTimeSec() { return estimatedTimeSec; }
-    public void setEstimatedTimeSec(Integer v) { this.estimatedTimeSec = v; }
-    public BigDecimal getEstimatedFilamentG() { return estimatedFilamentG; }
-    public void setEstimatedFilamentG(BigDecimal v) { this.estimatedFilamentG = v; }
-    public String getStatus() { return status; }
-    public void setStatus(String v) { this.status = v; }
-    public Integer getProgressPct() { return progressPct; }
-    public void setProgressPct(Integer v) { this.progressPct = v; }
-    public Instant getQueuedAt() { return queuedAt; }
-    public Instant getStartedAt() { return startedAt; }
-    public void setStartedAt(Instant v) { this.startedAt = v; }
-    public Instant getFinishedAt() { return finishedAt; }
-    public void setFinishedAt(Instant v) { this.finishedAt = v; }
-    public String getFailureReason() { return failureReason; }
-    public void setFailureReason(String v) { this.failureReason = v; }
-    public Integer getRetries() { return retries; }
-    public void setRetries(Integer v) { this.retries = v; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long v) {
+        this.organizationId = v;
+    }
+
+    public Long getQuoteId() {
+        return quoteId;
+    }
+
+    public void setQuoteId(Long v) {
+        this.quoteId = v;
+    }
+
+    public Long getQuoteLineId() {
+        return quoteLineId;
+    }
+
+    public void setQuoteLineId(Long v) {
+        this.quoteLineId = v;
+    }
+
+    public Long getBuildPlateId() {
+        return buildPlateId;
+    }
+
+    public void setBuildPlateId(Long v) {
+        this.buildPlateId = v;
+    }
+
+    public Long getMaterialId() {
+        return materialId;
+    }
+
+    public void setMaterialId(Long v) {
+        this.materialId = v;
+    }
+
+    public Long getSpoolId() {
+        return spoolId;
+    }
+
+    public void setSpoolId(Long v) {
+        this.spoolId = v;
+    }
+
+    public Long getPrinterId() {
+        return printerId;
+    }
+
+    public void setPrinterId(Long v) {
+        this.printerId = v;
+    }
+
+    public Integer getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Integer v) {
+        this.priority = v;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public void setJobName(String v) {
+        this.jobName = v;
+    }
+
+    public String getGcodeRef() {
+        return gcodeRef;
+    }
+
+    public void setGcodeRef(String v) {
+        this.gcodeRef = v;
+    }
+
+    public Integer getEstimatedTimeSec() {
+        return estimatedTimeSec;
+    }
+
+    public void setEstimatedTimeSec(Integer v) {
+        this.estimatedTimeSec = v;
+    }
+
+    public BigDecimal getEstimatedFilamentG() {
+        return estimatedFilamentG;
+    }
+
+    public void setEstimatedFilamentG(BigDecimal v) {
+        this.estimatedFilamentG = v;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String v) {
+        this.status = v;
+    }
+
+    public Integer getProgressPct() {
+        return progressPct;
+    }
+
+    public void setProgressPct(Integer v) {
+        this.progressPct = v;
+    }
+
+    public Instant getQueuedAt() {
+        return queuedAt;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(Instant v) {
+        this.startedAt = v;
+    }
+
+    public Instant getFinishedAt() {
+        return finishedAt;
+    }
+
+    public void setFinishedAt(Instant v) {
+        this.finishedAt = v;
+    }
+
+    public String getFailureReason() {
+        return failureReason;
+    }
+
+    public void setFailureReason(String v) {
+        this.failureReason = v;
+    }
+
+    public Integer getRetries() {
+        return retries;
+    }
+
+    public void setRetries(Integer v) {
+        this.retries = v;
+    }
 }

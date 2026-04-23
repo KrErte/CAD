@@ -2,22 +2,21 @@ package ee.krerte.cad.auth;
 
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 /**
  * Stripe payment endpoints.
  *
  * <ul>
- *   <li>POST /api/stripe/checkout — creates Stripe Checkout session, returns URL</li>
- *   <li>POST /api/stripe/webhook — Stripe webhook receiver (signature verified)</li>
- *   <li>GET  /api/stripe/subscription — get current user's subscription status</li>
- *   <li>POST /api/stripe/portal — create Stripe Billing Portal session</li>
+ *   <li>POST /api/stripe/checkout — creates Stripe Checkout session, returns URL
+ *   <li>POST /api/stripe/webhook — Stripe webhook receiver (signature verified)
+ *   <li>GET /api/stripe/subscription — get current user's subscription status
+ *   <li>POST /api/stripe/portal — create Stripe Billing Portal session
  * </ul>
  */
 @RestController
@@ -36,15 +35,17 @@ public class StripeController {
     public record CheckoutRequest(String tier) {}
 
     /**
-     * POST /api/stripe/checkout
-     * Creates a Stripe Checkout session for the given tier (pro/business).
+     * POST /api/stripe/checkout Creates a Stripe Checkout session for the given tier
+     * (pro/business).
      */
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(@RequestBody CheckoutRequest req) {
         if (!stripeService.isConfigured()) {
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "stripe_not_configured",
-                    "message", "Stripe on seadistamisel. Tule peagi tagasi!"));
+            return ResponseEntity.status(503)
+                    .body(
+                            Map.of(
+                                    "error", "stripe_not_configured",
+                                    "message", "Stripe on seadistamisel. Tule peagi tagasi!"));
         }
 
         Long userId = currentUserId();
@@ -52,9 +53,13 @@ public class StripeController {
         String priceId = stripeService.getPriceId(tier);
 
         if (priceId == null || priceId.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "invalid_tier",
-                    "message", "Tundmatu plaan: " + tier + ". Valige 'pro' või 'business'."));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error",
+                                    "invalid_tier",
+                                    "message",
+                                    "Tundmatu plaan: " + tier + ". Valige 'pro' või 'business'."));
         }
 
         try {
@@ -62,16 +67,15 @@ public class StripeController {
             return ResponseEntity.ok(Map.of("url", url));
         } catch (StripeException e) {
             log.error("Stripe checkout failed for user {}", userId, e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "stripe_error", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "stripe_error", "message", e.getMessage()));
         }
     }
 
     // ───────── Webhook ─────────
 
     /**
-     * POST /api/stripe/webhook
-     * Stripe sends events here. Signature is verified by StripeService.
+     * POST /api/stripe/webhook Stripe sends events here. Signature is verified by StripeService.
      */
     @PostMapping(value = "/webhook", consumes = "application/json")
     public ResponseEntity<?> webhook(
@@ -91,36 +95,38 @@ public class StripeController {
 
     // ───────── Subscription Status ─────────
 
-    /**
-     * GET /api/stripe/subscription
-     * Returns the current user's subscription details.
-     */
+    /** GET /api/stripe/subscription Returns the current user's subscription details. */
     @GetMapping("/subscription")
     public ResponseEntity<?> subscription() {
         Long userId = currentUserId();
         StripeService.SubscriptionStatus status = stripeService.getSubscription(userId);
-        return ResponseEntity.ok(Map.of(
-                "plan", status.plan().name(),
-                "status", status.status(),
-                "currentPeriodEnd", status.currentPeriodEnd() != null ? status.currentPeriodEnd().toString() : "",
-                "modelCount", status.modelCount(),
-                "modelLimit", status.modelLimit(),
-                "hasSubscription", status.stripeSubscriptionId() != null
-        ));
+        return ResponseEntity.ok(
+                Map.of(
+                        "plan", status.plan().name(),
+                        "status", status.status(),
+                        "currentPeriodEnd",
+                                status.currentPeriodEnd() != null
+                                        ? status.currentPeriodEnd().toString()
+                                        : "",
+                        "modelCount", status.modelCount(),
+                        "modelLimit", status.modelLimit(),
+                        "hasSubscription", status.stripeSubscriptionId() != null));
     }
 
     // ───────── Billing Portal ─────────
 
     /**
-     * POST /api/stripe/portal
-     * Creates a Stripe Billing Portal session for the user to manage their subscription.
+     * POST /api/stripe/portal Creates a Stripe Billing Portal session for the user to manage their
+     * subscription.
      */
     @PostMapping("/portal")
     public ResponseEntity<?> portal() {
         if (!stripeService.isConfigured()) {
-            return ResponseEntity.status(503).body(Map.of(
-                    "error", "stripe_not_configured",
-                    "message", "Stripe on seadistamisel."));
+            return ResponseEntity.status(503)
+                    .body(
+                            Map.of(
+                                    "error", "stripe_not_configured",
+                                    "message", "Stripe on seadistamisel."));
         }
 
         Long userId = currentUserId();
@@ -128,13 +134,15 @@ public class StripeController {
             String url = stripeService.createPortalSession(userId);
             return ResponseEntity.ok(Map.of("url", url));
         } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "no_subscription",
-                    "message", "Sul pole aktiivset tellimust."));
+            return ResponseEntity.badRequest()
+                    .body(
+                            Map.of(
+                                    "error", "no_subscription",
+                                    "message", "Sul pole aktiivset tellimust."));
         } catch (StripeException e) {
             log.error("Stripe portal creation failed for user {}", userId, e);
-            return ResponseEntity.status(502).body(Map.of(
-                    "error", "stripe_error", "message", e.getMessage()));
+            return ResponseEntity.status(502)
+                    .body(Map.of("error", "stripe_error", "message", e.getMessage()));
         }
     }
 

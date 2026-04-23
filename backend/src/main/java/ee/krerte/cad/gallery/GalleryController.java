@@ -4,14 +4,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ee.krerte.cad.auth.Design;
 import ee.krerte.cad.auth.DesignRepository;
-import ee.krerte.cad.auth.User;
 import ee.krerte.cad.auth.UserRepository;
+import java.util.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.*;
 
 @RestController
 @RequestMapping("/api/gallery")
@@ -23,8 +21,11 @@ public class GalleryController {
     private final UserRepository userRepo;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public GalleryController(GalleryRepository galleryRepo, GalleryLikeRepository likeRepo,
-                             DesignRepository designRepo, UserRepository userRepo) {
+    public GalleryController(
+            GalleryRepository galleryRepo,
+            GalleryLikeRepository likeRepo,
+            DesignRepository designRepo,
+            UserRepository userRepo) {
         this.galleryRepo = galleryRepo;
         this.likeRepo = likeRepo;
         this.designRepo = designRepo;
@@ -34,7 +35,11 @@ public class GalleryController {
     private Long uid() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) return null;
-        try { return (Long) auth.getPrincipal(); } catch (ClassCastException e) { return null; }
+        try {
+            return (Long) auth.getPrincipal();
+        } catch (ClassCastException e) {
+            return null;
+        }
     }
 
     /** Browse gallery — public, paginated, sortable. No auth required. */
@@ -45,30 +50,38 @@ public class GalleryController {
             @RequestParam(defaultValue = "") String q) {
 
         var pageable = PageRequest.of(page, 20);
-        var results = q.isBlank()
-                ? ("popular".equals(sort)
-                    ? galleryRepo.findByIsPublicTrueOrderByLikesDesc(pageable)
-                    : galleryRepo.findByIsPublicTrueOrderByCreatedAtDesc(pageable))
-                : galleryRepo.search(q, pageable);
+        var results =
+                q.isBlank()
+                        ? ("popular".equals(sort)
+                                ? galleryRepo.findByIsPublicTrueOrderByLikesDesc(pageable)
+                                : galleryRepo.findByIsPublicTrueOrderByCreatedAtDesc(pageable))
+                        : galleryRepo.search(q, pageable);
 
         Long myId = uid();
-        return results.stream().map(g -> {
-            var design = designRepo.findById(g.getDesignId()).orElse(null);
-            var author = userRepo.findById(g.getUserId()).orElse(null);
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", g.getId());
-            m.put("title", g.getTitle());
-            m.put("description", g.getDescription());
-            m.put("tags", g.getTags());
-            m.put("likes", g.getLikes());
-            m.put("forks", g.getForks());
-            m.put("author", author != null ? author.getName() : "Anonüümne");
-            m.put("template", design != null ? design.getTemplate() : "");
-            m.put("params", design != null ? safeJson(design.getParams()) : null);
-            m.put("created_at", g.getCreatedAt().toString());
-            m.put("liked_by_me", myId != null && likeRepo.existsByGalleryIdAndUserId(g.getId(), myId));
-            return m;
-        }).toList();
+        return results.stream()
+                .map(
+                        g -> {
+                            var design = designRepo.findById(g.getDesignId()).orElse(null);
+                            var author = userRepo.findById(g.getUserId()).orElse(null);
+                            Map<String, Object> m = new LinkedHashMap<>();
+                            m.put("id", g.getId());
+                            m.put("title", g.getTitle());
+                            m.put("description", g.getDescription());
+                            m.put("tags", g.getTags());
+                            m.put("likes", g.getLikes());
+                            m.put("forks", g.getForks());
+                            m.put("author", author != null ? author.getName() : "Anonüümne");
+                            m.put("template", design != null ? design.getTemplate() : "");
+                            m.put("params", design != null ? safeJson(design.getParams()) : null);
+                            m.put("created_at", g.getCreatedAt().toString());
+                            m.put(
+                                    "liked_by_me",
+                                    myId != null
+                                            && likeRepo.existsByGalleryIdAndUserId(
+                                                    g.getId(), myId));
+                            return m;
+                        })
+                .toList();
     }
 
     /** Share a design to the gallery. */
@@ -157,11 +170,17 @@ public class GalleryController {
 
         return ResponseEntity.ok()
                 .header("Content-Type", "application/sla")
-                .header("Content-Disposition", "attachment; filename=\"" + gallery.getTitle() + ".stl\"")
+                .header(
+                        "Content-Disposition",
+                        "attachment; filename=\"" + gallery.getTitle() + ".stl\"")
                 .body(design.getStl());
     }
 
     private JsonNode safeJson(String s) {
-        try { return mapper.readTree(s); } catch (Exception e) { return mapper.createObjectNode(); }
+        try {
+            return mapper.readTree(s);
+        } catch (Exception e) {
+            return mapper.createObjectNode();
+        }
     }
 }

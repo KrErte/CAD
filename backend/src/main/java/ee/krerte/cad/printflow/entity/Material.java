@@ -1,7 +1,6 @@
 package ee.krerte.cad.printflow.entity;
 
 import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -19,7 +18,7 @@ public class Material {
     private String name;
 
     @Column(nullable = false, length = 16)
-    private String family;  // PLA|PETG|ABS|PC|TPU|ASA|NYLON|RESIN|OTHER
+    private String family; // PLA|PETG|ABS|PC|TPU|ASA|NYLON|RESIN|OTHER
 
     @Column(name = "price_per_kg_eur", nullable = false, precision = 8, scale = 2)
     private BigDecimal pricePerKgEur = new BigDecimal("25.00");
@@ -45,26 +44,91 @@ public class Material {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
-    public Long getId() { return id; }
-    public Long getOrganizationId() { return organizationId; }
-    public void setOrganizationId(Long v) { this.organizationId = v; }
-    public String getName() { return name; }
-    public void setName(String v) { this.name = v; }
-    public String getFamily() { return family; }
-    public void setFamily(String v) { this.family = v; }
-    public BigDecimal getPricePerKgEur() { return pricePerKgEur; }
-    public void setPricePerKgEur(BigDecimal v) { this.pricePerKgEur = v; }
-    public BigDecimal getDensityGcm3() { return densityGcm3; }
-    public void setDensityGcm3(BigDecimal v) { this.densityGcm3 = v; }
-    public String getSlicerPreset() { return slicerPreset; }
-    public void setSlicerPreset(String v) { this.slicerPreset = v; }
-    public BigDecimal getMinWallMm() { return minWallMm; }
-    public void setMinWallMm(BigDecimal v) { this.minWallMm = v; }
-    public Integer getMaxOverhangDeg() { return maxOverhangDeg; }
-    public void setMaxOverhangDeg(Integer v) { this.maxOverhangDeg = v; }
-    public BigDecimal getSetupFeeEur() { return setupFeeEur; }
-    public void setSetupFeeEur(BigDecimal v) { this.setupFeeEur = v; }
-    public Boolean getActive() { return active; }
-    public void setActive(Boolean v) { this.active = v; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Long getId() {
+        return id;
+    }
+
+    public Long getOrganizationId() {
+        return organizationId;
+    }
+
+    public void setOrganizationId(Long v) {
+        this.organizationId = v;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String v) {
+        this.name = v;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public void setFamily(String v) {
+        this.family = v;
+    }
+
+    public BigDecimal getPricePerKgEur() {
+        return pricePerKgEur;
+    }
+
+    public void setPricePerKgEur(BigDecimal v) {
+        this.pricePerKgEur = v;
+    }
+
+    public BigDecimal getDensityGcm3() {
+        return densityGcm3;
+    }
+
+    public void setDensityGcm3(BigDecimal v) {
+        this.densityGcm3 = v;
+    }
+
+    public String getSlicerPreset() {
+        return slicerPreset;
+    }
+
+    public void setSlicerPreset(String v) {
+        this.slicerPreset = v;
+    }
+
+    public BigDecimal getMinWallMm() {
+        return minWallMm;
+    }
+
+    public void setMinWallMm(BigDecimal v) {
+        this.minWallMm = v;
+    }
+
+    public Integer getMaxOverhangDeg() {
+        return maxOverhangDeg;
+    }
+
+    public void setMaxOverhangDeg(Integer v) {
+        this.maxOverhangDeg = v;
+    }
+
+    public BigDecimal getSetupFeeEur() {
+        return setupFeeEur;
+    }
+
+    public void setSetupFeeEur(BigDecimal v) {
+        this.setupFeeEur = v;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean v) {
+        this.active = v;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

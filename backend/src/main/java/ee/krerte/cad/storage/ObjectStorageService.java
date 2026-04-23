@@ -1,5 +1,7 @@
 package ee.krerte.cad.storage;
 
+import java.time.Duration;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,21 +13,19 @@ import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
-import java.time.Duration;
-import java.util.UUID;
-
 /**
  * S3 / MinIO-compatible object storage backend (STL, Gcode, preview-PNG).
  *
- * <p><b>Miks mitte Postgres bytea?</b> STL-id on 100KB - 50MB suurusega binaarid.
- * Postgres'i bytea kasvatab WAL'i tohutu tempoga, tuleb Postgres läbi stream'ida
- * iga download'i jaoks ja backup'id saavad gigabyte'idega. S3 / MinIO lahendab
- * kõik need: replicate, CDN, pre-signed URL download otse kliendile.
+ * <p><b>Miks mitte Postgres bytea?</b> STL-id on 100KB - 50MB suurusega binaarid. Postgres'i bytea
+ * kasvatab WAL'i tohutu tempoga, tuleb Postgres läbi stream'ida iga download'i jaoks ja backup'id
+ * saavad gigabyte'idega. S3 / MinIO lahendab kõik need: replicate, CDN, pre-signed URL download
+ * otse kliendile.
  *
- * <p><b>Presigned URL'id</b>: frontend saab backend'ilt lühiealise URL'i
- * (nt 1h) ja download'ib otse MinIO'st — bypass'ib Tomcat'i backend'i täielikult.
+ * <p><b>Presigned URL'id</b>: frontend saab backend'ilt lühiealise URL'i (nt 1h) ja download'ib
+ * otse MinIO'st — bypass'ib Tomcat'i backend'i täielikult.
  *
  * <p>Key-layout konventsioon:
+ *
  * <pre>
  *   designs/&lt;design-id&gt;/&lt;sha256&gt;.stl
  *   designs/&lt;design-id&gt;/preview.png
@@ -43,28 +43,28 @@ public class ObjectStorageService {
     private final String bucket;
 
     public ObjectStorageService(
-        S3Client s3,
-        S3Presigner presigner,
-        @Value("${app.storage.bucket:cad-artifacts}") String bucket
-    ) {
+            S3Client s3,
+            S3Presigner presigner,
+            @Value("${app.storage.bucket:cad-artifacts}") String bucket) {
         this.s3 = s3;
         this.presigner = presigner;
         this.bucket = bucket;
     }
 
     /**
-     * Laadib fail'i S3'sse. Tagastab ETag'i (sisu hash), mille me salvestame
-     * DB'sse, et CDN cache invalidate + download integrity check'idel kasutada.
+     * Laadib fail'i S3'sse. Tagastab ETag'i (sisu hash), mille me salvestame DB'sse, et CDN cache
+     * invalidate + download integrity check'idel kasutada.
      */
     public PutResult put(String key, byte[] body, String contentType) {
-        var req = PutObjectRequest.builder()
-            .bucket(bucket)
-            .key(key)
-            .contentType(contentType)
-            .contentLength((long) body.length)
-            // Server-side encryption on MinIO/S3 — keys managed by provider
-            .serverSideEncryption(ServerSideEncryption.AES256)
-            .build();
+        var req =
+                PutObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(key)
+                        .contentType(contentType)
+                        .contentLength((long) body.length)
+                        // Server-side encryption on MinIO/S3 — keys managed by provider
+                        .serverSideEncryption(ServerSideEncryption.AES256)
+                        .build();
         var resp = s3.putObject(req, RequestBody.fromBytes(body));
         log.debug("S3 put bucket={} key={} size={} etag={}", bucket, key, body.length, resp.eTag());
         return new PutResult(key, resp.eTag(), body.length);
@@ -77,16 +77,17 @@ public class ObjectStorageService {
     }
 
     /**
-     * Genereerib pre-signed GET URL'i, mille frontend saab download'imiseks
-     * kasutada. URL on {@code expiresIn} jooksul kasutatav ja sisaldab
-     * kryptograafilist allkirja — keegi teine seda kasutada ei saa.
+     * Genereerib pre-signed GET URL'i, mille frontend saab download'imiseks kasutada. URL on {@code
+     * expiresIn} jooksul kasutatav ja sisaldab kryptograafilist allkirja — keegi teine seda
+     * kasutada ei saa.
      */
     public String presignedDownloadUrl(String key, Duration expiresIn) {
         var getReq = GetObjectRequest.builder().bucket(bucket).key(key).build();
-        var presignReq = GetObjectPresignRequest.builder()
-            .signatureDuration(expiresIn)
-            .getObjectRequest(getReq)
-            .build();
+        var presignReq =
+                GetObjectPresignRequest.builder()
+                        .signatureDuration(expiresIn)
+                        .getObjectRequest(getReq)
+                        .build();
         return presigner.presignGetObject(presignReq).url().toString();
     }
 

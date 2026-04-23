@@ -1,11 +1,11 @@
 package ee.krerte.cad;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -41,13 +41,13 @@ public class CadApplication {
                         .allowedOrigins(
                                 "https://tehisaicad.ee",
                                 "https://www.tehisaicad.ee",
-                                frontendUrl,           // arenduses http://localhost:4200
-                                "http://localhost:4200"
-                        )
+                                frontendUrl, // arenduses http://localhost:4200
+                                "http://localhost:4200")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
+
             @Override
             public void addInterceptors(InterceptorRegistry registry) {
                 registry.addInterceptor(metrics).addPathPatterns("/api/**");

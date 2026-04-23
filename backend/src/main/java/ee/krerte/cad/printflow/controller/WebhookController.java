@@ -4,19 +4,18 @@ import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.entity.WebhookSubscription;
 import ee.krerte.cad.printflow.repo.WebhookSubscriptionRepository;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
-
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
- * Webhook subscriptions — ERP / Slack / custom integratsioonid saavad kuulata
- * quote.accepted, job.finished, printer.offline jne sündmusi.
+ * Webhook subscriptions — ERP / Slack / custom integratsioonid saavad kuulata quote.accepted,
+ * job.finished, printer.offline jne sündmusi.
  */
 @RestController
 @RequestMapping("/api/printflow/webhooks")
@@ -34,7 +33,9 @@ public class WebhookController {
     @GetMapping
     public List<Map<String, Object>> list() {
         Organization org = orgCtx.currentOrganization();
-        return repo.findByOrganizationId(org.getId()).stream().map(WebhookController::render).toList();
+        return repo.findByOrganizationId(org.getId()).stream()
+                .map(WebhookController::render)
+                .toList();
     }
 
     @PostMapping
@@ -45,7 +46,9 @@ public class WebhookController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "target_url puudub");
         }
         if (input.getEventTypes() == null || input.getEventTypes().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "event_types puudub (CSV, nt 'job.complete,quote.accepted')");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "event_types puudub (CSV, nt 'job.complete,quote.accepted')");
         }
         input.setOrganizationId(org.getId());
         if (input.getSecret() == null || input.getSecret().isBlank()) {
@@ -58,11 +61,13 @@ public class WebhookController {
     }
 
     @PutMapping("/{id}")
-    public Map<String, Object> update(@PathVariable Long id, @RequestBody WebhookSubscription patch) {
+    public Map<String, Object> update(
+            @PathVariable Long id, @RequestBody WebhookSubscription patch) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("ADMIN");
-        WebhookSubscription w = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        WebhookSubscription w =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (patch.getTargetUrl() != null) w.setTargetUrl(patch.getTargetUrl());
         if (patch.getEventTypes() != null) w.setEventTypes(patch.getEventTypes());
         if (patch.getActive() != null) w.setActive(patch.getActive());
@@ -73,8 +78,9 @@ public class WebhookController {
     public Map<String, Object> delete(@PathVariable Long id) {
         Organization org = orgCtx.currentOrganization();
         orgCtx.requireRole("ADMIN");
-        WebhookSubscription w = repo.findByIdAndOrganizationId(id, org.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        WebhookSubscription w =
+                repo.findByIdAndOrganizationId(id, org.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         repo.delete(w);
         return Map.of("deleted", true);
     }

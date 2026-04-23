@@ -3,14 +3,11 @@ package ee.krerte.cad.printflow.controller;
 import ee.krerte.cad.printflow.entity.Organization;
 import ee.krerte.cad.printflow.service.AnalyticsService;
 import ee.krerte.cad.printflow.service.OrganizationContext;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.*;
 
-/**
- * Tootmise KPI-d juhtpaneelile — revenue, OEE, success rate, top materjalid.
- */
+/** Tootmise KPI-d juhtpaneelile — revenue, OEE, success rate, top materjalid. */
 @RestController
 @RequestMapping("/api/printflow/analytics")
 public class AnalyticsController {
@@ -36,7 +33,8 @@ public class AnalyticsController {
     }
 
     @GetMapping("/revenue")
-    public List<Map<String, Object>> revenue(@RequestParam(value = "days", defaultValue = "30") int days) {
+    public List<Map<String, Object>> revenue(
+            @RequestParam(value = "days", defaultValue = "30") int days) {
         Organization org = orgCtx.currentOrganization();
         if (days < 1) days = 1;
         if (days > 365) days = 365;
