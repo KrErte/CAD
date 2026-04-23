@@ -3,6 +3,7 @@ package ee.krerte.cad;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import ee.krerte.cad.auth.QuotaService;
 import ee.krerte.cad.auth.User;
 import ee.krerte.cad.auth.UserRepository;
 import org.slf4j.Logger;
@@ -19,7 +20,9 @@ import java.util.Optional;
  * ja see jookseb turvalises worker-sandbox'is (AST-whitelist, 15s timeout,
  * 512MB memory limit).
  *
- * <p>Ainult PRO ja TEAM plaanidel — Free ja Maker näevad 403 "upgrade required".
+ * <p>FREE plaanil on kuupõhine proovikvoot (vaikimisi 3 katset —
+ * {@code app.quota.free-freeform-monthly}). Peale kvoota ammendumist
+ * tagastame 403 {@code upgrade_required} — PRO+ on limiidita.
  * See on meie Pro-plaani peamine eristaja: 23 malli pole piisav → kirjuta ise.
  *
  * <p>Worker tagastab <code>{ok, error, error_kind, files:{stl,step}, elapsed_ms}</code>
@@ -34,11 +37,13 @@ public class FreeformController {
 
     private final WorkerClient worker;
     private final UserRepository users;
+    private final QuotaService quotas;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public FreeformController(WorkerClient worker, UserRepository users) {
+    public FreeformController(WorkerClient worker, UserRepository users, QuotaService quotas) {
         this.worker = worker;
         this.users = users;
+        this.quotas = quotas;
     }
 
     public record FreeformRequest(String code) {}
@@ -67,16 +72,23 @@ public class FreeformController {
                     "error_kind", "unauthorized"));
         }
         User u = uOpt.get();
-        // User.Plan on enum (FREE, PRO). .name() annab String'i.
-        // Kui tulevikus lisanduvad TEAM/ENTERPRISE, laieneb kontroll automaatselt.
-        String plan = u.getPlan() == null ? "FREE" : u.getPlan().name();
-        if (!plan.equals("PRO") && !plan.equals("TEAM") && !plan.equals("ENTERPRISE")) {
+        // FREE plaanile anname väikse proovikvoota (vaikimisi 3/kuus), et
+        // kasutaja saaks Pro-feature'it kogeda enne ostu. PRO+ on limiidita.
+        // Kvoot ületatud → 403 upgrade_required. Muidu reserveerime enne
+        // workerisse saatmist (optimistlik — kui worker kukub, kulub katse,
+        // aga see on ok: vastuses tuleb error_kind ja kasutaja näeb probleemi).
+        QuotaService.Status q = quotas.freeformStatus(u.getId());
+        if (!q.allowed()) {
+            String plan = u.getPlan() == null ? "FREE" : u.getPlan().name();
             return ResponseEntity.status(403).body(Map.of(
                     "ok", false,
-                    "error", "Freeform sandbox on saadaval ainult Pro ja Team plaanidel. Uuenda plaani, et jätkata.",
+                    "error", "Vaba plaani katsetuskvoot täis (" + q.used() + "/" + q.limit()
+                            + " sel kuul). Uuenda Pro plaanile, et jätkata piiranguta.",
                     "error_kind", "upgrade_required",
                     "current_plan", plan,
-                    "required_plan", "PRO"));
+                    "required_plan", "PRO",
+                    "used", q.used(),
+                    "limit", q.limit()));
         }
 
         ObjectNode body = mapper.createObjectNode();
@@ -92,6 +104,11 @@ public class FreeformController {
                     "ok", false,
                     "error", e.getMessage() == null ? "Worker error" : e.getMessage(),
                     "error_kind", "worker_unreachable"));
+        }
+        // Loeme edukad (ok=true) katsed kvoota alla — ebaõnnestunud
+        // runtime/syntax-vigu ei taha kasutajalt kätte maksta.
+        if (result != null && result.path("ok").asBoolean(false)) {
+            quotas.recordFreeform(u.getId());
         }
         return ResponseEntity.ok(result);
     }

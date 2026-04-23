@@ -1,0 +1,67 @@
+# Normaliseeri line endings repo-siseselt LF-iks, working copy-s autocrlf (Windows)
+* text=auto eol=lf
+
+# Allpool sh/shebang failid: alati LF (muidu ei k\u00e4ivitu Linuxis/Docker-is)
+*.sh   text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+deploy.sh text eol=lf
+
+# Windows-spetsiifilised: alati CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Gradle wrapper
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Allika kood: expliitselt LF (normaliseerib ka olemasoleva repo)
+*.java    text eol=lf
+*.kt      text eol=lf
+*.py      text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+*.mjs     text eol=lf
+*.cjs     text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+*.scss    text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.xml     text eol=lf
+*.toml    text eol=lf
+*.md      text eol=lf
+*.sql     text eol=lf
+*.gradle  text eol=lf
+*.properties text eol=lf
+*.conf    text eol=lf
+*.ini     text eol=lf
+*.gcode   text eol=lf
+Caddyfile text eol=lf
+
+# Bin\u00e4\u00e4rid: \u00e4ra puuduta
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.webp    binary
+*.svg     text eol=lf
+*.pdf     binary
+*.stl     binary
+*.step    binary
+*.3mf     binary
+*.glb     binary
+*.gltf    binary
+*.zip     binary
+*.tar.gz  binary
+*.jar     binary
+*.war     binary
+*.docx    binary
+*.pptx    binary
+*.xlsx    binary

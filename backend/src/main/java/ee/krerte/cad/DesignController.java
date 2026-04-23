@@ -2,8 +2,15 @@ package ee.krerte.cad;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ee.krerte.cad.ai.TemplateRagService;
+import ee.krerte.cad.auth.QuotaService;
+import ee.krerte.cad.auth.User;
+import ee.krerte.cad.auth.UserRepository;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +31,32 @@ public class DesignController {
     private final WorkerClient worker;
     private final MeshyClient meshy;
     private final SlicerClient slicer;
+    private final UserRepository users;
+    private final QuotaService quotas;
     private final ObjectMapper mapper = new ObjectMapper();
 
     /** Optional — kui repo pole deploy'tud (nt vanema DB skeemi peal), RAG on disableeritud. */
     @Autowired(required = false)
     private TemplateRagService rag;
 
-    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy, SlicerClient slicer) {
+    public DesignController(ClaudeClient claude, WorkerClient worker, MeshyClient meshy,
+                            SlicerClient slicer, UserRepository users, QuotaService quotas) {
         this.claude = claude;
         this.worker = worker;
         this.meshy = meshy;
         this.slicer = slicer;
+        this.users = users;
+        this.quotas = quotas;
+    }
+
+    private Optional<User> currentUser() {
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (!(principal instanceof Long)) return Optional.empty();
+            return users.findById((Long) principal);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     /** Just expose the worker catalog (what we can design today). */
@@ -81,6 +103,114 @@ public class DesignController {
         }
 
         return ResponseEntity.ok(spec);
+    }
+
+    /**
+     * Fallback: kui <code>/api/spec</code> tagastas "no_match" (st kataloogis
+     * pole sobivat malli), palume Claude'il leiutada — ta kirjutab otse CadQuery
+     * koodi, mille worker'i freeform-sandbox käivitab.
+     *
+     * <p>Vastus kujul:
+     * <pre>
+     *   { "template": "__freeform__",
+     *     "summary_et": "...",
+     *     "code": "...python...",
+     *     "ok": true,
+     *     "files": { "stl": "&lt;base64&gt;", "step": "&lt;base64&gt;" },
+     *     "elapsed_ms": 1234 }
+     * </pre>
+     *
+     * <p>Kulutab freeform-kvoota (sama mis kasutajapoolse freeform-i korral), sest
+     * tehniliselt on see LLM-kirjutatud CadQuery sandbox-is — sama kulutav kui Pro
+     * freeform feature. FREE kasutaja saab vaikimisi 3 katset kuus.
+     */
+    @PostMapping("/invent")
+    public ResponseEntity<?> invent(@RequestBody DesignRequest req) {
+        if (req == null || req.prompt() == null || req.prompt().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "prompt_required",
+                    "message", "Palun kirjuta, mida sa tahad leiutada."));
+        }
+
+        Optional<User> uOpt = currentUser();
+        if (uOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "error", "unauthorized",
+                    "message", "Logi sisse, et kasutada leiutamist."));
+        }
+        User u = uOpt.get();
+
+        QuotaService.Status q = quotas.freeformStatus(u.getId());
+        if (!q.allowed()) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "upgrade_required",
+                    "message", "Vaba plaani leiutamiskvoot täis (" + q.used() + "/" + q.limit()
+                            + " sel kuul). Uuenda Pro plaanile, et jätkata.",
+                    "current_plan", u.getPlan() == null ? "FREE" : u.getPlan().name(),
+                    "used", q.used(),
+                    "limit", q.limit()));
+        }
+
+        // 1) Claude kirjutab koodi.
+        JsonNode invented;
+        try {
+            invented = claude.inventFreeform(req.prompt());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(503).body(Map.of(
+                    "error", "claude_disabled",
+                    "message", "AI leiutamine pole saadaval (Claude API võti puudu)."));
+        } catch (Exception e) {
+            log.error("Claude invent failed", e);
+            return ResponseEntity.status(502).body(Map.of(
+                    "error", "claude_failed",
+                    "message", e.getMessage() == null ? "Claude kutsung ebaõnnestus" : e.getMessage()));
+        }
+
+        String code = invented.path("code").asText();
+        String summary = invented.path("summary_et").asText("Leiutatud detail");
+        String entrypoint = invented.path("entrypoint").asText("build");
+        if (code.isBlank()) {
+            return ResponseEntity.status(502).body(Map.of(
+                    "error", "empty_code",
+                    "message", "Claude ei tagastanud CadQuery koodi."));
+        }
+
+        // 2) Saadame sandbox-workerisse. Sama endpoint mis kasutaja-freeform.
+        ObjectNode workerReq = mapper.createObjectNode();
+        workerReq.put("code", code);
+        workerReq.put("entrypoint", entrypoint);
+        workerReq.putArray("export").add("stl").add("step");
+        JsonNode workerResp;
+        try {
+            workerResp = worker.freeformGenerate(workerReq);
+        } catch (Exception e) {
+            log.error("Worker freeform (invent) failed", e);
+            return ResponseEntity.status(502).body(Map.of(
+                    "error", "worker_unreachable",
+                    "message", e.getMessage() == null ? "Worker error" : e.getMessage(),
+                    "code", code));
+        }
+
+        // 3) Edukas → loeme kvoota alla. Ebaõnnestunud sandbox-run (syntax/runtime)
+        //    ei kuluta katsete arvu — kasutaja ei peaks Claude vigade eest maksma.
+        if (workerResp.path("ok").asBoolean(false)) {
+            quotas.recordFreeform(u.getId());
+        }
+
+        // 4) Frontendi-sõbralik vastus: spec-laadne kest + worker tulemus.
+        ObjectNode out = mapper.createObjectNode();
+        out.put("template", "__freeform__");
+        out.put("summary_et", summary);
+        out.put("code", code);
+        out.put("entrypoint", entrypoint);
+        out.put("ok", workerResp.path("ok").asBoolean(false));
+        if (workerResp.has("error")) out.set("error", workerResp.get("error"));
+        if (workerResp.has("error_kind")) out.set("error_kind", workerResp.get("error_kind"));
+        if (workerResp.has("files")) out.set("files", workerResp.get("files"));
+        if (workerResp.has("elapsed_ms")) out.set("elapsed_ms", workerResp.get("elapsed_ms"));
+        out.put("used", q.used() + (workerResp.path("ok").asBoolean(false) ? 1 : 0));
+        out.put("limit", q.limit());
+        return ResponseEntity.ok(out);
     }
 
     /**

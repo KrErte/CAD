@@ -32,7 +32,7 @@ public class SecurityConfig {
                                  "/api/pricing/**",
                                  "/oauth2/**", "/login/**",
                                  "/ws/**").permitAll()
-                .requestMatchers("/api/me", "/api/spec", "/api/generate", "/api/generate/**", "/api/meshy",
+                .requestMatchers("/api/me", "/api/spec", "/api/invent", "/api/generate", "/api/generate/**", "/api/meshy",
                                  "/api/metrics", "/api/preview", "/api/review",
                                  "/api/billing/**",
                                  "/api/designs/**", "/api/admin/**",

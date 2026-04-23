@@ -79,9 +79,16 @@ public class EvolveController {
                     "error", "claude_failed", "message", e.getMessage()));
         }
         if (spec.has("error")) {
+            // Kataloogis pole sobivat malli — pakume frontendile võimalust
+            // kutsuda /api/invent, kus Claude kirjutab CadQuery koodi otse.
+            // Darwin-populatsiooni (6 varianti SVG-ga) me invent-flow'is ei tagasta,
+            // sest freeform-kood on üks täpne detail, mitte param-ruumi sampling.
             return ResponseEntity.badRequest().body(Map.of(
                     "error", spec.get("error").asText(),
-                    "message", spec.path("summary_et").asText("Ei leidnud sobivat template'it")));
+                    "message", spec.path("summary_et").asText("Ei leidnud sobivat template'it"),
+                    "invent_suggested", true,
+                    "invent_endpoint", "/api/invent",
+                    "invent_prompt", req.prompt_et()));
         }
         String template = spec.path("template").asText();
 

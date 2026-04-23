@@ -36,6 +36,115 @@ public class ClaudeClient {
         this.webClient = webClient;
     }
 
+    /**
+     * Fallback "leiuta midagi" — kui ükski template ei sobi, palume Claude'il
+     * kirjutada CadQuery koodi otse. Kood peab järgima worker'i AST-whitelist'i
+     * (cadquery + math + random; ei tohi olla os/sys/open/eval/exec jne) ja
+     * defineerima funktsiooni {@code build()}, mis tagastab {@code cq.Workplane}.
+     *
+     * <p>Kasutame forced tool-use'i ({@code submit_freeform}), et saaks garanteeritud
+     * struktureeritud JSON-vastuse ilma markdown-i parseimiseta.
+     *
+     * @return JsonNode kujul {@code { "code": "...python...", "summary_et": "...",
+     *         "entrypoint": "build" }}
+     */
+    public JsonNode inventFreeform(String userPrompt) throws Exception {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("ANTHROPIC_API_KEY not configured");
+        }
+
+        String system = """
+            Sa oled eesti 3D-printimise ekspert ja CadQuery-spetsialist. Kui meie
+            23 parameetrilist malli EI SOBI kasutaja sooviga, on sinu töö leiutada
+            detail otse — kirjutada CadQuery Python-koodi, mis meie turvalises
+            sandbox'is jookseb.
+
+            SANDBOX REEGLID (oluline, muidu kood ei käivitu):
+              - Lubatud import'id ainult: cadquery, math, random.
+              - KEELATUD: os, sys, subprocess, socket, threading, pathlib, shutil,
+                ctypes, importlib, eval, exec, compile, __import__, open, input,
+                ning kõik dunder-atribuudid (__class__, __globals__, __builtins__ jne).
+              - Builtins on piiratud puhaste funktsioonidega (abs, min, max, range,
+                len, int, float, str, list, dict jne) + tavalised erandid.
+              - Timeout 15s, RAM 512MB.
+
+            KOODI NÕUDED:
+              - Defineeri funktsioon build() mis tagastab cq.Workplane objekti.
+              - Kasuta `import cadquery as cq` (soovitav) või kutsu `cq` otse.
+              - Kõik mõõdud millimeetrites.
+              - Eelistagu FDM-prinditavust: minimaalne seinapaksus 2mm, overhang
+                <45°, ei tohi olla hõljuvaid saarekesi ilma toeta.
+              - Kui detail on SUUREM kui tüüpiline FDM-voodi (220×220×250mm),
+                saa sellest aru — võid tagastada koodi, aga mainib summary_et-s,
+                et kasutaja peab osadeks jagama või tellima suure-voodi printerilt.
+              - Kood peab olema iseseisev — ära eelda mingeid worker-globaale.
+
+            VASTAMISREEGLID:
+              - Vasta AINULT tööriistaga submit_freeform.
+              - summary_et: üks lühike lause eesti keeles, mis kirjeldab, mida kood
+                genereerib (nt "72cm kõrgune ruudukujuline laua jalg seinapaksusega 3mm").
+            """;
+
+        // ---- Tool schema ----
+        ObjectNode tool = mapper.createObjectNode();
+        tool.put("name", "submit_freeform");
+        tool.put("description", "Esita CadQuery kood, mis sandbox'is käivitub ja cq.Workplane tagastab.");
+        ObjectNode toolSchema = tool.putObject("input_schema");
+        toolSchema.put("type", "object");
+        ArrayNode required = toolSchema.putArray("required");
+        required.add("code"); required.add("summary_et");
+        ObjectNode props = toolSchema.putObject("properties");
+        props.putObject("code").put("type", "string")
+                .put("description", "Terviklik Python-kood, mis defineerib build() -> cq.Workplane.");
+        props.putObject("summary_et").put("type", "string")
+                .put("description", "Üks lause eesti keeles — mida kood genereerib.");
+        props.putObject("entrypoint").put("type", "string")
+                .put("description", "Funktsiooni nimi, mida kutsuda. Vaikimisi 'build'.");
+
+        // ---- Body ----
+        ObjectNode body = mapper.createObjectNode();
+        body.put("model", model);
+        body.put("max_tokens", 2000);
+        body.put("system", system);
+        ArrayNode tools = body.putArray("tools");
+        tools.add(tool);
+        ObjectNode choice = body.putObject("tool_choice");
+        choice.put("type", "tool");
+        choice.put("name", "submit_freeform");
+
+        ArrayNode messages = body.putArray("messages");
+        ObjectNode msg = messages.addObject();
+        msg.put("role", "user");
+        msg.put("content", "Kasutaja soov (eesti keeles):\n"
+                + (userPrompt == null ? "" : userPrompt)
+                + "\n\nKataloogist ei leitud sobivat malli — palun leiuta detail CadQuery koodina.");
+
+        JsonNode resp = webClient.post()
+                .uri(baseUrl + "/v1/messages")
+                .header("x-api-key", apiKey)
+                .header("anthropic-version", "2023-06-01")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(JsonNode.class)
+                .block();
+
+        if (resp == null || !resp.has("content")) {
+            throw new RuntimeException("Empty response from Claude: " + resp);
+        }
+        for (JsonNode block : resp.get("content")) {
+            if ("tool_use".equals(block.path("type").asText())
+                    && "submit_freeform".equals(block.path("name").asText())) {
+                ObjectNode out = (ObjectNode) block.get("input").deepCopy();
+                if (!out.has("entrypoint") || out.path("entrypoint").asText().isBlank()) {
+                    out.put("entrypoint", "build");
+                }
+                return out;
+            }
+        }
+        throw new RuntimeException("Claude did not call submit_freeform: " + resp);
+    }
+
     public JsonNode specFromPrompt(String userPrompt, JsonNode templateCatalog) throws Exception {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("ANTHROPIC_API_KEY not configured");

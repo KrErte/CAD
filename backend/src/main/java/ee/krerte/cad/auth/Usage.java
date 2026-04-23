@@ -20,6 +20,10 @@ public class Usage {
     @Column(nullable = false)
     private int stlCount = 0;
 
+    /** Freeform (Claude-written CadQuery) katsete arv selle kuu jooksul. */
+    @Column(name = "freeform_count", nullable = false)
+    private int freeformCount = 0;
+
     public Long getId() { return id; }
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
@@ -28,4 +32,8 @@ public class Usage {
     public int getStlCount() { return stlCount; }
     public void setStlCount(int c) { this.stlCount = c; }
     public void increment() { this.stlCount++; }
+
+    public int getFreeformCount() { return freeformCount; }
+    public void setFreeformCount(int c) { this.freeformCount = c; }
+    public void incrementFreeform() { this.freeformCount++; }
 }
