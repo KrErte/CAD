@@ -18,7 +18,7 @@ services:
       retries: 5
 
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: aicad
       POSTGRES_USER: aicad
@@ -43,8 +43,8 @@ services:
       DB_USER: aicad
       DB_PASSWORD: ${DB_PASSWORD:-aicad}
       JWT_SECRET: ${JWT_SECRET:-change-me-please-change-me-please-32bytes!!}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4200}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
