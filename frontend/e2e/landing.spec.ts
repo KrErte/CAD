@@ -36,23 +36,11 @@ test.describe('Landing page — avalik pind', () => {
     await expect(page.locator('.usecase-pain').first()).not.toBeEmpty();
   });
 
-  test('hinnastik näitab 4 tier-i + kuu/aasta lüliti', async ({ page }) => {
-    await page.goto('/#pricing');
-    await expect(page.locator('.pricing-grid-4 .pricing-card')).toHaveCount(4);
-    await expect(page.locator('.pricing-toggle').filter({ hasText: 'Kuu' })).toBeVisible();
-    await expect(page.locator('.pricing-toggle').filter({ hasText: 'Aasta' })).toBeVisible();
-  });
-
-  test('kuu → aasta lüliti muudab kuvatavaid hindu', async ({ page }) => {
-    await page.goto('/#pricing');
-    const popularCard = page.locator('.pricing-popular');
-    const monthlyPrice = await popularCard.locator('.pricing-price').textContent();
-    expect(monthlyPrice).toContain('29.99');
-
-    await page.locator('.pricing-toggle').filter({ hasText: 'Aasta' }).click();
-    await page.waitForTimeout(150);
-    const yearlyPrice = await popularCard.locator('.pricing-price').textContent();
-    expect(yearlyPrice).toContain('24.90');
+  test('pricing CTA links to /pricing page', async ({ page }) => {
+    await page.goto('/');
+    const pricingCta = page.locator('#pricing a[href="/pricing"]');
+    await expect(pricingCta).toBeVisible();
+    await expect(pricingCta).toContainText(/View all plans/);
   });
 
   test('FAQ avaneb klikkides', async ({ page }) => {

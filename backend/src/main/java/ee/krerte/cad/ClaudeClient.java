@@ -31,6 +31,12 @@ public class ClaudeClient {
     @Value("${app.claude.model}")
     private String model;
 
+    @Value("${app.claude.model.intent:claude-haiku-4-5-20251001}")
+    private String intentModel;
+
+    @Value("${app.claude.model.review:claude-sonnet-4-6}")
+    private String reviewModel;
+
     @Value("${app.claude.base-url}")
     private String baseUrl;
 
@@ -71,7 +77,7 @@ public class ClaudeClient {
                         + userPrompt;
 
         ObjectNode body = mapper.createObjectNode();
-        body.put("model", model);
+        body.put("model", intentModel);
         body.put("max_tokens", 1024);
         body.put("system", system);
         var messages = body.putArray("messages");
@@ -232,7 +238,7 @@ public class ClaudeClient {
 
         // ---- Request body ----
         ObjectNode body = mapper.createObjectNode();
-        body.put("model", model);
+        body.put("model", reviewModel);
         body.put("max_tokens", 1500);
         body.put("system", system);
 
@@ -392,7 +398,7 @@ public class ClaudeClient {
         // huvides saadame SVG-d TEKSTINA: Claude tajub kontuurid koodist piisavalt
         // vaatlus-tasemel, kuna need on lihtsad polüüpid).
         ObjectNode body = mapper.createObjectNode();
-        body.put("model", model);
+        body.put("model", intentModel);
         body.put("max_tokens", 2000);
         body.put("system", system);
 

@@ -1,0 +1,8 @@
+-- V9: Widen plan column for new pricing tiers
+-- Old values: FREE, PRO, BUSINESS
+-- New values: DEMO, MAKER, CREATOR, BUREAU_STARTER, BUREAU_STUDIO,
+--             BUREAU_FACTORY, BUREAU_ENTERPRISE, DEV_TRIAL, DEV_GROWTH, DEV_BUSINESS
+
+ALTER TABLE users ALTER COLUMN plan TYPE VARCHAR(32);
+
+CREATE INDEX IF NOT EXISTS idx_users_plan ON users (plan);

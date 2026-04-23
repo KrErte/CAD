@@ -35,6 +35,16 @@
           },
           "defaultConfiguration": "production"
         },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js",
+            "styles": ["src/styles.css"],
+            "scripts": []
+          }
+        },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {

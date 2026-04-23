@@ -82,6 +82,7 @@ public class SecurityConfig {
                                                 "/api/gallery/*/stl",
                                                 "/api/orders/quote",
                                                 "/api/pricing/**",
+                                                "/api/demo/**",
                                                 "/actuator/health/**",
                                                 "/actuator/info",
                                                 "/oauth2/**",

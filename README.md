@@ -125,6 +125,18 @@ docs/      ARCHITECTURE.md, openapi.yaml
 .github/   CI (per-component) + Release (multi-arch ghcr.io push)
 ```
 
+## Pricing
+
+Three audience segments — Makers, Print Bureaus, Developers. See [docs/PRICING.md](./docs/PRICING.md) for full details.
+
+- **Demo**: 2 generations/day, no auth required (`POST /api/demo/generate`)
+- **Maker** (Free): 100 gen/mo, 30 reviews, 10 meshy
+- **Creator** (29.99 €/mo): 500 gen/mo, Darwin CAD, STEP export
+- **Bureau plans**: Starter → Studio → Factory → Enterprise
+- **Developer plans**: Trial (14d) → Growth → Business (API access)
+
+Public pricing endpoint: `GET /api/pricing/plans`
+
 ## Roadmap
 
 - LLM-juhitud uute template'ide loomine (review queue, mitte auto-merge)

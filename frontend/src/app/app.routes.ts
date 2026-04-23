@@ -3,15 +3,18 @@ import { AppComponent } from './app.component';
 import { AuthComponent } from './auth.component';
 import { FactoryComponent } from './factory/factory.component';
 import { RfqPublicComponent } from './factory/rfq-public.component';
+import { PricingComponent } from './pricing/pricing.component';
 
 /**
  * Route konfiguratsioon:
  *   /             → TehisAI CAD Home (olemasolev AppComponent)
+ *   /pricing      → Pricing page (3-tab layout)
  *   /factory      → PrintFlow MES admin moodul
  *   /p/:slug      → Avaliku RFQ vormi leht (tehniline klient ilma loginita)
  */
 export const APP_ROUTES: Routes = [
   { path: '', pathMatch: 'full', component: AppComponent },
+  { path: 'pricing', component: PricingComponent },
   { path: 'factory', component: FactoryComponent },
   { path: 'p/:slug', component: RfqPublicComponent },
   { path: 'auth', component: AuthComponent },

@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ee.krerte.cad.auth.QuotaService;
 import ee.krerte.cad.auth.RateLimitService;
+import ee.krerte.cad.auth.User;
+import ee.krerte.cad.auth.UserRepository;
+import ee.krerte.cad.pricing.PricingPlan;
+import ee.krerte.cad.pricing.UsageTrackingService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -28,6 +32,8 @@ public class DesignController {
     private final SlicerClient slicer;
     private final RateLimitService rateLimiter;
     private final QuotaService quotaService;
+    private final UsageTrackingService usageTracking;
+    private final UserRepository userRepository;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public DesignController(
@@ -36,13 +42,17 @@ public class DesignController {
             MeshyClient meshy,
             SlicerClient slicer,
             RateLimitService rateLimiter,
-            QuotaService quotaService) {
+            QuotaService quotaService,
+            UsageTrackingService usageTracking,
+            UserRepository userRepository) {
         this.claude = claude;
         this.worker = worker;
         this.meshy = meshy;
         this.slicer = slicer;
         this.rateLimiter = rateLimiter;
         this.quotaService = quotaService;
+        this.usageTracking = usageTracking;
+        this.userRepository = userRepository;
     }
 
     /** Just expose the worker catalog (what we can design today). */
@@ -114,22 +124,27 @@ public class DesignController {
                                             "Liiga palju genereerimisi. Proovi minuti pärast uuesti.",
                                     "remaining", rateLimiter.remaining(userId, "generate")));
         }
-        // Subscription quota check — verify monthly model limit
-        QuotaService.Status quota = quotaService.status(userId);
+        // Subscription quota check — new tier-aware enforcement
+        PricingPlan plan = resolvePlan(userId);
+        UsageTrackingService.CheckResult quota =
+                usageTracking.checkAndRecord(userId, plan, UsageTrackingService.UsageKind.GENERATION);
         if (!quota.allowed()) {
-            return ResponseEntity.status(403)
+            String upgradePlan =
+                    plan == PricingPlan.MAKER ? "CREATOR" : plan == PricingPlan.CREATOR ? "DEV_GROWTH" : "DEV_BUSINESS";
+            return ResponseEntity.status(402)
                     .body(
                             Map.of(
                                     "error", "quota_exceeded",
                                     "message",
-                                            "Kuu limiit täis ("
-                                                    + quota.used()
+                                            "Monthly limit reached ("
+                                                    + quota.current()
                                                     + "/"
                                                     + quota.limit()
-                                                    + "). Uuenda plaani, et jätkata.",
-                                    "used", quota.used(),
+                                                    + "). Upgrade to continue.",
+                                    "current", quota.current(),
                                     "limit", quota.limit(),
-                                    "plan", quota.plan().name()));
+                                    "upgrade_plan", upgradePlan,
+                                    "upgrade_url", "/pricing"));
         }
         byte[] stl = worker.generate(spec);
         String name = spec.path("template").asText("model") + ".stl";
@@ -247,6 +262,15 @@ public class DesignController {
 
     private static double round2(double v) {
         return Math.round(v * 100.0) / 100.0;
+    }
+
+    /** Resolve the user's current PricingPlan from the legacy User.Plan enum. */
+    private PricingPlan resolvePlan(long userId) {
+        if (userId == 0L) return PricingPlan.DEMO;
+        return userRepository
+                .findById(userId)
+                .map(u -> PricingPlan.fromLegacy(u.getPlan().name()))
+                .orElse(PricingPlan.DEMO);
     }
 
     /** Abimeetod rate limitingu jaoks — tagastab kasutaja ID või 0 anonüümsele. */

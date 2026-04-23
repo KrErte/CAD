@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from './auth.service';
+import { DemoComponent } from './demo/demo.component';
 import { EXAMPLES, FEATURED_EXAMPLES, Example } from './examples';
 import * as THREE from 'three';
 // @ts-ignore — STLLoader ships without types in @types/three
@@ -75,7 +76,7 @@ interface TemplateSchema {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule, DemoComponent],
   template: `
     <!-- ═══════ HEADER ═══════ -->
     <header class="header">
@@ -89,7 +90,7 @@ interface TemplateSchema {
           <a href="#darwin" style="color:var(--accent-2);font-weight:600">Darwin CAD</a>
           <a href="#gallery">{{ t('nav_gallery') }}</a>
           <a href="#examples">{{ t('nav_examples') }}</a>
-          <a href="#pricing">{{ t('nav_pricing') }}</a>
+          <a routerLink="/pricing">{{ t('nav_pricing') }}</a>
           <select class="lang-select" [ngModel]="lang()" (ngModelChange)="setLang($event)">
             <option value="et">&#127466;&#127466; ET</option>
             <option value="en">&#127468;&#127463; EN</option>
@@ -107,6 +108,7 @@ interface TemplateSchema {
           <a href="#mydesigns" (click)="loadMyDesigns()">{{ t('my_designs') }}</a>
           <a href="#gallery">{{ t('nav_gallery') }}</a>
           <a href="#orders" (click)="loadMyOrders()">{{ t('my_orders') }}</a>
+          <a routerLink="/pricing">{{ t('nav_pricing') }}</a>
           <a href="#admin" (click)="loadAdmin()" *ngIf="isAdmin()" style="color:var(--amber)">Admin</a>
           <select class="lang-select" [ngModel]="lang()" (ngModelChange)="setLang($event)">
             <option value="et">&#127466;&#127466; ET</option>
@@ -149,6 +151,7 @@ interface TemplateSchema {
               Proovi tavaline &darr;
             </a>
           </div>
+          <app-demo class="animate-in animate-in-delay-3"></app-demo>
           <div class="hero-stats animate-in animate-in-delay-4">
             <div class="hero-stat">
               <span class="hero-stat-number">6</span>
@@ -422,113 +425,19 @@ interface TemplateSchema {
 
     <div class="section-divider"></div>
 
-    <!-- ═══════ PRICING ═══════ -->
+    <!-- ═══════ PRICING CTA ═══════ -->
     <section id="pricing" class="section">
-      <div class="container">
+      <div class="container" style="text-align:center;max-width:600px">
         <div class="section-header">
           <div class="badge">HINNAD</div>
           <h2 class="section-title">Lihtne hinnakiri, mis kasvab sinuga kaasa.</h2>
           <p class="section-subtitle">
-            Alusta tasuta. Uuenda, kui vajad rohkem mudeleid või API ligipääsu.
+            Makers, print bureaus, developers — we have a plan for you.
           </p>
         </div>
-
-        <div class="pricing-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:960px;margin:0 auto">
-          <!-- FREE -->
-          <div class="pricing-card card-glass">
-            <div class="pricing-tier">Free</div>
-            <div class="pricing-price">0 €<span class="pricing-period">/kuu</span></div>
-            <div class="pricing-tagline">Proovi ilma kaardita</div>
-            <ul class="pricing-features">
-              <li><strong>3 mudelit</strong> kuus</li>
-              <li>Kõik mallid</li>
-              <li>Eestikeelne AI</li>
-              <li>Metrika (kaal, aeg, mõõdud)</li>
-              <li style="color:var(--text-muted)">Ei API · Ei prioriteet</li>
-            </ul>
-            <button *ngIf="!auth.me()" class="pricing-btn" style="background:var(--bg-card)"
-                    (click)="auth.loginWithGoogle()">Alusta tasuta</button>
-            <div *ngIf="auth.me()?.plan === 'FREE'" class="pricing-current">Praegune plaan</div>
-          </div>
-
-          <!-- PRO (populaarne) -->
-          <div class="pricing-card card-glass pricing-popular">
-            <div class="pricing-badge-top">POPULAARSEIM</div>
-            <div class="pricing-tier">Pro</div>
-            <div class="pricing-price">14.99 €<span class="pricing-period">/kuu</span></div>
-            <div class="pricing-tagline">Inseneridele ja 3D-printijatele</div>
-            <ul class="pricing-features">
-              <li><strong>50 mudelit</strong> kuus</li>
-              <li>Kõik mallid + Darwin CAD</li>
-              <li>STEP-eksport</li>
-              <li>Freeform Python-gen (sandbox)</li>
-              <li>Ajalugu + re-download</li>
-              <li>Prioriteetne järjekord</li>
-              <li>E-mail tugi (24h)</li>
-            </ul>
-            <button class="pricing-btn btn-cta" (click)="upgrade('pro')"
-                    [disabled]="isCurrentPlan('PRO')">
-              {{ isCurrentPlan('PRO') ? 'Aktiivne' : 'Uuenda Pro' }}
-            </button>
-          </div>
-
-          <!-- BUSINESS -->
-          <div class="pricing-card card-glass">
-            <div class="pricing-tier">Business</div>
-            <div class="pricing-price">49.99 €<span class="pricing-period">/kuu</span></div>
-            <div class="pricing-tagline">Tiimidele ja API-integratsioonidele</div>
-            <ul class="pricing-features">
-              <li><strong>200 mudelit</strong> kuus</li>
-              <li>Kõik Pro omadused</li>
-              <li><strong>API ligipääs</strong></li>
-              <li>Kommertslitsents</li>
-              <li>Prioriteetne tugi (4h)</li>
-              <li>Usage analytics</li>
-            </ul>
-            <button class="pricing-btn" style="background:var(--bg-card)" (click)="upgrade('business')"
-                    [disabled]="isCurrentPlan('BUSINESS')">
-              {{ isCurrentPlan('BUSINESS') ? 'Aktiivne' : 'Uuenda Business' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Subscription management for logged-in users -->
-        <div *ngIf="auth.me() && auth.me()!.plan !== 'FREE'"
-             style="text-align:center;margin-top:1.5rem">
-          <button class="pricing-btn" style="background:var(--bg-card);padding:.6rem 1.2rem;font-size:.9rem"
-                  (click)="openBillingPortal()">
-            Halda tellimust
-          </button>
-        </div>
-
-        <!-- Garantii + trust -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-             gap:1rem;margin-top:2rem;text-align:center">
-          <div style="padding:1rem">
-            <div style="font-size:1.8rem">🛡️</div>
-            <div style="font-weight:700;margin-top:.4rem">30 päeva tagasi­makse</div>
-            <div style="color:var(--text-muted);font-size:.85rem">Küsimata põhjusi</div>
-          </div>
-          <div style="padding:1rem">
-            <div style="font-size:1.8rem">🇪🇪</div>
-            <div style="font-weight:700;margin-top:.4rem">Eesti ettevõte</div>
-            <div style="color:var(--text-muted);font-size:.85rem">Reg-nr + e-arve</div>
-          </div>
-          <div style="padding:1rem">
-            <div style="font-size:1.8rem">⏱️</div>
-            <div style="font-weight:700;margin-top:.4rem">Tühista 1 kliki</div>
-            <div style="color:var(--text-muted);font-size:.85rem">Ei küsi "miks"</div>
-          </div>
-          <div style="padding:1rem">
-            <div style="font-size:1.8rem">🔒</div>
-            <div style="font-weight:700;margin-top:.4rem">GDPR + Stripe</div>
-            <div style="color:var(--text-muted);font-size:.85rem">Kaardi­andmed meie süsteemis ei salvesta</div>
-          </div>
-        </div>
-
-        <p style="color:var(--text-muted);font-size:.85rem;margin-top:2rem;text-align:center">
-          Kõik hinnad sis. KM (22%). B2B e-arve saadaval. Aasta-plaanid tasuta 14-päeva proovi­periood.
-        </p>
+        <a routerLink="/pricing" class="btn-cta" style="display:inline-block;padding:.8rem 2rem;font-size:1.1rem">
+          View all plans &rarr;
+        </a>
       </div>
     </section>
 

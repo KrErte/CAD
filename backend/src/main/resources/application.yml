@@ -133,6 +133,8 @@ app:
   claude:
     api-key: ${ANTHROPIC_API_KEY:}
     model: ${CLAUDE_MODEL:claude-opus-4-6}
+    model.intent: ${CLAUDE_MODEL_INTENT:claude-haiku-4-5-20251001}
+    model.review: ${CLAUDE_MODEL_REVIEW:claude-sonnet-4-6}
     base-url: https://api.anthropic.com
   worker:
     url: ${WORKER_URL:http://localhost:8000}

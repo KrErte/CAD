@@ -26,5 +26,5 @@
     "strictTemplates": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["e2e/**/*", "playwright.config.ts", "node_modules"]
+  "exclude": ["e2e/**/*", "playwright.config.ts", "node_modules", "src/**/*.spec.ts"]
 }
