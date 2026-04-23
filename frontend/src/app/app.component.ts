@@ -1026,18 +1026,24 @@ interface TemplateSchema {
               <div class="review-section" *ngIf="r.suggestions?.length">
                 <h5>&#128161; Soovitused</h5>
                 <div class="suggestion-list">
-                  <button *ngFor="let sug of r.suggestions"
-                          class="suggestion-item"
-                          [class.suggestion-actionable]="sug.param && sug.new_value !== null && sug.new_value !== undefined"
-                          (click)="applySuggestion(sug)"
-                          [title]="sug.rationale_et">
-                    <div class="sug-label">
-                      {{ sug.label_et }}
-                      <span *ngIf="sug.param && sug.new_value !== null && sug.new_value !== undefined"
-                            class="sug-apply">&#8634; Rakenda</span>
+                  <ng-container *ngFor="let sug of r.suggestions">
+                    <button *ngIf="sug.param && sug.new_value !== null && sug.new_value !== undefined"
+                            class="suggestion-item suggestion-actionable"
+                            (click)="applySuggestion(sug)"
+                            [title]="sug.rationale_et">
+                      <div class="sug-label">
+                        {{ sug.label_et }}
+                        <span class="sug-apply">&#8634; Rakenda</span>
+                      </div>
+                      <div class="sug-reason">{{ sug.rationale_et }}</div>
+                    </button>
+                    <div *ngIf="!(sug.param && sug.new_value !== null && sug.new_value !== undefined)"
+                         class="suggestion-item"
+                         [title]="sug.rationale_et">
+                      <div class="sug-label">{{ sug.label_et }}</div>
+                      <div class="sug-reason">{{ sug.rationale_et }}</div>
                     </div>
-                    <div class="sug-reason">{{ sug.rationale_et }}</div>
-                  </button>
+                  </ng-container>
                 </div>
               </div>
 
@@ -2554,12 +2560,23 @@ result = (
    * Returns true if applied, false if the suggestion was non-numeric.
    */
   applySuggestion(sug: Suggestion) {
-    if (!sug.param || typeof sug.new_value !== 'number') return false;
+    if (!sug.param || typeof sug.new_value !== 'number') {
+      console.warn('[applySuggestion] Soovitus pole rakendatav — puudub param või new_value:', sug);
+      this.error.set('See soovitus pole automaatselt rakendatav.');
+      setTimeout(() => this.error.set(null), 3000);
+      return false;
+    }
     const s = this.spec();
     if (!s) return false;
     const schema = this.schemaFor(s.template, sug.param);
+    if (!schema) {
+      console.warn(`[applySuggestion] schemaFor("${s.template}", "${sug.param}") tagastas undefined — param-nimi ei vasta template schema'le`);
+      this.error.set(`Tundmatu parameeter "${sug.param}" — ei saa rakendada.`);
+      setTimeout(() => this.error.set(null), 4000);
+      return false;
+    }
     let v = sug.new_value;
-    if (schema) v = Math.min(schema.max, Math.max(schema.min, v));
+    v = Math.min(schema.max, Math.max(schema.min, v));
     const next = { ...s, params: { ...s.params, [sug.param]: v } };
     this.spec.set(next);
     this.fetchMetrics(next);
