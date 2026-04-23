@@ -151,8 +151,6 @@ spotless {
 spotbugs {
     toolVersion = '4.8.6'
     ignoreFailures = true   // esialgu warn-only, hiljem fail-on-error
-    effort = 'MAX'
-    reportLevel = 'MEDIUM'
     excludeFilter = file('spotbugs-exclude.xml')
 }
 
