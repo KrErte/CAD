@@ -39,27 +39,18 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // ── Security headers ───────────────────────────────────────
-            .headers(h -> h
-                // HSTS — 1 aasta, sub-domain'id kaasa
-                .httpStrictTransportSecurity(hsts -> hsts
+            .headers(h -> {
+                h.httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(31_536_000))
-                // X-Frame-Options: DENY (clickjacking kaitse)
-                .frameOptions(f -> f.deny())
-                // X-Content-Type-Options: nosniff
-                .contentTypeOptions(c -> {})
-                // Referrer-Policy: strict-origin-when-cross-origin
-                .referrerPolicy(r -> r.policy(
-                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
-                // Permissions-Policy
-                .permissionsPolicy(p -> p.policy(
-                    "camera=(), microphone=(), geolocation=(), payment=(self)"))
-                // X-XSS-Protection: 0
-                .xssProtection(x -> x.headerValue(
-                    XXssProtectionHeaderWriter.HeaderValue.DISABLED))
-                // Content-Security-Policy
-                .contentSecurityPolicy(csp -> csp.policyDirectives(buildCsp()))
-            )
+                    .maxAgeInSeconds(31_536_000));
+                h.frameOptions(f -> f.deny());
+                h.contentTypeOptions(ct -> {});
+                h.referrerPolicy(r -> r.policy(
+                    ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
+                h.permissionsPolicy(p -> p.policy(
+                    "camera=(), microphone=(), geolocation=(), payment=(self)"));
+                h.contentSecurityPolicy(csp -> csp.policyDirectives(buildCsp()));
+            })
             .authorizeHttpRequests(a -> a
                 .requestMatchers("/api/auth/**", "/api/stripe/webhook",
                                  "/api/templates", "/api/health",

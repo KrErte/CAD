@@ -30,13 +30,16 @@ public class RefreshTokenController {
 
     private final RefreshTokenService refreshService;
     private final JwtService jwtService;
+    private final UserRepository userRepo;
     private final AuditService audit;
 
     public RefreshTokenController(RefreshTokenService refreshService,
                                    JwtService jwtService,
+                                   UserRepository userRepo,
                                    AuditService audit) {
         this.refreshService = refreshService;
         this.jwtService = jwtService;
+        this.userRepo = userRepo;
         this.audit = audit;
     }
 
@@ -59,7 +62,8 @@ public class RefreshTokenController {
         }
 
         var r = result.get();
-        String accessJwt = jwtService.generate(r.userId());
+        User user = userRepo.findById(r.userId()).orElseThrow();
+        String accessJwt = jwtService.issue(user);
         setCookie(resp, r.newRefreshToken());
 
         audit.record("TOKEN_REFRESH", "refresh_token", r.userId(), "SUCCESS");
