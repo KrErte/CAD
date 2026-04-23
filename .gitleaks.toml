@@ -1,0 +1,24 @@
+# Gitleaks konfig — otsib API-võtme'i ja secret'e git history'st.
+#
+# Aluseks default reeglid; täiendame allow-list'iga meie false-positive'idele
+# (nt test-võtmed nagu "test-key-xxx" või "whsec_test").
+
+title = "Gitleaks config for CAD"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Teadlikud test-võtmed — ei ole päris secret'id"
+regexes = [
+    '''test-key-xxx''',
+    '''sk_test_[a-zA-Z0-9_]{24,}''',    # Stripe test key prefix
+    '''whsec_test''',
+    '''change-me-please-change-me-please-32bytes!!''',
+]
+paths = [
+    '''(.*?)/test/(.*?)''',
+    '''frontend/e2e/(.*?)''',
+    '''load-tests/(.*?)''',
+    '''docs/(.*?)\.md''',   # dokumentatsioonis tohivad olla näidis-võtmed
+]

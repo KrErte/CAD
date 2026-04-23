@@ -1,0 +1,108 @@
+# Dependabot — iganädalased PR'id uuendustega iga ökosüsteemi kohta.
+# Me grupeerime mitte-security patch+minor'id ühte PR'i, et inbox ei upuks.
+# Security-update'id tulevad eraldi PR'idena ja läbi dependabot'i prioriteedi.
+version: 2
+updates:
+  # ── Backend (Gradle) ──────────────────────────────────────────
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Tallinn
+    open-pull-requests-limit: 5
+    labels: [dependencies, backend]
+    groups:
+      spring-boot:
+        patterns:
+          - "org.springframework.boot:*"
+          - "io.spring.dependency-management"
+      micrometer-otel:
+        patterns:
+          - "io.micrometer:*"
+          - "io.opentelemetry:*"
+      testing:
+        patterns:
+          - "org.testcontainers:*"
+          - "com.github.tomakehurst:wiremock*"
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # ── Frontend (npm) ────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies, frontend]
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-devkit/*"
+      minor-and-patch:
+        update-types: [minor, patch]
+    # npm audit leiab tihti sama asja — laseme dependabot'il juhtida
+    ignore:
+      - dependency-name: "*"
+        update-types: [version-update:semver-major]
+
+  # ── Worker (pip) ──────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /worker
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, worker]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # ── Slicer (pip) ──────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /slicer
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, slicer]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # ── GitHub Actions (pinned action versions) ───────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # ── Docker base images ────────────────────────────────────────
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+  - package-ecosystem: docker
+    directory: /frontend
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+  - package-ecosystem: docker
+    directory: /worker
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]
+  - package-ecosystem: docker
+    directory: /slicer
+    schedule:
+      interval: weekly
+    labels: [dependencies, docker]

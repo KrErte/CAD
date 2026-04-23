@@ -1,0 +1,43 @@
+name: Load test (k6)
+
+# Manuaalne trigger — load-test ei tohi iga PR peal jooksta (15+ min)
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Base URL (default: staging)'
+        default: 'https://staging.krerte.ee'
+        required: true
+      scenario:
+        description: 'Millist skripti jooksutada'
+        default: 'api-mix'
+        type: choice
+        options: [smoke, api-mix]
+
+  schedule:
+    # Igal pühapäeval öösel — nädala jooksul kogutud performance baseline
+    - cron: '0 3 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run k6
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: load-tests/${{ github.event.inputs.scenario || 'smoke' }}.js
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://staging.krerte.ee' }}
+
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary-${{ github.run_id }}
+          path: load-tests/summary.json
+          retention-days: 30

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback konfiguratsioon — konsool (JSON struktureeritud, Loki-sõbralik)
+  + Loki HTTP appender kui LOKI_URL on seatud.
+
+  MDC sisaldab automaatselt traceId/spanId (Micrometer Observation API), mis
+  annab logi ja trace'i vahel üks-ühele mapping'u Grafanas.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="appName" source="spring.application.name"/>
+    <springProperty scope="context" name="env" source="APP_ENV" defaultValue="local"/>
+
+    <!-- ── CONSOLE ────────────────────────────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %5p [${appName},%X{traceId:-},%X{spanId:-}] %-40.40logger{39} : %m%n%wEx
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── LOKI (HTTP push) ───────────────────────────────────────
+         Aktiveerub kui LOKI_URL on env-is. Grafana Loki otsib logisid
+         label'ite järgi: app, env, traceId.
+    -->
+    <springProfile name="!test">
+        <if condition='isDefined("LOKI_URL")'>
+            <then>
+                <appender name="LOKI" class="com.github.loki4j.logback.Loki4jAppender">
+                    <http>
+                        <url>${LOKI_URL}/loki/api/v1/push</url>
+                    </http>
+                    <format>
+                        <label>
+                            <pattern>app=${appName},env=${env},host=${HOSTNAME:-unknown},level=%level</pattern>
+                            <readMarkers>true</readMarkers>
+                        </label>
+                        <message>
+                            <pattern>l=%level h=${HOSTNAME:-unknown} c=%logger{20} t=%thread traceId=%X{traceId:-} spanId=%X{spanId:-} | %msg %ex</pattern>
+                        </message>
+                    </format>
+                </appender>
+            </then>
+        </if>
+    </springProfile>
+
+    <!-- ── Sentry (ainult WARN+) ─────────────────────────────────── -->
+    <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SENTRY"/>
+        <if condition='isDefined("LOKI_URL")'>
+            <then><appender-ref ref="LOKI"/></then>
+        </if>
+    </root>
+
+    <logger name="ee.krerte" level="DEBUG"/>
+    <logger name="org.hibernate.SQL" level="INFO"/>
+    <logger name="org.springframework.web" level="INFO"/>
+</configuration>

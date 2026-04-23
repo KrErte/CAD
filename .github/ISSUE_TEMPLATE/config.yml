@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Turva-probleem (confidential)
+    url: https://github.com/olen-krerte/CAD/security/advisories/new
+    about: Turvavigadest teata privaatselt security advisory kaudu, mitte avalikus issue'is.

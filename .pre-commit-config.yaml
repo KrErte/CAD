@@ -1,0 +1,94 @@
+# pre-commit hooks — jooksutavad need lokaalselt enne commit'i.
+# Eesmärk: CI-ga sama tulemus, aga 30s, mitte 5 min, ja enne git log'i jõudmist.
+#
+# Install:
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit run --all-files   # esimest korda kõikide failide peal
+#
+# CI jooksutab sama `pre-commit run --all-files` — kui mõni hook ütleb EI,
+# siis build fail'ib. See tagab, et main branch on alati formaadi-puhas.
+
+repos:
+  # ── Üldised sanity checkid ──────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-yaml
+        exclude: ^(helm/.*/templates/|\.github/workflows/)  # helm templates sisaldavad {{ }}
+      - id: check-added-large-files
+        args: [--maxkb=500]    # > 500KB fail ei pääse Git'i (.stl peaks S3'sse)
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # ── Secret detection ────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  # ── Python (worker, slicer) ─────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # ── Frontend (Angular) ──────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: frontend-lint
+        name: ESLint (frontend)
+        entry: bash -c 'cd frontend && npx eslint --fix'
+        language: system
+        files: ^frontend/src/.*\.(ts|html)$
+        pass_filenames: true
+
+      - id: frontend-prettier
+        name: Prettier (frontend)
+        entry: bash -c 'cd frontend && npx prettier --write'
+        language: system
+        files: ^frontend/src/.*\.(ts|html|scss|json)$
+        pass_filenames: true
+
+  # ── Backend (Java) ──────────────────────────────────────────────
+  # Spotless jookseb Gradle'ist — hook käivitab selle muutunud failide peal.
+  # Kiireim: jookseb ainult *.java muudatustel
+  - repo: local
+    hooks:
+      - id: spotless
+        name: Spotless (Java)
+        entry: bash -c 'cd backend && gradle spotlessApply --quiet'
+        language: system
+        files: ^backend/src/.*\.java$
+        pass_filenames: false
+
+  # ── Helm lint ──────────────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: helm-lint
+        name: helm lint
+        entry: helm lint helm/ai-cad
+        language: system
+        files: ^helm/.*\.(yaml|yml|tpl)$
+        pass_filenames: false
+
+  # ── Dockerfile lint (hadolint) ──────────────────────────────────
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.1-beta
+    hooks:
+      - id: hadolint-docker
+        args: [--ignore, DL3008, --ignore, DL3018]   # "pin apt package versions"
+
+  # ── Commit message — Conventional Commits ──────────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, chore, docs, test, refactor, perf, ci, build, revert]

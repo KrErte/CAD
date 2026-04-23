@@ -2,18 +2,42 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  labels:
+    app: backend
+    app.kubernetes.io/name: ai-cad-backend
+    app.kubernetes.io/component: backend
 spec:
   replicas: {{ .Values.backend.replicas }}
-  selector: { matchLabels: { app: backend } }
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: backend
   template:
-    metadata: { labels: { app: backend } }
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/name: ai-cad-backend
+      annotations:
+        # Kui Prometheus pole Operator, siis fallback on annotation-based scrape
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
+      terminationGracePeriodSeconds: 45
       containers:
         - name: backend
           image: {{ include "ai-cad.image" (dict "Values" .Values "component" "backend") }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports: [{ containerPort: 8080 }]
+          ports:
+            - name: http
+              containerPort: 8080
           env:
+            - name: APP_ENV
+              value: {{ .Values.env | default "prod" | quote }}
             - name: WORKER_URL
               value: "http://worker:8000"
             {{- if .Values.slicer.enabled }}
@@ -26,7 +50,7 @@ spec:
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: ANTHROPIC_API_KEY } }
             - name: MESHY_API_KEY
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: MESHY_API_KEY } }
-            # --- Pricing partners (kõik optional, tühjad = heuristika-fallback) ---
+            # ── Pricing partners (kõik optional, tühjad = heuristika-fallback) ──
             - name: PRICING_KODA_KEY
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_KODA_KEY, optional: true } }
             - name: PRICING_PRINTIDUD_KEY
@@ -35,11 +59,114 @@ spec:
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_SHAPEWAYS_KEY, optional: true } }
             - name: PRICING_TREATSTOCK_KEY
               valueFrom: { secretKeyRef: { name: ai-cad-secrets, key: PRICING_TREATSTOCK_KEY, optional: true } }
+            # ── Observability ──
+            {{- if .Values.observability.tracing.enabled }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ .Values.observability.tracing.otlpEndpoint | quote }}
+            - name: TRACING_SAMPLE
+              value: {{ .Values.observability.tracing.samplingProbability | quote }}
+            {{- end }}
+            {{- if .Values.observability.logging.lokiUrl }}
+            - name: LOKI_URL
+              value: {{ .Values.observability.logging.lokiUrl | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Startup probe — Spring Boot võib olla aeglane (Hibernate + Flyway)
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            failureThreshold: 30
+            periodSeconds: 5
           resources: {{ toYaml .Values.backend.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: false  # Spring Boot vajab /tmp-i
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
 ---
 apiVersion: v1
 kind: Service
-metadata: { name: backend }
+metadata:
+  name: backend
+  labels:
+    app: backend
+    app.kubernetes.io/name: ai-cad-backend
 spec:
-  selector: { app: backend }
-  ports: [{ port: 8080, targetPort: 8080 }]
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+{{- if .Values.observability.serviceMonitor.enabled }}
+---
+# kube-prometheus-stack Operator CR — selle asemel, et annotation-based scrape
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ai-cad-backend
+  labels:
+    {{- with .Values.observability.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: backend
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ .Values.observability.serviceMonitor.interval }}
+      scrapeTimeout: 10s
+{{- end }}
+{{- if .Values.backend.pdb.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend
+spec:
+  minAvailable: {{ .Values.backend.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      app: backend
+{{- end }}
+{{- if .Values.backend.hpa.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: {{ .Values.backend.hpa.minReplicas }}
+  maxReplicas: {{ .Values.backend.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.backend.hpa.targetCPU }}
+{{- end }}

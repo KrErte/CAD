@@ -1,0 +1,34 @@
+name: Feature request
+description: Paku uut funktsionaalsust
+title: "[feat]: "
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Mis probleem?
+      description: Mis on täna valesti või puudu?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Pakutav lahendus
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatiivid, mida kaalusid
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - S (1-2 päeva)
+        - M (nädal)
+        - L (sprint)
+        - XL (mitu sprint'i)

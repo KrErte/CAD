@@ -1,0 +1,42 @@
+# Integration-test profile — Testcontainers Postgres üle võtab datasource URL'i
+# DynamicPropertySource kaudu. Sellele failile on vaja ainult, et meilile ja
+# väliste teenuste URLid ei oleks prod'ist.
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+
+app:
+  claude:
+    api-key: "test-key"
+    model: "claude-sonnet-4-5"
+    base-url: "http://localhost:0"   # ülekirjutab DynamicPropertySource
+  worker:
+    url: "http://localhost:0"
+  slicer:
+    url: "http://localhost:0"
+  meshy:
+    api-key: "test-key"
+    base-url: "http://localhost:0"
+  stripe:
+    secret-key: "sk_test_xxx"
+    webhook-secret: "whsec_test"
+  jwt:
+    secret: "test-jwt-secret-must-be-at-least-32-bytes-long!"
+    ttl-hours: 24
+  frontend:
+    url: "http://localhost:4200"
+
+logging:
+  level:
+    root: WARN
+    ee.krerte.cad: INFO
+    org.testcontainers: WARN
+    # Silence'i Hibernate SQL log'i testides (kiirendab ~3x)
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN

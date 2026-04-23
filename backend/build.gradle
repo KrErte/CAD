@@ -2,6 +2,15 @@ plugins {
     id 'org.springframework.boot' version '3.3.4'
     id 'io.spring.dependency-management' version '1.1.6'
     id 'java'
+    id 'jacoco'
+    // ── Security ──
+    // OWASP dependency-check — avastab CVE'd sõltuvustes
+    id 'org.owasp.dependencycheck' version '10.0.4'
+    // Spotless — automaatne formaadindus + license header
+    id 'com.diffplug.spotless' version '6.25.0'
+    // SpotBugs — static analysis (null-check, resource leak, concurrency bugs)
+    id 'com.github.spotbugs' version '6.0.22'
+    // Error Prone — Google static analysis (laiendab javac hoiatusi)
 }
 
 group = 'ee.krerte'
@@ -11,6 +20,7 @@ java.sourceCompatibility = JavaVersion.VERSION_21
 repositories { mavenCentral() }
 
 dependencies {
+    // ── Core ─────────────────────────────────────────────────────────
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -26,11 +36,128 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+    // ── Observability ────────────────────────────────────────────────
+    // Actuator — health, info, metrics, prometheus endpoint'id
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Micrometer → Prometheus scrape format (/actuator/prometheus)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    // OpenTelemetry — distributed tracing (backend → worker → slicer)
+    // Bridge Micrometer Observation API → OTel spans
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
+    // Loki logback appender — struktureeritud logid Grafana Loki jaoks
+    implementation 'com.github.loki4j:loki-logback-appender:1.5.2'
+
+    // ── Error tracking ───────────────────────────────────────────────
     implementation 'io.sentry:sentry-spring-boot-starter-jakarta:7.14.0'
     implementation 'io.sentry:sentry-logback:7.14.0'
+
+    // ── Rate limiting (tulevases security-hardening branch'is laieneb) ──
+    implementation 'com.bucket4j:bucket4j-core:8.10.1'
+    // bucket4j-redis — jagatud rate-limit state üle mitme backend'i instantsi
+    implementation 'com.bucket4j:bucket4j-redis:8.10.1'
+    implementation 'io.lettuce:lettuce-core'
+
+    // ── Caching ──────────────────────────────────────────────────────
+    // Redis cache Claude spec/review vastuste jaoks + session store tulevaks
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+    // ── Object storage (S3 / MinIO) ──────────────────────────────────
+    // STL / Gcode / preview-PNG fail'id lähevad S3-kompatibel storage'i,
+    // mitte Postgres'i bytea veergu. Postgres jääb metadata / relational.
+    implementation 'software.amazon.awssdk:s3:2.28.5'
+
+    // ── Vector search (pgvector) ─────────────────────────────────────
+    // Embeddings RAG-lite jaoks — sarnased promptid + sarnased disainid
+    implementation 'com.pgvector:pgvector:0.1.6'
+
+    // ── Testing ──────────────────────────────────────────────────────
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'io.projectreactor:reactor-test'
+    // Testcontainers — integration testid Postgres'iga
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.2'
+    testImplementation 'org.testcontainers:postgresql:1.20.2'
+    // WireMock — Claude/Meshy API kontrakti-testid ilma päris raha kulutamata
+    testImplementation 'org.wiremock:wiremock-standalone:3.9.1'
+    // Testcontainers moodulid täiendava infra jaoks
+    testImplementation 'com.redis:testcontainers-redis:2.2.2'
+    testImplementation 'org.testcontainers:minio:1.20.2'
 }
 
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true   // CI upload (Codecov / SonarQube)
+        html.required = true
+    }
+}
+
+// Code coverage gate — CI fail'ib kui total line coverage < 60%
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit { minimum = 0.60 }
+        }
+    }
+}
+
+// ── OWASP dependency-check ───────────────────────────────────────────
+// Käivita: ./gradlew dependencyCheckAnalyze
+// CI fail'ib kui CVSS score >= 7.0 ükski sõltuvus. Saab jätta tühja
+// .dependencyCheckSuppressions.xml faili, kui mõni alert on false-positive.
+dependencyCheck {
+    failBuildOnCVSS = 7.0
+    formats = ['HTML', 'JSON', 'SARIF']  // SARIF = GitHub Security tab'i upload
+    suppressionFile = 'dependency-check-suppressions.xml'
+    analyzers {
+        // Me ei kasuta .NET / Node / Swift jne — keelame
+        assemblyEnabled = false
+        nodeAudit.enabled = false
+        retirejs.enabled = false
+    }
+    // NVD API võti — ilma selleta on rate-limit drastiline (~30 min DL)
+    // Seadista: export NVD_API_KEY=...
+    nvd.apiKey = System.getenv('NVD_API_KEY') ?: ''
+}
+
+// ── Spotless (code formatting) ───────────────────────────────────────
+spotless {
+    java {
+        googleJavaFormat('1.23.0').aosp()   // 4-space indent (Spring-style)
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+        target 'src/**/*.java'
+        targetExclude 'src/**/generated/**'
+    }
+    format 'misc', {
+        target '*.gradle', '*.md', '.gitattributes', '.gitignore'
+        trimTrailingWhitespace()
+        indentWithSpaces(4)
+        endWithNewline()
+    }
+}
+
+// ── SpotBugs (static analysis) ───────────────────────────────────────
+spotbugs {
+    toolVersion = '4.8.6'
+    ignoreFailures = true   // esialgu warn-only, hiljem fail-on-error
+    excludeFilter = file('spotbugs-exclude.xml')
+}
+
+// Kõik checkid ühe task'iga
+tasks.register('securityCheck') {
+    group = 'verification'
+    description = 'Runs OWASP dep-check + SpotBugs + Spotless + test coverage gate'
+    dependsOn 'dependencyCheckAnalyze', 'spotbugsMain', 'spotlessCheck',
+              'jacocoTestCoverageVerification'
+}
