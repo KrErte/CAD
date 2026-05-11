@@ -19,13 +19,13 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
         with:
           java-version: "21"
           distribution: temurin
           cache: gradle
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build & test (Jacoco coverage included)
         # Wrapper (gradlew) is not checked in to the repo, so we use the
@@ -36,7 +36,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: backend/build/reports/jacoco/test/jacocoTestReport.xml
           flags: backend
@@ -45,7 +45,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-test-results
           path: |
@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload OWASP SARIF to Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: backend/build/reports/dependency-check-report.sarif
           category: owasp-dep-check
@@ -74,8 +74,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload frontend coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: frontend/coverage/lcov.info
           flags: frontend
@@ -115,8 +115,8 @@ jobs:
       run:
         working-directory: worker
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -128,7 +128,7 @@ jobs:
         run: pytest -v --cov=. --cov-report=xml --cov-report=term
       - name: Upload worker coverage
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: worker/coverage.xml
           flags: worker
@@ -142,8 +142,8 @@ jobs:
       run:
         working-directory: slicer
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
@@ -155,7 +155,7 @@ jobs:
         run: pytest -v --cov=. --cov-report=xml --cov-report=term
       - name: Upload slicer coverage
         if: always()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           files: slicer/coverage.xml
           flags: slicer
@@ -167,9 +167,9 @@ jobs:
   trivy-fs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -179,7 +179,7 @@ jobs:
           ignore-unfixed: true
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
@@ -190,8 +190,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
+      - uses: actions/checkout@v6
+      - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: high
           comment-summary-in-pr: always
